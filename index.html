@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07100d">
+  <title>Digital InKrementation // Terminal</title>
+  <link rel="stylesheet" href="./style.css">
+  <script src="./script.js" defer></script>
+</head>
+<body>
+  <main class="terminal">
+    <header class="panel masthead">
+      <div>
+        <p class="eyebrow">SYSTÈME AUTONOME // TERMINAL 01</p>
+        <h1>DIGITAL <span>INKREMENTATION</span></h1>
+        <p class="subtitle">Développez votre infrastructure. Optimisez vos flux.</p>
+      </div>
+      <div class="system-state" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="system-status">INITIALISATION...</span>
+      </div>
+    </header>
+
+    <section class="resource-grid" aria-label="Ressources">
+      <article class="panel resource-card bits-card">
+        <div class="resource-heading"><span class="resource-icon">&gt;_</span><h2>BITS</h2></div>
+        <strong id="resource-bits" class="resource-value">0</strong>
+        <span class="resource-rate" id="rate-bits">+0 / s</span>
+      </article>
+      <article class="panel resource-card data-card">
+        <div class="resource-heading"><span class="resource-icon">[D]</span><h2>DATA</h2></div>
+        <strong id="resource-data" class="resource-value">0</strong>
+        <span class="resource-rate" id="rate-data">+0 / s</span>
+      </article>
+      <article class="panel resource-card energy-card">
+        <div class="resource-heading"><span class="resource-icon">~</span><h2>ENERGY</h2></div>
+        <strong id="resource-energy" class="resource-value">0</strong>
+        <span class="resource-rate" id="rate-energy">+0 / s</span>
+      </article>
+    </section>
+
+    <section id="offline-panel" class="panel offline-panel" hidden aria-labelledby="offline-title">
+      <div>
+        <p class="eyebrow">REPRISE DE SESSION</p>
+        <h2 id="offline-title">Activité hors ligne détectée</h2>
+        <p id="offline-summary"></p>
+      </div>
+      <button id="claim-offline" class="button button-cyan">RÉCUPÉRER</button>
+    </section>
+
+    <div id="storage-warning" class="notice notice-warning" role="status" hidden>
+      Sauvegarde locale indisponible. La progression sera conservée uniquement pendant cette session.
+    </div>
+
+    <section class="panel flow-panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">TÉLÉMÉTRIE</p><h2>Flux de production</h2></div>
+        <span id="specialty-badge" class="badge" hidden></span>
+      </div>
+      <div id="production-lines" class="production-lines"></div>
+    </section>
+
+    <div class="main-grid">
+      <section class="panel" aria-labelledby="buildings-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">INFRASTRUCTURE</p><h2 id="buildings-title">Bâtiments</h2></div>
+          <span class="section-count" id="building-count">01 UNITÉ</span>
+        </div>
+        <div id="building-list" class="item-list"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="tech-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">RECHERCHE</p><h2 id="tech-title">Technologies</h2></div>
+          <span class="section-count">06 MODULES</span>
+        </div>
+        <div id="technology-list" class="item-list"></div>
+      </section>
+    </div>
+
+    <section class="panel specialization-panel" aria-labelledby="specializations-title">
+      <div class="section-heading">
+        <div><p class="eyebrow">ORIENTATION DU SYSTÈME</p><h2 id="specializations-title">Spécialisations</h2></div>
+        <span id="specialization-lock" class="section-count"></span>
+      </div>
+      <p id="specialization-intro" class="muted"></p>
+      <div id="specialization-list" class="specialization-list"></div>
+    </section>
+
+    <footer class="panel system-log">
+      <span class="log-prefix">SYS.LOG &gt;</span>
+      <p id="system-message" aria-live="polite">Noyau démarré. Processeur de base en ligne.</p>
+      <span class="save-state" id="save-state">SAUVEGARDE AUTO // 10 S</span>
+    </footer>
+  </main>
+</body>
+</html>
