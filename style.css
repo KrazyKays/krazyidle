@@ -169,6 +169,8 @@ h2 { margin-bottom: 0; font-size: 16px; font-weight: 600; }
 .system-log { display: flex; align-items: baseline; gap: 10px; padding: 11px 14px; color: var(--muted); font-size: 11px; }
 .system-log p { flex: 1; margin: 0; }
 .log-prefix { color: var(--green-dim); }
+.reset-button { align-self: center; margin-top: 4px; padding: 4px 8px; border: 0; background: none; color: var(--line); font: inherit; font-size: 10px; cursor: pointer; }
+.reset-button:hover, .reset-button:focus-visible { color: var(--red); }
 [hidden] { display: none !important; }
 
 @media (max-width: 700px) {

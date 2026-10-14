@@ -10,6 +10,7 @@
   const BASE_LIFETIME_MS = 8000;
   const LONG_WORD_THRESHOLD = 5;
   const PULL_COST = 10;
+  const PASSIVE_MAX_STACKS = 5;
   const PITY_LIMIT = 20;
   const FREE_PULL_MS = 10 * 60 * 1000;
   const RARITY_WEIGHTS = [["commune", 70], ["rare", 24], ["epique", 5], ["legendaire", 1]];
@@ -149,7 +150,7 @@
       if (!creature || count <= 0) return;
       const { type, value } = creature.passive;
       if (type === "fuzzy") mods.fuzzy = Math.max(mods.fuzzy, value);
-      else mods[type] += value * count;
+      else mods[type] += value * Math.min(count, PASSIVE_MAX_STACKS);
     });
     mods.crit = Math.min(1, mods.crit);
     return mods;
@@ -206,16 +207,10 @@
     return state.words.find(word => word.text.length === typed.length && hammingDistance(word.text, typed) <= mods.fuzzy) || null;
   }
 
-  function submitWord(event) {
-    event.preventDefault();
-    const typed = normalize(el["word-input"].value);
-    if (!typed) return;
+  function validateWord(typed) {
     const mods = getModifiers();
     const target = findTarget(typed, mods);
-    if (!target) {
-      setMessage("Aucun mot visible ne correspond.");
-      return;
-    }
+    if (!target) return false;
     let gained = wordGain(target.text, mods);
     removeWord(target);
     state.words
@@ -226,12 +221,28 @@
         removeWord(word);
       });
     state.essence += gained;
-    el["word-input"].value = "";
     if (state.tutorialStep === 0) state.tutorialStep = 1;
     renderEssence();
     renderTutorial();
     setMessage(`+${formatNumber(gained)} ESSENCE`);
     save();
+    return true;
+  }
+
+  function handleWordInput() {
+    const raw = el["word-input"].value;
+    const typed = normalize(raw);
+    const validated = typed !== "" && validateWord(typed);
+    if (!validated && !/\s/.test(raw)) return;
+    el["word-input"].value = "";
+    if (!validated && typed !== "") setMessage("Aucun mot visible ne correspond.");
+  }
+
+  function submitWord(event) {
+    event.preventDefault();
+    const typed = normalize(el["word-input"].value);
+    el["word-input"].value = "";
+    if (typed !== "" && !validateWord(typed)) setMessage("Aucun mot visible ne correspond.");
   }
 
   function renderEssence() {
@@ -322,14 +333,23 @@
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
+  function ownedCount() {
+    return Object.values(state.collection).reduce((sum, count) => sum + count, 0);
+  }
+
+  function pullCost() {
+    return PULL_COST + ownedCount();
+  }
+
   function pull() {
     const now = Date.now();
     const free = freePullReady(now);
-    if (!free && state.essence < PULL_COST) return;
+    const cost = pullCost();
+    if (!free && state.essence < cost) return;
     if (free) {
       state.lastFreePull = now;
     } else {
-      state.essence -= PULL_COST;
+      state.essence -= cost;
     }
     const guaranteed = state.pityCounter + 1 >= PITY_LIMIT;
     const rolled = rollRarity();
@@ -347,8 +367,9 @@
   function renderPull() {
     const now = Date.now();
     const free = freePullReady(now);
-    setText(el["pull-button"], free ? "INVOQUER · GRATUIT" : `INVOQUER · ${PULL_COST} ESSENCE`);
-    el["pull-button"].disabled = !free && state.essence < PULL_COST;
+    const cost = pullCost();
+    setText(el["pull-button"], free ? "INVOQUER · GRATUIT" : `INVOQUER · ${cost} ESSENCE`);
+    el["pull-button"].disabled = !free && state.essence < cost;
     const remaining = Math.max(0, FREE_PULL_MS - (now - state.lastFreePull));
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
@@ -482,15 +503,35 @@
     renderPull();
   }
 
+  function resetGame() {
+    if (!window.confirm("Effacer la partie et repartir de zéro ?")) return;
+    state.words.forEach(word => word.node.remove());
+    state.words = [];
+    state.essence = 0;
+    state.collection = defaultCollection();
+    state.pityCounter = 0;
+    state.lastFreePull = 0;
+    state.knownFusions = [];
+    state.tutorialStep = 0;
+    state.selection = [];
+    el["word-input"].value = "";
+    setText(el["pull-result"], "");
+    renderAll();
+    setMessage("Nouvelle partie démarrée.");
+    save();
+  }
+
   function initialize() {
     [
       "essence-value", "word-zone", "word-form", "word-input", "tutorial", "tutorial-text",
       "tutorial-next", "pull-button", "pull-info", "pull-result", "fusion-slots", "fusion-info",
-      "fuse-button", "bestiary-list", "bestiary-count", "system-message"
+      "fuse-button", "bestiary-list", "bestiary-count", "system-message", "reset-button"
     ].forEach(id => { el[id] = byId(id); });
     load();
     renderAll();
     el["word-form"].addEventListener("submit", submitWord);
+    el["word-input"].addEventListener("input", handleWordInput);
+    el["reset-button"].addEventListener("click", resetGame);
     el["pull-button"].addEventListener("click", pull);
     el["fuse-button"].addEventListener("click", fuse);
     el["fusion-slots"].addEventListener("click", handleSlotClick);
