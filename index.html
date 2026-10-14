@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#07100d">
-  <title>Digital InKrementation // Terminal</title>
+  <title>K typer // Terminal</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./script.js" defer></script>
 </head>
@@ -12,86 +12,58 @@
   <main class="terminal">
     <header class="panel masthead">
       <div>
-        <p class="eyebrow">SYSTÈME AUTONOME // TERMINAL 01</p>
-        <h1>DIGITAL <span>INKREMENTATION</span></h1>
-        <p class="subtitle">Développez votre infrastructure. Optimisez vos flux.</p>
+        <p class="eyebrow">BESTIAIRE // TERMINAL 01</p>
+        <h1>K <span>TYPER</span></h1>
       </div>
-      <div class="system-state" aria-live="polite">
-        <span class="status-dot"></span>
-        <span id="system-status">INITIALISATION...</span>
+      <div class="essence">
+        <p class="eyebrow">ESSENCE</p>
+        <strong id="essence-value">0</strong>
       </div>
     </header>
 
-    <section class="resource-grid" aria-label="Ressources">
-      <article class="panel resource-card bits-card">
-        <div class="resource-heading"><span class="resource-icon">&gt;_</span><h2>BITS</h2></div>
-        <strong id="resource-bits" class="resource-value">0</strong>
-        <span class="resource-rate" id="rate-bits">+0 / s</span>
-      </article>
-      <article class="panel resource-card data-card">
-        <div class="resource-heading"><span class="resource-icon">[D]</span><h2>DATA</h2></div>
-        <strong id="resource-data" class="resource-value">0</strong>
-        <span class="resource-rate" id="rate-data">+0 / s</span>
-      </article>
-      <article class="panel resource-card energy-card">
-        <div class="resource-heading"><span class="resource-icon">~</span><h2>ENERGY</h2></div>
-        <strong id="resource-energy" class="resource-value">0</strong>
-        <span class="resource-rate" id="rate-energy">+0 / s</span>
-      </article>
-    </section>
-
-    <section id="offline-panel" class="panel offline-panel" hidden aria-labelledby="offline-title">
-      <div>
-        <p class="eyebrow">REPRISE DE SESSION</p>
-        <h2 id="offline-title">Activité hors ligne détectée</h2>
-        <p id="offline-summary"></p>
-      </div>
-      <button id="claim-offline" class="button button-cyan">RÉCUPÉRER</button>
-    </section>
-
-    <div id="storage-warning" class="notice notice-warning" role="status" hidden>
-      Sauvegarde locale indisponible. La progression sera conservée uniquement pendant cette session.
+    <div id="tutorial" class="panel tutorial" hidden>
+      <p id="tutorial-text"></p>
+      <button id="tutorial-next" class="button" type="button">MASQUER</button>
     </div>
 
-    <section class="panel flow-panel">
-      <div class="section-heading">
-        <div><p class="eyebrow">TÉLÉMÉTRIE</p><h2>Flux de production</h2></div>
-        <span id="specialty-badge" class="badge" hidden></span>
-      </div>
-      <div id="production-lines" class="production-lines"></div>
+    <section class="panel word-panel" aria-label="Zone de mots">
+      <div id="word-zone" class="word-zone"></div>
+      <form id="word-form" class="word-form" autocomplete="off">
+        <input id="word-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Mot à taper" placeholder="Tapez un mot visible">
+      </form>
     </section>
 
     <div class="main-grid">
-      <section class="panel" aria-labelledby="buildings-title">
+      <section class="panel" aria-labelledby="pull-title">
         <div class="section-heading">
-          <div><p class="eyebrow">INFRASTRUCTURE</p><h2 id="buildings-title">Bâtiments</h2></div>
-          <span class="section-count" id="building-count">01 UNITÉ</span>
+          <div><p class="eyebrow">INVOCATION</p><h2 id="pull-title">Tirage</h2></div>
         </div>
-        <div id="building-list" class="item-list"></div>
+        <button id="pull-button" class="button button-cyan" type="button">INVOQUER · 10 ESSENCE</button>
+        <p id="pull-info" class="muted"></p>
+        <p id="pull-result" class="pull-result" aria-live="polite"></p>
       </section>
 
-      <section class="panel" aria-labelledby="tech-title">
+      <section class="panel" aria-labelledby="fusion-title">
         <div class="section-heading">
-          <div><p class="eyebrow">RECHERCHE</p><h2 id="tech-title">Technologies</h2></div>
-          <span class="section-count">06 MODULES</span>
+          <div><p class="eyebrow">FUSION</p><h2 id="fusion-title">Combinaison</h2></div>
         </div>
-        <div id="technology-list" class="item-list"></div>
+        <div id="fusion-slots" class="fusion-slots"></div>
+        <p id="fusion-info" class="muted"></p>
+        <button id="fuse-button" class="button" type="button" disabled>FUSIONNER</button>
       </section>
     </div>
 
-    <section class="panel specialization-panel" aria-labelledby="specializations-title">
+    <section class="panel" aria-labelledby="bestiary-title">
       <div class="section-heading">
-        <div><p class="eyebrow">ORIENTATION DU SYSTÈME</p><h2 id="specializations-title">Spécialisations</h2></div>
-        <span id="specialization-lock" class="section-count"></span>
+        <div><p class="eyebrow">COLLECTION</p><h2 id="bestiary-title">Bestiaire</h2></div>
+        <span id="bestiary-count" class="section-count"></span>
       </div>
-      <p id="specialization-intro" class="muted"></p>
-      <div id="specialization-list" class="specialization-list"></div>
+      <div id="bestiary-list" class="bestiary-list"></div>
     </section>
 
     <footer class="panel system-log">
-      <span class="log-prefix">SYS.LOG &gt;</span>
-      <p id="system-message" aria-live="polite">Noyau démarré. Processeur de base en ligne.</p>
-      <span class="save-state" id="save-state">SAUVEGARDE AUTO // 10 S</span>
+      <span class="log-prefix">LOG &gt;</span>
+      <p id="system-message" aria-live="polite"></p>
     </footer>
   </main>
 </body>
