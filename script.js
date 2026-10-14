@@ -57,11 +57,17 @@
 
   const fusions = [
     { a: "gelee", b: "luciole", result: "lanterne" },
+    { a: "phalene", b: "luciole", result: "lanterne" },
     { a: "glyphe", b: "crabe", result: "cerbere" },
+    { a: "glyphe", b: "spectre", result: "cerbere" },
     { a: "pixo", b: "golem", result: "chimere" },
+    { a: "phalene", b: "dragonnet", result: "chimere" },
     { a: "phalene", b: "spectre", result: "revenant" },
+    { a: "tic", b: "spectre", result: "revenant" },
     { a: "tic", b: "titan", result: "horloge" },
-    { a: "dragonnet", b: "oracle", result: "sphinx" }
+    { a: "tic", b: "golem", result: "horloge" },
+    { a: "dragonnet", b: "oracle", result: "sphinx" },
+    { a: "oracle", b: "titan", result: "sphinx" }
   ];
 
   const creatureMap = new Map(creatures.map(creature => [creature.id, creature]));
@@ -374,13 +380,12 @@
       passive.className = "creature-passive";
       passive.textContent = passiveText(creature.passive);
       body.append(passive);
-      const recipe = fusions.find(item => item.result === creature.id);
-      if (recipe && isKnownFusion(recipe)) {
+      fusions.filter(item => item.result === creature.id && isKnownFusion(item)).forEach(recipe => {
         const line = document.createElement("span");
         line.className = "creature-recipe";
         line.textContent = `Recette : ${creatureMap.get(recipe.a).name} + ${creatureMap.get(recipe.b).name}`;
         body.append(line);
-      }
+      });
     }
     card.append(sprite, body);
     return card;
