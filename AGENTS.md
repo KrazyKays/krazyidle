@@ -35,6 +35,7 @@ Développer cet idle game rétro en privilégiant la simplicité, la rejouabilit
 - Privilégier la publication GitHub Pages depuis une branche.
 - Ne pas ajouter de workflow, d'étape de build ou de dépendance de déploiement sans nécessité.
 - Ne jamais inclure de secrets ou de données personnelles dans le dépôt.
+- Incrémenter `SAVE_VERSION` dans `script.js` à chaque nouvelle version déployée : cela réinitialise les sauvegardes.
 
 ## Fin de tâche
 Répondre en 3 à 5 lignes maximum : fichiers modifiés, vérifications réellement effectuées et éventuel problème restant.

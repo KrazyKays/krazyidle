@@ -2,7 +2,7 @@
 
 (() => {
   const SAVE_KEY = "k_typer_save_v1";
-  const SAVE_VERSION = 1;
+  const SAVE_VERSION = 2;
   const TICK_MS = 200;
   const SAVE_MS = 10000;
   const MAX_WORDS = 5;
@@ -12,8 +12,9 @@
   const PULL_COST = 10;
   const PASSIVE_MAX_STACKS = 5;
   const PITY_LIMIT = 20;
+  const JACKPOT_CHANCE = 0.02;
+  const JACKPOT_ID = "oracle";
   const FREE_PULL_MS = 10 * 60 * 1000;
-  const RARITY_WEIGHTS = [["commune", 70], ["rare", 24], ["epique", 5], ["legendaire", 1]];
   const RARITY_LABELS = { commune: "COMMUNE", rare: "RARE", epique: "ÉPIQUE", legendaire: "LÉGENDAIRE" };
   const TUTORIAL_STEPS = [
     "Tapez les mots qui apparaissent dans la zone et validez avec Entrée pour gagner de l'Essence.",
@@ -40,38 +41,45 @@
     { id: "pixo", name: "Pixo", rarity: "commune", shape: "square", color: "#6de7e0", passive: { type: "longWord", value: 1 } },
     { id: "glyphe", name: "Glyphe", rarity: "commune", shape: "triangle", color: "#f2c66d", passive: { type: "fuzzy", value: 1 } },
     { id: "phalene", name: "Phalène", rarity: "commune", shape: "round", color: "#c7a6ff", passive: { type: "echo", value: 1 } },
-    { id: "tic", name: "Tic", rarity: "commune", shape: "square", color: "#ff827c", passive: { type: "lifetime", value: 1.5 } },
     { id: "crabe", name: "Crabe", rarity: "rare", shape: "diamond", color: "#ff9d5c", passive: { type: "crit", value: 0.15 } },
     { id: "luciole", name: "Luciole", rarity: "rare", shape: "round", color: "#fff27a", passive: { type: "gain", value: 0.25 } },
-    { id: "golem", name: "Golem", rarity: "rare", shape: "square", color: "#9aa7b8", passive: { type: "longWord", value: 2 } },
-    { id: "spectre", name: "Spectre", rarity: "rare", shape: "triangle", color: "#8fd3ff", passive: { type: "lifetime", value: 2.5 } },
-    { id: "dragonnet", name: "Dragonnet", rarity: "epique", shape: "diamond", color: "#ff5ad6", passive: { type: "gain", value: 0.5 } },
-    { id: "titan", name: "Titan", rarity: "epique", shape: "square", color: "#ffd166", passive: { type: "crit", value: 0.3 } },
     { id: "oracle", name: "Oracle", rarity: "legendaire", shape: "triangle", color: "#ffffff", passive: { type: "crit", value: 0.5 } },
+    { id: "tic", name: "Tic", rarity: "commune", shape: "square", color: "#ff827c", passive: { type: "lifetime", value: 1.5 }, fusion: true },
+    { id: "metronome", name: "Métronome", rarity: "commune", shape: "square", color: "#e8c07a", passive: { type: "spawn", value: 0.15 }, fusion: true },
+    { id: "golem", name: "Golem", rarity: "rare", shape: "square", color: "#9aa7b8", passive: { type: "longWord", value: 2 }, fusion: true },
+    { id: "spectre", name: "Spectre", rarity: "rare", shape: "triangle", color: "#8fd3ff", passive: { type: "lifetime", value: 2.5 }, fusion: true },
     { id: "lanterne", name: "Lanterne", rarity: "rare", shape: "round", color: "#ffe066", passive: { type: "gain", value: 0.35 }, fusion: true },
+    { id: "revenant", name: "Revenant", rarity: "rare", shape: "round", color: "#b388ff", passive: { type: "echo", value: 2 }, fusion: true },
+    { id: "horloge", name: "Horloge", rarity: "rare", shape: "square", color: "#ffb347", passive: { type: "lifetime", value: 4 }, fusion: true },
+    { id: "dragonnet", name: "Dragonnet", rarity: "epique", shape: "diamond", color: "#ff5ad6", passive: { type: "gain", value: 0.5 }, fusion: true },
+    { id: "titan", name: "Titan", rarity: "epique", shape: "square", color: "#ffd166", passive: { type: "crit", value: 0.3 }, fusion: true },
     { id: "cerbere", name: "Cerbère", rarity: "epique", shape: "triangle", color: "#ff6b6b", passive: { type: "fuzzy", value: 2 }, fusion: true },
     { id: "chimere", name: "Chimère", rarity: "epique", shape: "diamond", color: "#5ce1a6", passive: { type: "longWord", value: 3 }, fusion: true },
-    { id: "revenant", name: "Revenant", rarity: "epique", shape: "round", color: "#b388ff", passive: { type: "echo", value: 2 }, fusion: true },
-    { id: "horloge", name: "Horloge", rarity: "epique", shape: "square", color: "#ffb347", passive: { type: "lifetime", value: 4 }, fusion: true },
+    { id: "comete", name: "Comète", rarity: "epique", shape: "triangle", color: "#9fe8ff", passive: { type: "spawn", value: 0.4 }, fusion: true },
     { id: "sphinx", name: "Sphinx", rarity: "legendaire", shape: "diamond", color: "#e0e0ff", passive: { type: "crit", value: 0.6 }, fusion: true }
   ];
 
   const fusions = [
+    { a: "glyphe", b: "phalene", result: "tic" },
+    { a: "gelee", b: "pixo", result: "metronome" },
+    { a: "pixo", b: "crabe", result: "golem" },
+    { a: "glyphe", b: "luciole", result: "spectre" },
     { a: "gelee", b: "luciole", result: "lanterne" },
-    { a: "phalene", b: "luciole", result: "lanterne" },
-    { a: "glyphe", b: "crabe", result: "cerbere" },
-    { a: "glyphe", b: "spectre", result: "cerbere" },
-    { a: "pixo", b: "golem", result: "chimere" },
-    { a: "phalene", b: "dragonnet", result: "chimere" },
-    { a: "phalene", b: "spectre", result: "revenant" },
-    { a: "tic", b: "spectre", result: "revenant" },
-    { a: "tic", b: "titan", result: "horloge" },
-    { a: "tic", b: "golem", result: "horloge" },
-    { a: "dragonnet", b: "oracle", result: "sphinx" },
-    { a: "oracle", b: "titan", result: "sphinx" }
+    { a: "phalene", b: "crabe", result: "revenant" },
+    { a: "gelee", b: "crabe", result: "horloge" },
+    { a: "crabe", b: "luciole", result: "dragonnet" },
+    { a: "gelee", b: "oracle", result: "titan" },
+    { a: "glyphe", b: "oracle", result: "cerbere" },
+    { a: "pixo", b: "oracle", result: "chimere" },
+    { a: "phalene", b: "oracle", result: "comete" },
+    { a: "crabe", b: "oracle", result: "sphinx" }
   ];
 
   const creatureMap = new Map(creatures.map(creature => [creature.id, creature]));
+  const passiveMax = {};
+  creatures.forEach(({ passive }) => {
+    passiveMax[passive.type] = Math.max(passiveMax[passive.type] || 0, passive.value);
+  });
   const el = {};
   let storageOk = true;
   let nextSpawnAt = 0;
@@ -140,11 +148,12 @@
     if (type === "fuzzy") return `Tolère ${value} lettre${value > 1 ? "s" : ""} différente${value > 1 ? "s" : ""}`;
     if (type === "echo") return `Valide aussi ${value} mot${value > 1 ? "s" : ""} plus court${value > 1 ? "s" : ""}`;
     if (type === "lifetime") return `+${value} s d'affichage des mots`;
+    if (type === "spawn") return `+${percent} % de vitesse d'apparition des mots`;
     return `${percent} % de chance de doubler le gain`;
   }
 
   function getModifiers() {
-    const mods = { gain: 0, longWord: 0, fuzzy: 0, echo: 0, lifetime: 0, crit: 0 };
+    const mods = { gain: 0, longWord: 0, fuzzy: 0, echo: 0, lifetime: 0, crit: 0, spawn: 0 };
     Object.entries(state.collection).forEach(([id, count]) => {
       const creature = creatureMap.get(id);
       if (!creature || count <= 0) return;
@@ -187,8 +196,9 @@
   function tickWords() {
     const now = Date.now();
     if (now >= nextSpawnAt && state.words.length < MAX_WORDS) {
-      spawnWord(now, getModifiers());
-      nextSpawnAt = now + SPAWN_MS;
+      const mods = getModifiers();
+      spawnWord(now, mods);
+      nextSpawnAt = now + SPAWN_MS / (1 + mods.spawn);
     }
     state.words = state.words.filter(word => {
       const remaining = word.expiresAt - now;
@@ -318,18 +328,8 @@
     return now - state.lastFreePull >= FREE_PULL_MS;
   }
 
-  function rollRarity() {
-    const total = RARITY_WEIGHTS.reduce((sum, [, weight]) => sum + weight, 0);
-    let roll = Math.random() * total;
-    for (const [rarity, weight] of RARITY_WEIGHTS) {
-      roll -= weight;
-      if (roll < 0) return rarity;
-    }
-    return "commune";
-  }
-
-  function pickCreature(rarity) {
-    const pool = creatures.filter(creature => !creature.fusion && creature.rarity === rarity);
+  function pickPullable() {
+    const pool = creatures.filter(creature => !creature.fusion && creature.id !== JACKPOT_ID);
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
@@ -351,12 +351,10 @@
     } else {
       state.essence -= cost;
     }
-    const guaranteed = state.pityCounter + 1 >= PITY_LIMIT;
-    const rolled = rollRarity();
-    const rarity = guaranteed && !["epique", "legendaire"].includes(rolled) ? "epique" : rolled;
-    const creature = pickCreature(rarity);
+    const jackpot = state.pityCounter + 1 >= PITY_LIMIT || Math.random() < JACKPOT_CHANCE;
+    const creature = jackpot ? creatureMap.get(JACKPOT_ID) : pickPullable();
     state.collection[creature.id] += 1;
-    state.pityCounter = ["epique", "legendaire"].includes(rarity) ? 0 : state.pityCounter + 1;
+    state.pityCounter = jackpot ? 0 : state.pityCounter + 1;
     if (state.tutorialStep === 1) state.tutorialStep = 2;
     setText(el["pull-result"], `Obtenu : ${creature.name} · ${RARITY_LABELS[creature.rarity]}`);
     setMessage(`${creature.name} rejoint le bestiaire.`);
@@ -374,7 +372,7 @@
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
     const freeText = free ? "Tirage gratuit disponible." : `Prochain tirage gratuit dans ${minutes} min ${String(seconds).padStart(2, "0")} s.`;
-    setText(el["pull-info"], `${freeText} Tirages sans épique : ${state.pityCounter}/${PITY_LIMIT}`);
+    setText(el["pull-info"], `${freeText} Tirages sans Oracle : ${state.pityCounter}/${PITY_LIMIT}`);
   }
 
   function createCreatureCard(creature) {
@@ -400,7 +398,12 @@
       const passive = document.createElement("span");
       passive.className = "creature-passive";
       passive.textContent = passiveText(creature.passive);
-      body.append(passive);
+      const power = document.createElement("span");
+      power.className = "creature-power";
+      const fill = document.createElement("span");
+      fill.style.width = `${Math.round((creature.passive.value / passiveMax[creature.passive.type]) * 100)}%`;
+      power.append(fill);
+      body.append(passive, power);
       fusions.filter(item => item.result === creature.id && isKnownFusion(item)).forEach(recipe => {
         const line = document.createElement("span");
         line.className = "creature-recipe";
