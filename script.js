@@ -76,10 +76,6 @@
   ];
 
   const creatureMap = new Map(creatures.map(creature => [creature.id, creature]));
-  const passiveMax = {};
-  creatures.forEach(({ passive }) => {
-    passiveMax[passive.type] = Math.max(passiveMax[passive.type] || 0, passive.value);
-  });
   const el = {};
   let storageOk = true;
   let nextSpawnAt = 0;
@@ -397,13 +393,11 @@
     if (known) {
       const passive = document.createElement("span");
       passive.className = "creature-passive";
-      passive.textContent = passiveText(creature.passive);
-      const power = document.createElement("span");
-      power.className = "creature-power";
-      const fill = document.createElement("span");
-      fill.style.width = `${Math.round((creature.passive.value / passiveMax[creature.passive.type]) * 100)}%`;
-      power.append(fill);
-      body.append(passive, power);
+      const { type, value } = creature.passive;
+      const maxValue = type === "fuzzy" ? value : value * PASSIVE_MAX_STACKS;
+      const cappedMax = type === "crit" ? Math.min(1, maxValue) : maxValue;
+      passive.textContent = `${passiveText(creature.passive)} (max ${passiveText({ type, value: cappedMax })})`;
+      body.append(passive);
       fusions.filter(item => item.result === creature.id && isKnownFusion(item)).forEach(recipe => {
         const line = document.createElement("span");
         line.className = "creature-recipe";
