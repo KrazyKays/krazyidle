@@ -18,18 +18,33 @@
       <div class="essence">
         <p class="eyebrow">ESSENCE</p>
         <strong id="essence-value">0</strong>
+        <span id="rate-value" class="rate">+0/s</span>
       </div>
     </header>
 
-    <div id="tutorial" class="panel tutorial" hidden>
-      <p id="tutorial-text"></p>
-      <button id="tutorial-next" class="button" type="button">MASQUER</button>
+    <div id="notice" class="panel notice" hidden>
+      <p id="notice-text"></p>
+      <button id="notice-close" class="button" type="button">OK</button>
     </div>
 
+    <section id="quest" class="panel quest" aria-label="Objectif">
+      <div class="quest-body">
+        <p id="quest-step" class="eyebrow"></p>
+        <p id="quest-text" class="quest-text"></p>
+        <p id="quest-hint" class="muted"></p>
+        <div class="progress"><span id="quest-bar"></span></div>
+      </div>
+      <button id="quest-claim" class="button button-amber" type="button" disabled></button>
+    </section>
+
     <section class="panel word-panel" aria-label="Zone de mots">
+      <div class="word-head">
+        <span id="combo-text" class="combo-text"></span>
+        <div class="progress combo-progress"><span id="combo-bar"></span></div>
+      </div>
       <div id="word-zone" class="word-zone"></div>
       <form id="word-form" class="word-form" autocomplete="off">
-        <input id="word-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Mot à taper" placeholder="Tapez un mot visible">
+        <input id="word-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Mot à taper" placeholder="Tapez un mot visible…">
       </form>
     </section>
 
@@ -38,9 +53,12 @@
         <div class="section-heading">
           <div><p class="eyebrow">INVOCATION</p><h2 id="pull-title">Tirage</h2></div>
         </div>
-        <button id="pull-button" class="button button-cyan" type="button">INVOQUER · 10 ESSENCE</button>
+        <div class="pull-buttons">
+          <button id="pull-button" class="button button-cyan" type="button"></button>
+          <button id="pull10-button" class="button" type="button"></button>
+        </div>
         <p id="pull-info" class="muted"></p>
-        <p id="pull-result" class="pull-result" aria-live="polite"></p>
+        <div id="pull-result" class="chips" aria-live="polite"></div>
       </section>
 
       <section class="panel" aria-labelledby="fusion-title">
@@ -50,6 +68,15 @@
         <div id="fusion-slots" class="fusion-slots"></div>
         <p id="fusion-info" class="muted"></p>
         <button id="fuse-button" class="button" type="button" disabled>FUSIONNER</button>
+        <div id="fusion-result" class="chips" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="upgrade-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">SYSTÈME</p><h2 id="upgrade-title">Améliorations</h2></div>
+        </div>
+        <p id="upgrade-empty" class="muted">Accumulez de l'Essence pour débloquer des améliorations.</p>
+        <div id="upgrade-list" class="upgrade-list"></div>
       </section>
     </div>
 
