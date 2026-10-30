@@ -3,96 +3,123 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07100d">
-  <title>K typer // Terminal</title>
+  <meta name="theme-color" content="#ffe9c7">
+  <title>K typer</title>
   <link rel="stylesheet" href="./style.css">
   <script src="./script.js" defer></script>
 </head>
 <body>
-  <main class="terminal">
-    <header class="panel masthead">
-      <div>
-        <p class="eyebrow">BESTIAIRE // TERMINAL 01</p>
-        <h1>K <span>TYPER</span></h1>
-      </div>
-      <div class="essence">
-        <p class="eyebrow">ESSENCE</p>
+  <header class="topbar">
+    <div class="brand">
+      <span id="mascot" class="sprite is-round mascot" style="--c:#ff7ab6" aria-hidden="true"></span>
+      <h1>K <span>typer</span></h1>
+    </div>
+    <div class="wallet">
+      <div class="pill pill-essence" title="Essence">
+        <span class="gem" aria-hidden="true"></span>
         <strong id="essence-value">0</strong>
         <span id="rate-value" class="rate">+0/s</span>
       </div>
-    </header>
+      <div class="pill pill-stars" title="Étoiles (bonus permanent)">⭐ <strong id="header-stars">0</strong></div>
+      <button id="reset-button" class="link-button" type="button">Effacer la partie</button>
+    </div>
+  </header>
 
-    <div id="notice" class="panel notice" hidden>
-      <p id="notice-text"></p>
-      <button id="notice-close" class="button" type="button">OK</button>
+  <main class="layout">
+    <div class="play">
+      <section id="quest" class="card quest" aria-label="Objectif">
+        <div class="quest-body">
+          <p id="quest-step" class="eyebrow"></p>
+          <p id="quest-text" class="quest-text"></p>
+          <p id="quest-hint" class="muted"></p>
+          <div class="progress"><span id="quest-bar"></span></div>
+        </div>
+        <button id="quest-claim" class="btn btn-yellow" type="button" disabled></button>
+      </section>
+
+      <section id="word-card" class="card word-card" aria-label="Zone de mots">
+        <div class="word-head">
+          <span id="combo-text" class="combo-text"></span>
+          <span id="frenzy-text" class="frenzy-text" hidden></span>
+          <div class="progress combo-progress"><span id="combo-bar"></span></div>
+        </div>
+        <div id="word-zone" class="word-zone"></div>
+        <form id="word-form" class="word-form" autocomplete="off">
+          <input id="word-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Mot à taper" placeholder="Tapez un mot visible…">
+        </form>
+      </section>
+
+      <div class="speech" aria-live="polite">
+        <p id="system-message"></p>
+      </div>
     </div>
 
-    <section id="quest" class="panel quest" aria-label="Objectif">
-      <div class="quest-body">
-        <p id="quest-step" class="eyebrow"></p>
-        <p id="quest-text" class="quest-text"></p>
-        <p id="quest-hint" class="muted"></p>
-        <div class="progress"><span id="quest-bar"></span></div>
-      </div>
-      <button id="quest-claim" class="button button-amber" type="button" disabled></button>
-    </section>
+    <section class="card side">
+      <nav id="tabs" class="tabs" role="tablist" aria-label="Menus">
+        <button class="tab is-active" type="button" role="tab" data-tab="invoke" aria-selected="true">✨ Invoquer</button>
+        <button class="tab" type="button" role="tab" data-tab="fusion" aria-selected="false">🧪 Fusion</button>
+        <button class="tab" type="button" role="tab" data-tab="shop" aria-selected="false">🛒 Boutique</button>
+        <button class="tab" type="button" role="tab" data-tab="bestiary" aria-selected="false">📖 Bestiaire</button>
+        <button class="tab" type="button" role="tab" data-tab="stars" aria-selected="false">⭐ Étoiles</button>
+      </nav>
 
-    <section class="panel word-panel" aria-label="Zone de mots">
-      <div class="word-head">
-        <span id="combo-text" class="combo-text"></span>
-        <div class="progress combo-progress"><span id="combo-bar"></span></div>
-      </div>
-      <div id="word-zone" class="word-zone"></div>
-      <form id="word-form" class="word-form" autocomplete="off">
-        <input id="word-input" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Mot à taper" placeholder="Tapez un mot visible…">
-      </form>
-    </section>
-
-    <div class="main-grid">
-      <section class="panel" aria-labelledby="pull-title">
-        <div class="section-heading">
-          <div><p class="eyebrow">INVOCATION</p><h2 id="pull-title">Tirage</h2></div>
-        </div>
+      <div class="panel" data-panel="invoke" role="tabpanel">
+        <h2>Invocation</h2>
+        <p class="muted">Invoquez des créatures : elles produisent de l'Essence en continu et offrent des pouvoirs.</p>
         <div class="pull-buttons">
-          <button id="pull-button" class="button button-cyan" type="button"></button>
-          <button id="pull10-button" class="button" type="button"></button>
+          <button id="pull-button" class="btn btn-pink btn-big" type="button"></button>
+          <button id="pull10-button" class="btn btn-blue" type="button"></button>
         </div>
         <p id="pull-info" class="muted"></p>
         <div id="pull-result" class="chips" aria-live="polite"></div>
-      </section>
+      </div>
 
-      <section class="panel" aria-labelledby="fusion-title">
-        <div class="section-heading">
-          <div><p class="eyebrow">FUSION</p><h2 id="fusion-title">Combinaison</h2></div>
-        </div>
+      <div class="panel" data-panel="fusion" role="tabpanel" hidden>
+        <h2>Fusion</h2>
         <div id="fusion-slots" class="fusion-slots"></div>
         <p id="fusion-info" class="muted"></p>
-        <button id="fuse-button" class="button" type="button" disabled>FUSIONNER</button>
+        <button id="fuse-button" class="btn btn-green" type="button" disabled>FUSIONNER !</button>
         <div id="fusion-result" class="chips" aria-live="polite"></div>
-      </section>
+        <h3>Vos créatures</h3>
+        <div id="fusion-picker" class="picker"></div>
+        <h3>Recettes connues</h3>
+        <div id="recipe-list" class="recipe-list"></div>
+      </div>
 
-      <section class="panel" aria-labelledby="upgrade-title">
-        <div class="section-heading">
-          <div><p class="eyebrow">SYSTÈME</p><h2 id="upgrade-title">Améliorations</h2></div>
-        </div>
+      <div class="panel" data-panel="shop" role="tabpanel" hidden>
+        <h2>Boutique</h2>
         <p id="upgrade-empty" class="muted">Accumulez de l'Essence pour débloquer des améliorations.</p>
         <div id="upgrade-list" class="upgrade-list"></div>
-      </section>
-    </div>
-
-    <section class="panel" aria-labelledby="bestiary-title">
-      <div class="section-heading">
-        <div><p class="eyebrow">COLLECTION</p><h2 id="bestiary-title">Bestiaire</h2></div>
-        <span id="bestiary-count" class="section-count"></span>
       </div>
-      <div id="bestiary-list" class="bestiary-list"></div>
-    </section>
 
-    <footer class="panel system-log">
-      <span class="log-prefix">LOG &gt;</span>
-      <p id="system-message" aria-live="polite"></p>
-    </footer>
-    <button id="reset-button" class="reset-button" type="button">REPRENDRE DE ZÉRO</button>
+      <div class="panel" data-panel="bestiary" role="tabpanel" hidden>
+        <h2>Bestiaire <span id="bestiary-count" class="count"></span></h2>
+        <div id="bestiary-list" class="bestiary-list"></div>
+      </div>
+
+      <div class="panel" data-panel="stars" role="tabpanel" hidden>
+        <h2>Renaissance</h2>
+        <div class="stars-box">
+          <span class="big-star" aria-hidden="true">⭐</span>
+          <div>
+            <strong id="stars-value">0</strong> étoile(s)
+            <p id="stars-bonus" class="muted"></p>
+          </div>
+        </div>
+        <p class="muted">Recommencez avec un bonus permanent. Vous perdez Essence, créatures et améliorations, mais gardez le bestiaire, les recettes et les objectifs.</p>
+        <p id="stars-info" class="muted"></p>
+        <button id="rebirth-button" class="btn btn-yellow btn-big" type="button" disabled>RENAISSANCE</button>
+      </div>
+    </section>
   </main>
+
+  <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+
+  <div id="notice" class="modal" hidden>
+    <div class="modal-box card">
+      <p id="notice-text"></p>
+      <button id="notice-close" class="btn btn-green" type="button">Super !</button>
+    </div>
+  </div>
 </body>
 </html>

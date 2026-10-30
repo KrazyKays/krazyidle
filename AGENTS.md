@@ -1,13 +1,13 @@
 # AGENTS.md — Digital InKrementation
 
 ## Objectif
-Développer cet idle game rétro en privilégiant la simplicité, la rejouabilité, la fiabilité et une consommation minimale de tokens et de ressources.
+Développer cet idle game cartoon en privilégiant la simplicité, la rejouabilité, la fiabilité et une consommation minimale de tokens et de ressources.
 
 ## Contraintes techniques
 - HTML, CSS et JavaScript natifs uniquement.
 - Aucun framework, dépendance, build, backend, API ou appel réseau.
 - Compatible avec GitHub Pages, ordinateur et mobile.
-- Interface en français, esthétique terminal rétro 8-bit, visuels CSS uniquement.
+- Interface en français, esthétique cartoon colorée, visuels CSS uniquement.
 - Sauvegarde `localStorage`, progression hors ligne plafonnée à 8 heures.
 - Aucun son ni ressource externe.
 

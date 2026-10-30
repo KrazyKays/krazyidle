@@ -2,7 +2,7 @@
 
 (() => {
   const SAVE_KEY = "k_typer_save_v1";
-  const SAVE_VERSION = 3;
+  const SAVE_VERSION = 4;
   const TICK_MS = 200;
   const SAVE_MS = 10000;
   const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000;
@@ -26,6 +26,13 @@
   const GOLD_MULT = 5;
   const RATE_PER_LETTER = 0.1;
   const MAX_ESSENCE = 1e15;
+  const BUBBLE_FIRST_MS = 30000;
+  const BUBBLE_MS = 75000;
+  const BUBBLE_LIFE_MS = 9000;
+  const FRENZY_MS = 20000;
+  const FRENZY_MULT = 3;
+  const STAR_UNIT = 1e6;
+  const STAR_BONUS = 0.1;
   const RARITY_LABELS = { commune: "COMMUNE", rare: "RARE", epique: "ÉPIQUE", legendaire: "LÉGENDAIRE", mythique: "MYTHIQUE" };
   const PULL_WEIGHTS = { commune: 3, rare: 2 };
   const UNITS = ["", " k", " M", " Md", " Bn", " Bd"];
@@ -41,8 +48,9 @@
     sable caillou rocher falaise vallee cascade tempete eclair brume aurore crepuscule minuit
     horloge boussole lanterne bougie miroir couronne anneau rubis saphir emeraude diamant perle
     ambre obsidienne fusee planete comete galaxie orbite satellite astronaute robot engrenage
-    ressort levier piston moteur turbine catapulte trebuchet
-  `.trim().split(/\s+/);
+    ressort levier piston moteur turbine catapulte trebuchet bonbon guimauve sucette nuage
+    arc ciel pirate perroquet trampoline toboggan ballon cerf volant pingouin koala panda
+  `.trim().split(/\s+/).filter((word, index, list) => list.indexOf(word) === index);
 
   // prod = Essence par seconde et par exemplaire ; le passif plafonne à PASSIVE_MAX_STACKS exemplaires.
   const creatures = [
@@ -91,20 +99,22 @@
   ];
 
   const upgrades = [
-    { id: "clavier", name: "Clavier mécanique", desc: "+25 % d'Essence par mot", base: 25, growth: 1.7, max: Infinity },
-    { id: "cpu", name: "Processeur", desc: "+20 % de production des créatures", base: 60, growth: 1.8, max: Infinity },
-    { id: "ram", name: "Mémoire vive", desc: "+1 mot affiché simultanément", base: 150, growth: 10, max: 3 },
-    { id: "tampon", name: "Tampon de combo", desc: "+0,5 au multiplicateur de combo maximal", base: 300, growth: 6, max: 4 },
-    { id: "antenne", name: "Antenne dorée", desc: "+2 % de chance de mot doré (×5)", base: 400, growth: 4, max: 5 }
+    { id: "clavier", name: "⌨️ Clavier magique", desc: "+25 % d'Essence par mot", base: 25, growth: 1.7, max: Infinity },
+    { id: "cpu", name: "🍲 Chaudron bouillonnant", desc: "+20 % de production des créatures", base: 60, growth: 1.8, max: Infinity },
+    { id: "ram", name: "📋 Grand tableau", desc: "+1 mot affiché en même temps", base: 150, growth: 10, max: 3 },
+    { id: "tampon", name: "🌀 Ressort à combo", desc: "+0,5 au multiplicateur de combo maximal", base: 300, growth: 6, max: 4 },
+    { id: "antenne", name: "🍀 Trèfle doré", desc: "+2 % de chance de mot doré (×5)", base: 400, growth: 4, max: 5 },
+    { id: "filet", name: "🦋 Filet à bulles", desc: "Bulles bonus 25 % plus fréquentes", base: 500, growth: 5, max: 4 }
   ];
 
   const QUESTS = [
     { text: "Tapez 5 mots", hint: "Un mot se valide dès qu'il est complet, sans appuyer sur Entrée.", goal: 5, value: () => state.stats.words, reward: 15 },
-    { text: "Invoquez une créature", hint: "Le premier tirage est offert, puis un toutes les 10 minutes.", goal: 1, value: () => state.stats.pulls, reward: 20 },
-    { text: "Atteignez un combo de 10", hint: "Chaque mot augmente le multiplicateur. Un mot expiré divise le combo par deux.", goal: 10, value: () => state.stats.bestCombo, reward: 40 },
-    { text: "Achetez une amélioration", hint: "Les améliorations apparaissent à mesure que vous accumulez de l'Essence.", goal: 1, value: upgradeTotal, reward: 60 },
+    { text: "Invoquez une créature", hint: "Onglet ✨ Invoquer : le premier tirage est offert, puis un toutes les 10 minutes.", goal: 1, value: () => state.stats.pulls, reward: 20 },
+    { text: "Atteignez un combo de 10", hint: "Chaque mot augmente le multiplicateur. Un mot raté divise le combo par deux.", goal: 10, value: () => state.stats.bestCombo, reward: 40 },
+    { text: "Achetez une amélioration", hint: "Onglet 🛒 Boutique : les objets apparaissent à mesure que vous gagnez de l'Essence.", goal: 1, value: upgradeTotal, reward: 60 },
+    { text: "Éclatez une bulle bonus", hint: "Une bulle 🎁 apparaît parfois dans le ciel : cliquez-la vite !", goal: 1, value: () => state.stats.bubbles, reward: 80 },
     { text: "Possédez 5 créatures", hint: "Chaque créature produit de l'Essence en continu, même hors ligne (8 h max).", goal: 5, value: ownedCount, reward: 80 },
-    { text: "Réussissez une fusion", hint: "Cliquez deux créatures du bestiaire. Les cartes ??? donnent un ingrédient en indice.", goal: 1, value: () => state.stats.fusions, reward: 150 },
+    { text: "Réussissez une fusion", hint: "Onglet 🧪 Fusion : choisissez deux créatures. Le bestiaire donne des indices.", goal: 1, value: () => state.stats.fusions, reward: 150 },
     { text: "Tapez un mot doré", hint: "Les mots dorés rapportent cinq fois plus.", goal: 1, value: () => state.stats.golden, reward: 200 },
     { text: "Produisez 10 Essence/s", hint: "Les créatures fusionnées produisent bien plus que leurs ingrédients.", goal: 10, value: () => mods.rate, reward: 400 },
     { text: "Découvrez 8 créatures", goal: 8, value: () => state.discovered.length, reward: 800 },
@@ -114,17 +124,29 @@
     { text: "Découvrez une créature épique", goal: 1, value: () => discoveredCount(c => c.rarity === "epique"), reward: 15000 },
     { text: "Atteignez un combo de 50", goal: 50, value: () => state.stats.bestCombo, reward: 30000 },
     { text: "Produisez 1 000 Essence/s", goal: 1000, value: () => mods.rate, reward: 100000 },
+    { text: "Faites une Renaissance", hint: "Onglet ⭐ Étoiles : repartez avec un bonus permanent.", goal: 1, value: () => state.rebirths, reward: 50000 },
     { text: "Découvrez 18 créatures", goal: 18, value: () => state.discovered.length, reward: 300000 },
     { text: "Fusionnez une créature légendaire", goal: 1, value: () => discoveredCount(c => c.fusion && c.rarity === "legendaire"), reward: 1e6 },
     { text: "Produisez 10 000 Essence/s", goal: 10000, value: () => mods.rate, reward: 3e6 },
     { text: "Complétez le bestiaire", goal: creatures.length, value: () => state.discovered.length, reward: 2e7 }
   ];
 
+  const BONUSES = [
+    { id: "frenzy", weight: 3 },
+    { id: "rain", weight: 3 },
+    { id: "combo", weight: 2 },
+    { id: "pull", weight: 1 }
+  ];
+
   const creatureMap = new Map(creatures.map(creature => [creature.id, creature]));
   const el = {};
   const upgradeNodes = {};
+  const tabNodes = {};
   let storageOk = true;
   let nextSpawnAt = 0;
+  let nextBubbleAt = Date.now() + BUBBLE_FIRST_MS;
+  let bubble = null;
+  let frenzyUntil = 0;
   let lastTick = Date.now();
   let mods = null;
 
@@ -141,7 +163,9 @@
       knownFusions: [],
       upgrades: Object.fromEntries(upgrades.map(upgrade => [upgrade.id, 0])),
       questIndex: 0,
-      stats: { words: 0, golden: 0, pulls: 0, fusions: 0, bestCombo: 0, earned: 0 },
+      stars: 0,
+      rebirths: 0,
+      stats: { words: 0, golden: 0, pulls: 0, fusions: 0, bestCombo: 0, earned: 0, bubbles: 0 },
       combo: 0,
       selection: [],
       words: []
@@ -161,8 +185,15 @@
     if (node.style.width !== width) node.style.width = width;
   }
 
+  function restartAnimation(node, className) {
+    node.classList.remove(className);
+    void node.offsetWidth;
+    node.classList.add(className);
+  }
+
   function setMessage(text) {
     setText(el["system-message"], text);
+    restartAnimation(el["system-message"].parentNode, "is-talking");
   }
 
   function showNotice(text) {
@@ -172,6 +203,11 @@
 
   function pick(list) {
     return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function pickWeighted(list) {
+    let roll = Math.random() * list.reduce((sum, item) => sum + item.weight, 0);
+    return list.find(item => (roll -= item.weight) < 0) || list[0];
   }
 
   function formatNumber(value) {
@@ -248,7 +284,19 @@
     return `${Math.min(100, percent)} % de chance de gain doublé`;
   }
 
-  // Recalculé uniquement quand la collection ou les améliorations changent.
+  function starMult() {
+    return 1 + STAR_BONUS * state.stars;
+  }
+
+  function frenzyMult(now) {
+    return now < frenzyUntil ? FRENZY_MULT : 1;
+  }
+
+  function pendingStars() {
+    return Math.max(0, Math.floor(Math.sqrt(state.stats.earned / STAR_UNIT)) - state.stars);
+  }
+
+  // Recalculé uniquement quand la collection, les améliorations ou les étoiles changent.
   function refreshMods() {
     const next = { gain: 0, longWord: 0, fuzzy: 0, echo: 0, lifetime: 0, crit: 0, spawn: 0, prod: 0 };
     let baseRate = 0;
@@ -261,11 +309,12 @@
       else next[type] += value * Math.min(count, PASSIVE_MAX_STACKS);
     });
     next.crit = Math.min(1, next.crit);
-    next.rate = baseRate * (1 + next.prod + 0.2 * state.upgrades.cpu);
-    next.wordMult = 1 + next.gain + 0.25 * state.upgrades.clavier;
+    next.rate = baseRate * (1 + next.prod + 0.2 * state.upgrades.cpu) * starMult();
+    next.wordMult = (1 + next.gain + 0.25 * state.upgrades.clavier) * starMult();
     next.maxWords = BASE_WORDS + state.upgrades.ram;
     next.comboCap = BASE_COMBO_CAP + 0.5 * state.upgrades.tampon;
     next.gold = GOLD_CHANCE + 0.02 * state.upgrades.antenne;
+    next.bubbleMs = BUBBLE_MS / (1 + 0.25 * state.upgrades.filet);
     mods = next;
   }
 
@@ -281,22 +330,21 @@
   function breakCombo() {
     if (state.combo === 0) return;
     state.combo = Math.floor(state.combo / 2);
-    const node = el["combo-text"];
-    node.classList.remove("is-broken");
-    void node.offsetWidth;
-    node.classList.add("is-broken");
+    restartAnimation(el["combo-text"], "is-broken");
     renderCombo();
   }
 
   // Les mots rapportent aussi une fraction de la production : la frappe reste utile en fin de partie.
-  function wordGain(word) {
+  function wordGain(word, now) {
     const length = word.text.length;
     const bonus = Math.max(0, length - LONG_WORD_THRESHOLD) * mods.longWord;
     const crit = Math.random() < mods.crit;
     const value = (length + bonus) * (1 + mods.rate * RATE_PER_LETTER) * mods.wordMult * comboMult()
-      * (crit ? 2 : 1) * (word.gold ? GOLD_MULT : 1);
+      * (crit ? 2 : 1) * (word.gold ? GOLD_MULT : 1) * frenzyMult(now);
     return { value, crit };
   }
+
+  /* ---------- Mots ---------- */
 
   function spawnWord(now) {
     const usedRows = new Set(state.words.map(word => word.row));
@@ -309,7 +357,7 @@
     const life = BASE_LIFETIME_MS + mods.lifetime * 1000;
     const node = document.createElement("div");
     node.className = `word${gold ? " is-gold" : text.length >= 8 ? " is-long" : ""}`;
-    node.style.top = `${(row * 100) / ROWS}%`;
+    node.style.top = `calc((100% - 46px) * ${row / (ROWS - 1)} + 4px)`;
     const typed = document.createElement("span");
     typed.className = "typed";
     const rest = document.createElement("span");
@@ -319,8 +367,8 @@
     bar.style.animationDuration = `${life}ms`;
     node.append(typed, rest, bar);
     el["word-zone"].append(node);
-    const maxLeft = Math.max(0, el["word-zone"].clientWidth - node.offsetWidth - 8);
-    node.style.left = `${4 + Math.random() * maxLeft}px`;
+    const maxLeft = Math.max(0, el["word-zone"].clientWidth - node.offsetWidth - 12);
+    node.style.left = `${6 + Math.random() * maxLeft}px`;
     const word = { text, node, typed, rest, row, gold, hl: 0, expiresAt: now + life };
     state.words.push(word);
     highlightWord(word, normalize(el["word-input"].value));
@@ -366,12 +414,12 @@
     state.words.forEach(word => highlightWord(word, typed));
   }
 
-  function floatText(word, text, big) {
+  function floatText(left, top, text, big) {
     const node = document.createElement("span");
     node.className = `float${big ? " is-big" : ""}`;
     node.textContent = text;
-    node.style.left = `${word.node.offsetLeft}px`;
-    node.style.top = `${word.node.offsetTop}px`;
+    node.style.left = `${left}px`;
+    node.style.top = `${top}px`;
     node.addEventListener("animationend", () => node.remove());
     el["word-zone"].append(node);
   }
@@ -385,11 +433,12 @@
   function validateWord(typed, allowFuzzy) {
     const target = findTarget(typed, allowFuzzy);
     if (!target) return false;
+    const now = Date.now();
     const echoes = state.words.filter(word => word !== target && word.text.length < target.text.length).slice(0, mods.echo);
     let total = 0;
     let golden = false;
     [target, ...echoes].forEach(word => {
-      const { value, crit } = wordGain(word);
+      const { value, crit } = wordGain(word, now);
       total += value;
       state.combo += 1;
       state.stats.words += 1;
@@ -397,23 +446,20 @@
         state.stats.golden += 1;
         golden = true;
       }
-      floatText(word, `+${formatNumber(value)}${crit ? " CRIT" : ""}`, word.gold || crit);
+      floatText(word.node.offsetLeft, word.node.offsetTop, `+${formatNumber(value)}${crit ? " CRIT !" : ""}`, word.gold || crit);
       removeWord(word);
     });
     state.stats.bestCombo = Math.max(state.stats.bestCombo, state.combo);
     earn(total);
     renderCombo();
     renderEssence();
-    setMessage(`${golden ? "MOT DORÉ ! " : ""}+${formatNumber(total)} ESSENCE${echoes.length ? ` · ÉCHO ×${echoes.length}` : ""}`);
+    setMessage(`${golden ? "Wouah, un mot doré ! " : ""}+${formatNumber(total)} Essence${echoes.length ? ` · écho ×${echoes.length}` : ""}`);
     return true;
   }
 
   function rejectInput() {
-    const input = el["word-input"];
-    input.classList.remove("is-error");
-    void input.offsetWidth;
-    input.classList.add("is-error");
-    setMessage("Aucun mot visible ne correspond.");
+    restartAnimation(el["word-input"], "is-error");
+    setMessage("Oups, aucun mot visible ne correspond.");
   }
 
   function handleWordInput() {
@@ -437,9 +483,114 @@
 
   function focusOnType(event) {
     if (event.ctrlKey || event.metaKey || event.altKey || event.key.length !== 1) return;
-    if (event.target === el["word-input"]) return;
+    if (event.target === el["word-input"] || !el.notice.hidden) return;
     el["word-input"].focus();
   }
+
+  /* ---------- Bulles bonus ---------- */
+
+  function spawnBubble(now) {
+    const node = document.createElement("button");
+    node.type = "button";
+    node.className = "bubble";
+    node.textContent = "🎁";
+    node.setAttribute("aria-label", "Bulle bonus");
+    const zone = el["word-zone"];
+    node.style.left = `${8 + Math.random() * Math.max(0, zone.clientWidth - 80)}px`;
+    node.style.top = `${8 + Math.random() * Math.max(0, zone.clientHeight - 80)}px`;
+    node.addEventListener("pointerdown", event => event.preventDefault());
+    node.addEventListener("click", popBubble);
+    zone.append(node);
+    bubble = { node, expiresAt: now + BUBBLE_LIFE_MS };
+  }
+
+  function removeBubble(now) {
+    if (bubble) bubble.node.remove();
+    bubble = null;
+    nextBubbleAt = now + mods.bubbleMs * (0.7 + Math.random() * 0.6);
+  }
+
+  function tickBubble(now) {
+    if (bubble && now >= bubble.expiresAt) removeBubble(now);
+    else if (!bubble && now >= nextBubbleAt) spawnBubble(now);
+  }
+
+  function popBubble() {
+    if (!bubble) return;
+    const now = Date.now();
+    const { offsetLeft, offsetTop } = bubble.node;
+    removeBubble(now);
+    state.stats.bubbles += 1;
+    let bonus = pickWeighted(BONUSES).id;
+    if (bonus === "pull" && freePullReady(now)) bonus = "rain";
+    let label;
+    if (bonus === "frenzy") {
+      frenzyUntil = now + FRENZY_MS;
+      label = `FRÉNÉSIE ×${FRENZY_MULT} !`;
+      setMessage(`Frénésie ! Tous les gains sont multipliés par ${FRENZY_MULT} pendant ${FRENZY_MS / 1000} secondes.`);
+    } else if (bonus === "rain") {
+      const gain = Math.max(50 * starMult(), mods.rate * 90);
+      earn(gain);
+      label = `+${formatNumber(gain)}`;
+      setMessage(`Pluie d'Essence : +${formatNumber(gain)} !`);
+    } else if (bonus === "combo") {
+      state.combo += 10;
+      state.stats.bestCombo = Math.max(state.stats.bestCombo, state.combo);
+      label = "COMBO +10";
+      setMessage("Coup de pouce : +10 au combo !");
+      renderCombo();
+    } else {
+      state.lastFreePull = 0;
+      label = "TIRAGE OFFERT";
+      setMessage("Un tirage gratuit vous attend dans l'onglet Invoquer !");
+    }
+    floatText(offsetLeft, offsetTop, label, true);
+    renderEssence();
+    renderPull();
+    el["word-input"].focus({ preventScroll: true });
+  }
+
+  /* ---------- Info-bulle des compagnons ---------- */
+
+  function showTip(target) {
+    const creature = creatureMap.get(target.dataset.tip);
+    if (!creature) return;
+    const count = state.collection[creature.id];
+    const { type, value } = creature.passive;
+    const stacks = Math.max(1, Math.min(count, PASSIVE_MAX_STACKS));
+    const tip = el.tooltip;
+    tip.replaceChildren();
+    [
+      [`${creature.name} · ${RARITY_LABELS[creature.rarity]}`, "tip-title"],
+      [`+${formatRate(creature.prod)} Essence/s par exemplaire`, "tip-prod"],
+      [passiveText(type, type === "fuzzy" ? value : value * stacks), ""],
+      [`Possédé : ×${count}${count > PASSIVE_MAX_STACKS && type !== "fuzzy" ? ` (pouvoir plafonné à ${PASSIVE_MAX_STACKS})` : ""}`, "tip-own"]
+    ].forEach(([text, className]) => addLine(tip, className, text));
+    tip.hidden = false;
+    const rect = target.getBoundingClientRect();
+    const left = Math.max(8, Math.min(window.innerWidth - tip.offsetWidth - 8, rect.left + rect.width / 2 - tip.offsetWidth / 2));
+    const above = rect.top - tip.offsetHeight - 10;
+    tip.style.left = `${left}px`;
+    tip.style.top = `${above >= 8 ? above : rect.bottom + 10}px`;
+  }
+
+  function hideTip() {
+    el.tooltip.hidden = true;
+  }
+
+  function handleTipOver(event) {
+    const target = event.target.closest("[data-tip]");
+    if (target) showTip(target);
+    else hideTip();
+  }
+
+  function handleTipClick(event) {
+    const target = event.target.closest("[data-tip]");
+    if (target && window.matchMedia("(hover: none)").matches) showTip(target);
+    else if (!target) hideTip();
+  }
+
+  /* ---------- Invocation ---------- */
 
   function freePullReady(now) {
     return now - state.lastFreePull >= FREE_PULL_MS;
@@ -472,12 +623,14 @@
     const sprite = document.createElement("span");
     sprite.className = `sprite${mini ? " is-mini" : ""}${known ? ` is-${creature.shape}` : " is-hidden"}`;
     if (known) sprite.style.setProperty("--c", creature.color);
+    sprite.setAttribute("aria-hidden", "true");
     return sprite;
   }
 
   function createChip(creature, isNew) {
     const chip = document.createElement("span");
     chip.className = `chip r-${creature.rarity}`;
+    chip.dataset.tip = creature.id;
     chip.append(createSprite(creature, true, true), creature.name);
     if (isNew) {
       const badge = document.createElement("span");
@@ -508,24 +661,36 @@
       if (creature.id === JACKPOT_ID || isNew) best = creature;
     }
     chips.forEach((chip, index) => { chip.style.animationDelay = `${index * 60}ms`; });
+    hideTip();
     el["pull-result"].replaceChildren(...chips);
     state.stats.pulls += count;
     refreshMods();
-    setMessage(best && best.id === JACKPOT_ID ? "L'ORACLE répond à l'appel !" : best ? `${best.name} rejoint le bestiaire.` : "Invocation terminée.");
+    setMessage(best && best.id === JACKPOT_ID ? "L'Oracle répond à l'appel ! ✨" : best ? `${best.name} rejoint la bande !` : "Invocation terminée.");
     renderAll();
     save();
   }
 
+  /* ---------- Rendu ---------- */
+
   function renderEssence() {
     setText(el["essence-value"], formatNumber(state.essence));
-    setText(el["rate-value"], `+${formatRate(mods.rate)}/s`);
+    setText(el["rate-value"], `+${formatRate(mods.rate * frenzyMult(Date.now()))}/s`);
+    setText(el["header-stars"], formatNumber(state.stars));
   }
 
   function renderCombo() {
     const mult = comboMult();
-    setText(el["combo-text"], `COMBO ${state.combo} · ×${mult.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`);
+    setText(el["combo-text"], `🔥 Combo ${state.combo} · ×${mult.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`);
     el["combo-text"].classList.toggle("is-max", mult >= mods.comboCap);
     setWidth(el["combo-bar"], (mult - 1) / (mods.comboCap - 1));
+  }
+
+  function renderFrenzy(now) {
+    const remaining = frenzyUntil - now;
+    const active = remaining > 0;
+    el["word-card"].classList.toggle("is-frenzy", active);
+    el["frenzy-text"].hidden = !active;
+    if (active) setText(el["frenzy-text"], `FRÉNÉSIE ×${FRENZY_MULT} · ${Math.ceil(remaining / 1000)} s`);
   }
 
   function renderPull() {
@@ -533,7 +698,7 @@
     const free = freePullReady(now);
     const cost = pullCost(1);
     const multi = pullCost(MULTI_PULL);
-    setText(el["pull-button"], free ? "INVOQUER · GRATUIT" : `INVOQUER · ${formatNumber(cost)}`);
+    setText(el["pull-button"], free ? "Invoquer · GRATUIT 🎉" : `Invoquer · ${formatNumber(cost)}`);
     el["pull-button"].disabled = !free && state.essence < cost;
     setText(el["pull10-button"], `×${MULTI_PULL} · ${formatNumber(multi)}`);
     el["pull10-button"].disabled = state.essence < multi;
@@ -547,8 +712,8 @@
   function renderQuest() {
     const quest = QUESTS[state.questIndex];
     if (!quest) {
-      setText(el["quest-step"], "OBJECTIFS TERMINÉS");
-      setText(el["quest-text"], "Toutes les missions sont accomplies. Visez le combo et la production ultimes !");
+      setText(el["quest-step"], "Objectifs terminés 🏆");
+      setText(el["quest-text"], "Bravo ! Visez maintenant les étoiles et le combo ultime.");
       setText(el["quest-hint"], "");
       setWidth(el["quest-bar"], 1);
       el["quest-claim"].hidden = true;
@@ -557,11 +722,11 @@
     }
     const current = Math.min(quest.value(), quest.goal);
     const done = current >= quest.goal;
-    setText(el["quest-step"], `OBJECTIF ${state.questIndex + 1}/${QUESTS.length}`);
+    setText(el["quest-step"], `Objectif ${state.questIndex + 1}/${QUESTS.length}`);
     setText(el["quest-text"], `${quest.text} · ${formatNumber(current)}/${formatNumber(quest.goal)}`);
     setText(el["quest-hint"], quest.hint || "");
     setWidth(el["quest-bar"], current / quest.goal);
-    setText(el["quest-claim"], `${done ? "RÉCLAMER " : ""}+${formatNumber(quest.reward)}`);
+    setText(el["quest-claim"], `${done ? "Réclamer " : "🎁 "}+${formatNumber(quest.reward)}`);
     el["quest-claim"].hidden = false;
     el["quest-claim"].disabled = !done;
     el.quest.classList.toggle("is-done", done);
@@ -572,7 +737,7 @@
     if (!quest || quest.value() < quest.goal) return;
     earn(quest.reward);
     state.questIndex += 1;
-    setMessage(`Objectif accompli : +${formatNumber(quest.reward)} ESSENCE.`);
+    setMessage(`Objectif accompli : +${formatNumber(quest.reward)} Essence ! 🎉`);
     renderEssence();
     renderQuest();
     save();
@@ -601,20 +766,27 @@
     return upgrade.base * upgrade.growth ** state.upgrades[upgrade.id];
   }
 
+  function upgradeVisible(upgrade) {
+    return state.upgrades[upgrade.id] > 0 || state.stats.earned >= upgrade.base / 2;
+  }
+
+  function canBuy(upgrade) {
+    return state.upgrades[upgrade.id] < upgrade.max && state.essence >= upgradeCost(upgrade);
+  }
+
   function renderUpgrades() {
     let anyVisible = false;
     upgrades.forEach(upgrade => {
       const nodes = upgradeNodes[upgrade.id];
       const level = state.upgrades[upgrade.id];
-      const visible = level > 0 || state.stats.earned >= upgrade.base / 2;
+      const visible = upgradeVisible(upgrade);
       nodes.node.hidden = !visible;
       if (!visible) return;
       anyVisible = true;
       const maxed = level >= upgrade.max;
-      const cost = upgradeCost(upgrade);
-      setText(nodes.name, `${upgrade.name} · NV ${level}${upgrade.max < Infinity ? `/${upgrade.max}` : ""}`);
-      setText(nodes.cost, maxed ? "MAX" : formatNumber(cost));
-      nodes.node.disabled = maxed || state.essence < cost;
+      setText(nodes.name, `${upgrade.name} · niv. ${level}${upgrade.max < Infinity ? `/${upgrade.max}` : ""}`);
+      setText(nodes.cost, maxed ? "MAX" : formatNumber(upgradeCost(upgrade)));
+      nodes.node.disabled = !canBuy(upgrade);
     });
     el["upgrade-empty"].hidden = anyVisible;
   }
@@ -623,21 +795,22 @@
     const node = event.target.closest("button[data-id]");
     if (!node) return;
     const upgrade = upgrades.find(item => item.id === node.dataset.id);
-    const cost = upgradeCost(upgrade);
-    if (state.upgrades[upgrade.id] >= upgrade.max || state.essence < cost) return;
-    state.essence -= cost;
+    if (!canBuy(upgrade)) return;
+    state.essence -= upgradeCost(upgrade);
     state.upgrades[upgrade.id] += 1;
     refreshMods();
-    setMessage(`${upgrade.name} niveau ${state.upgrades[upgrade.id]} installé.`);
+    setMessage(`${upgrade.name} passe au niveau ${state.upgrades[upgrade.id]} !`);
     renderEssence();
     renderCombo();
     renderUpgrades();
     save();
   }
 
+  /* ---------- Bestiaire ---------- */
+
   function addLine(body, className, text) {
     const line = document.createElement("span");
-    line.className = `creature-line ${className}`;
+    if (className) line.className = className;
     line.textContent = text;
     body.append(line);
   }
@@ -645,12 +818,10 @@
   function createCreatureCard(creature) {
     const count = state.collection[creature.id];
     const known = isDiscovered(creature.id);
-    const card = document.createElement("button");
-    card.type = "button";
-    card.dataset.id = creature.id;
-    card.disabled = count < 1;
-    card.className = `creature r-${creature.rarity}${known ? "" : " is-unknown"}${known && count < 1 ? " is-empty" : ""}${state.selection.includes(creature.id) ? " is-selected" : ""}`;
+    const card = document.createElement("div");
+    card.className = `creature r-${creature.rarity}${known ? "" : " is-unknown"}${known && count < 1 ? " is-empty" : ""}`;
     const body = document.createElement("span");
+    body.className = "creature-body";
     const name = document.createElement("span");
     name.className = "creature-name";
     const label = document.createElement("span");
@@ -661,18 +832,18 @@
       amount.textContent = `×${count}`;
       name.append(amount);
     }
-    const meta = document.createElement("span");
-    meta.className = "creature-meta";
-    meta.textContent = `${RARITY_LABELS[creature.rarity]} · ${creature.fusion ? "FUSION" : "INVOCATION"}`;
-    body.append(name, meta);
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = `${RARITY_LABELS[creature.rarity]} · ${creature.fusion ? "FUSION" : "INVOCATION"}`;
+    body.append(name, tag);
     if (known) {
       const { type, value } = creature.passive;
       const stacks = Math.min(count, PASSIVE_MAX_STACKS);
-      const pips = type === "fuzzy" ? "" : ` ${"■".repeat(stacks)}${"□".repeat(PASSIVE_MAX_STACKS - stacks)}`;
+      const pips = type === "fuzzy" ? "" : ` ${"●".repeat(stacks)}${"○".repeat(PASSIVE_MAX_STACKS - stacks)}`;
       addLine(body, "creature-prod", `+${formatRate(creature.prod)}/s par exemplaire`);
       addLine(body, "", `${passiveText(type, type === "fuzzy" ? value : value * Math.max(1, stacks))}${pips}`);
       fusions.filter(item => item.result === creature.id && isKnownFusion(item)).forEach(recipe => {
-        addLine(body, "creature-recipe", `${creatureMap.get(recipe.a).name} + ${creatureMap.get(recipe.b).name}`);
+        addLine(body, "creature-recipe", `🧪 ${creatureMap.get(recipe.a).name} + ${creatureMap.get(recipe.b).name}`);
       });
     } else if (creature.fusion) {
       const recipe = fusions.find(item => item.result === creature.id);
@@ -685,14 +856,13 @@
   }
 
   function renderBestiary() {
-    setText(el["bestiary-count"], `${state.discovered.length} / ${creatures.length} découvertes`);
-    el["bestiary-list"].replaceChildren(...creatures.map(creature => createCreatureCard(creature)));
+    setText(el["bestiary-count"], `${state.discovered.length}/${creatures.length}`);
+    el["bestiary-list"].replaceChildren(...creatures.map(createCreatureCard));
   }
 
-  function handleBestiaryClick(event) {
-    const card = event.target.closest("button[data-id]");
-    if (!card || card.disabled) return;
-    const id = card.dataset.id;
+  /* ---------- Fusion ---------- */
+
+  function toggleSelection(id) {
     if (state.selection.includes(id)) {
       state.selection = state.selection.filter(item => item !== id);
     } else if (state.selection.length < 2) {
@@ -700,45 +870,109 @@
     } else {
       state.selection = [state.selection[1], id];
     }
-    renderBestiary();
     renderFusion();
+  }
+
+  function handlePickerClick(event) {
+    const node = event.target.closest("button[data-id]");
+    if (node) toggleSelection(node.dataset.id);
   }
 
   function handleSlotClick(event) {
     const slot = event.target.closest("[data-index]");
     if (!slot) return;
     state.selection.splice(Number(slot.dataset.index), 1);
-    renderBestiary();
     renderFusion();
   }
 
-  function renderFusion() {
-    el["fusion-slots"].replaceChildren(...[0, 1].map(index => {
-      const creature = creatureMap.get(state.selection[index]);
-      const slot = document.createElement("div");
-      if (!creature) {
-        slot.className = "fusion-slot";
-        slot.textContent = `Emplacement ${index + 1}`;
-        return slot;
-      }
-      slot.className = `fusion-slot is-filled r-${creature.rarity}`;
-      slot.dataset.index = index;
-      slot.title = "Retirer";
-      slot.append(createSprite(creature, true, true), `${creature.name} ×${state.collection[creature.id]}`);
+  function handleRecipeClick(event) {
+    const node = event.target.closest("button[data-a]");
+    if (!node) return;
+    state.selection = [node.dataset.a, node.dataset.b];
+    fuse();
+  }
+
+  function createSlot(index) {
+    const creature = creatureMap.get(state.selection[index]);
+    const slot = document.createElement("div");
+    if (!creature) {
+      slot.className = "fusion-slot";
+      slot.textContent = "Choisissez une créature";
       return slot;
+    }
+    slot.className = `fusion-slot is-filled r-${creature.rarity}`;
+    slot.dataset.index = index;
+    slot.dataset.tip = creature.id;
+    slot.append(createSprite(creature, true, false), `${creature.name} ×${state.collection[creature.id]}`);
+    return slot;
+  }
+
+  function renderPicker() {
+    const owned = creatures.filter(creature => state.collection[creature.id] > 0);
+    if (!owned.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Invoquez des créatures pour pouvoir les fusionner.";
+      el["fusion-picker"].replaceChildren(empty);
+      return;
+    }
+    el["fusion-picker"].replaceChildren(...owned.map(creature => {
+      const node = document.createElement("button");
+      node.type = "button";
+      node.dataset.id = creature.id;
+      node.dataset.tip = creature.id;
+      node.className = `pick r-${creature.rarity}${state.selection.includes(creature.id) ? " is-selected" : ""}`;
+      node.append(createSprite(creature, true, true), `${creature.name} ×${state.collection[creature.id]}`);
+      return node;
     }));
-    let info = "Cliquez deux créatures du bestiaire pour tenter une fusion.";
+  }
+
+  function renderRecipes() {
+    const known = fusions.filter(isKnownFusion);
+    if (!known.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Aucune recette découverte. Expérimentez !";
+      el["recipe-list"].replaceChildren(empty);
+      return;
+    }
+    el["recipe-list"].replaceChildren(...known.map(fusion => {
+      const row = document.createElement("div");
+      row.className = "recipe";
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-green";
+      button.dataset.a = fusion.a;
+      button.dataset.b = fusion.b;
+      button.textContent = "Fusionner";
+      button.disabled = state.collection[fusion.a] < 1 || state.collection[fusion.b] < 1;
+      row.append(
+        createChip(creatureMap.get(fusion.a), false), "+",
+        createChip(creatureMap.get(fusion.b), false), "→",
+        createChip(creatureMap.get(fusion.result), false), button
+      );
+      return row;
+    }));
+  }
+
+  function renderFusion() {
+    hideTip();
+    const plus = document.createElement("span");
+    plus.className = "fusion-plus";
+    plus.textContent = "+";
+    el["fusion-slots"].replaceChildren(createSlot(0), plus, createSlot(1));
+    let info = "Choisissez deux créatures ci-dessous pour tenter une fusion.";
     let canFuse = false;
     if (state.selection.length === 2) {
       const [a, b] = state.selection;
       const fusion = findFusion(a, b);
       if (!fusion) {
-        info = "Aucune recette pour cette combinaison.";
+        info = "Hmm… ces deux-là ne s'entendent pas. Essayez autre chose !";
       } else {
         const result = creatureMap.get(fusion.result);
         info = isKnownFusion(fusion)
           ? `Résultat : ${result.name} · +${formatRate(result.prod)}/s · ${passiveText(result.passive.type, result.passive.value)}`
-          : `Recette inconnue · résultat ${RARITY_LABELS[result.rarity]}.`;
+          : `Recette mystère · résultat ${RARITY_LABELS[result.rarity]} !`;
         const last = [a, b].filter(id => state.collection[id] === 1).map(id => creatureMap.get(id).name);
         if (last.length) info += ` Attention : dernier exemplaire de ${last.join(" et ")}.`;
         canFuse = true;
@@ -746,6 +980,8 @@
     }
     setText(el["fusion-info"], info);
     el["fuse-button"].disabled = !canFuse;
+    renderPicker();
+    renderRecipes();
   }
 
   function fuse() {
@@ -763,9 +999,60 @@
     if (state.collection[a] < 1 || state.collection[b] < 1) state.selection = [];
     refreshMods();
     el["fusion-result"].replaceChildren(createChip(result, isNew));
-    setMessage(wasKnown ? `Fusion réussie : ${result.name}.` : `Recette découverte : ${result.name} !`);
+    setMessage(wasKnown ? `Pouf ! Voici ${result.name}.` : `Nouvelle recette découverte : ${result.name} ! 🧪`);
     renderAll();
     save();
+  }
+
+  /* ---------- Renaissance ---------- */
+
+  function renderStars() {
+    const pending = pendingStars();
+    setText(el["stars-value"], formatNumber(state.stars));
+    setText(el["stars-bonus"], `+${formatNumber(state.stars * STAR_BONUS * 100)} % sur tous les gains`);
+    const next = STAR_UNIT * (state.stars + pending + 1) ** 2;
+    setText(el["stars-info"], `Essence récoltée au total : ${formatNumber(state.stats.earned)}. Prochaine étoile à ${formatNumber(next)}.`);
+    setText(el["rebirth-button"], pending >= 1 ? `Renaissance · +${formatNumber(pending)} ⭐` : "Renaissance");
+    el["rebirth-button"].disabled = pending < 1;
+  }
+
+  function rebirth() {
+    const gain = pendingStars();
+    if (gain < 1) return;
+    if (!window.confirm(`Renaître avec ${gain} étoile(s) de plus ? Essence, créatures et améliorations seront remises à zéro.`)) return;
+    const kept = {
+      discovered: state.discovered,
+      knownFusions: state.knownFusions,
+      questIndex: state.questIndex,
+      stats: state.stats,
+      stars: state.stars + gain,
+      rebirths: state.rebirths + 1
+    };
+    clearWords();
+    Object.assign(state, freshState(), kept);
+    refreshMods();
+    el["pull-result"].replaceChildren();
+    el["fusion-result"].replaceChildren();
+    renderAll();
+    setMessage(`Renaissance ! Vous avez maintenant ${state.stars} étoile(s). ⭐`);
+    save();
+  }
+
+  /* ---------- Onglets ---------- */
+
+  function showTab(name) {
+    Object.entries(tabNodes).forEach(([key, { tab, panel }]) => {
+      const active = key === name;
+      tab.classList.toggle("is-active", active);
+      tab.setAttribute("aria-selected", String(active));
+      panel.hidden = !active;
+    });
+  }
+
+  function renderBadges(now) {
+    tabNodes.invoke.tab.classList.toggle("has-badge", freePullReady(now));
+    tabNodes.shop.tab.classList.toggle("has-badge", upgrades.some(upgrade => upgradeVisible(upgrade) && canBuy(upgrade)));
+    tabNodes.stars.tab.classList.toggle("has-badge", pendingStars() >= 1);
   }
 
   function renderAll() {
@@ -776,20 +1063,27 @@
     renderUpgrades();
     renderFusion();
     renderBestiary();
+    renderStars();
   }
 
   function tick() {
     const now = Date.now();
     const elapsed = Math.min(Math.max(0, now - lastTick), OFFLINE_CAP_MS);
     lastTick = now;
-    if (mods.rate > 0) earn((mods.rate * elapsed) / 1000);
+    if (mods.rate > 0) earn((mods.rate * frenzyMult(now) * elapsed) / 1000);
     if (document.hidden) return;
     tickWords(now);
+    tickBubble(now);
+    renderFrenzy(now);
     renderEssence();
     renderPull();
     renderUpgrades();
     renderQuest();
+    renderStars();
+    renderBadges(now);
   }
+
+  /* ---------- Sauvegarde ---------- */
 
   function save() {
     if (!storageOk) return;
@@ -805,6 +1099,8 @@
       knownFusions: state.knownFusions,
       upgrades: state.upgrades,
       questIndex: state.questIndex,
+      stars: state.stars,
+      rebirths: state.rebirths,
       stats: state.stats
     };
     try {
@@ -857,6 +1153,7 @@
         loaded.stats[key] = value;
       });
       if (!isCount(data.pulls) || !isCount(data.pityCounter) || data.pityCounter > PITY_LIMIT) throw new Error("pulls");
+      if (!isCount(data.stars) || !isCount(data.rebirths)) throw new Error("stars");
       if (![data.lastFreePull, data.savedAt].every(time => Number.isFinite(time) && time >= 0)) throw new Error("time");
       if (!Number.isInteger(data.questIndex) || data.questIndex < 0 || data.questIndex > QUESTS.length) throw new Error("quest");
       const discovered = Array.isArray(data.discovered) ? data.discovered : [];
@@ -869,10 +1166,12 @@
       loaded.pityCounter = data.pityCounter;
       loaded.lastFreePull = data.lastFreePull;
       loaded.questIndex = data.questIndex;
+      loaded.stars = data.stars;
+      loaded.rebirths = data.rebirths;
       Object.assign(state, loaded);
       return Math.min(Math.max(0, Date.now() - data.savedAt), OFFLINE_CAP_MS);
     } catch (error) {
-      showNotice("Nouvelle version ou sauvegarde invalide : une nouvelle partie démarre.");
+      showNotice("Nouvelle version ou sauvegarde invalide : une nouvelle partie démarre !");
       return 0;
     }
   }
@@ -880,6 +1179,8 @@
   function resetGame() {
     if (!window.confirm("Effacer la partie et repartir de zéro ?")) return;
     clearWords();
+    removeBubble(Date.now());
+    frenzyUntil = 0;
     Object.assign(state, freshState());
     refreshMods();
     el["word-input"].value = "";
@@ -887,29 +1188,34 @@
     el["fusion-result"].replaceChildren();
     el.notice.hidden = true;
     renderAll();
-    setMessage("Nouvelle partie démarrée.");
+    setMessage("Nouvelle partie démarrée. Bonne chance !");
     save();
   }
 
   function initialize() {
     [
-      "essence-value", "rate-value", "notice", "notice-text", "notice-close", "quest", "quest-step",
-      "quest-text", "quest-hint", "quest-bar", "quest-claim", "combo-text", "combo-bar", "word-zone",
-      "word-form", "word-input", "pull-button", "pull10-button", "pull-info", "pull-result",
-      "fusion-slots", "fusion-info", "fuse-button", "fusion-result", "upgrade-empty", "upgrade-list",
-      "bestiary-list", "bestiary-count", "system-message", "reset-button"
+      "essence-value", "rate-value", "header-stars", "notice", "notice-text", "notice-close", "quest",
+      "quest-step", "tooltip", "quest-text", "quest-hint", "quest-bar", "quest-claim", "word-card", "combo-text",
+      "combo-bar", "frenzy-text", "word-zone", "word-form", "word-input", "system-message", "tabs",
+      "pull-button", "pull10-button", "pull-info", "pull-result", "fusion-slots", "fusion-info",
+      "fuse-button", "fusion-result", "fusion-picker", "recipe-list", "upgrade-empty", "upgrade-list",
+      "bestiary-list", "bestiary-count", "stars-value", "stars-bonus", "stars-info", "rebirth-button",
+      "reset-button"
     ].forEach(id => { el[id] = byId(id); });
+    el.tabs.querySelectorAll("[data-tab]").forEach(tab => {
+      tabNodes[tab.dataset.tab] = { tab, panel: document.querySelector(`[data-panel="${tab.dataset.tab}"]`) };
+    });
     buildUpgrades();
     const offline = load();
     refreshMods();
     if (offline >= OFFLINE_MIN_MS && mods.rate > 0) {
       const gained = (mods.rate * offline) / 1000;
       earn(gained);
-      showNotice(`Pendant votre absence (${formatDuration(offline)}), vos créatures ont récolté ${formatNumber(gained)} Essence.`);
+      showNotice(`Pendant votre absence (${formatDuration(offline)}), vos créatures ont récolté ${formatNumber(gained)} Essence !`);
     }
     lastTick = Date.now();
     renderAll();
-    setMessage("Terminal prêt. Tapez un mot pour commencer.");
+    setMessage("Salut ! Tapez les mots qui flottent dans le ciel pour gagner de l'Essence.");
     el["word-form"].addEventListener("submit", submitWord);
     el["word-input"].addEventListener("input", handleWordInput);
     el["reset-button"].addEventListener("click", resetGame);
@@ -917,10 +1223,19 @@
     el["pull10-button"].addEventListener("click", () => pull(MULTI_PULL));
     el["fuse-button"].addEventListener("click", fuse);
     el["fusion-slots"].addEventListener("click", handleSlotClick);
-    el["bestiary-list"].addEventListener("click", handleBestiaryClick);
+    el["fusion-picker"].addEventListener("click", handlePickerClick);
+    el["recipe-list"].addEventListener("click", handleRecipeClick);
     el["upgrade-list"].addEventListener("click", buyUpgrade);
     el["quest-claim"].addEventListener("click", claimQuest);
+    el["rebirth-button"].addEventListener("click", rebirth);
+    el.tabs.addEventListener("click", event => {
+      const tab = event.target.closest("[data-tab]");
+      if (tab) showTab(tab.dataset.tab);
+    });
     el["notice-close"].addEventListener("click", () => { el.notice.hidden = true; });
+    document.addEventListener("mouseover", handleTipOver);
+    document.addEventListener("click", handleTipClick);
+    document.addEventListener("scroll", hideTip, true);
     document.addEventListener("keydown", focusOnType);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) save();
