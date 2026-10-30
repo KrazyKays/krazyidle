@@ -2,7 +2,7 @@
 
 (() => {
   const SAVE_KEY = "k_typer_save_v1";
-  const SAVE_VERSION = 4;
+  const SAVE_VERSION = 5;
   const TICK_MS = 200;
   const SAVE_MS = 10000;
   const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000;
@@ -12,8 +12,8 @@
   const SPAWN_MS = 1800;
   const BASE_LIFETIME_MS = 8000;
   const LONG_WORD_THRESHOLD = 5;
-  const PULL_BASE_COST = 10;
-  const PULL_GROWTH = 1.15;
+  const PULL_BASE_COST = 50;
+  const PULL_GROWTH = 1.2;
   const MULTI_PULL = 10;
   const PASSIVE_MAX_STACKS = 5;
   const PITY_LIMIT = 20;
@@ -35,6 +35,9 @@
   const STAR_BONUS = 0.1;
   const RARITY_LABELS = { commune: "COMMUNE", rare: "RARE", epique: "ÉPIQUE", legendaire: "LÉGENDAIRE", mythique: "MYTHIQUE" };
   const PULL_WEIGHTS = { commune: 3, rare: 2 };
+  // Onglets révélés au fil des objectifs (index de quête requis) pour découvrir une mécanique à la fois.
+  const TAB_UNLOCKS = { invoke: 0, shop: 3, bestiary: 5, fusion: 6, stars: 16 };
+  const BUBBLE_QUEST = 4;
   const UNITS = ["", " k", " M", " Md", " Bn", " Bd"];
 
   const WORDS = `
@@ -99,21 +102,21 @@
   ];
 
   const upgrades = [
-    { id: "clavier", name: "⌨️ Clavier magique", desc: "+25 % d'Essence par mot", base: 25, growth: 1.7, max: Infinity },
-    { id: "cpu", name: "🍲 Chaudron bouillonnant", desc: "+20 % de production des créatures", base: 60, growth: 1.8, max: Infinity },
-    { id: "ram", name: "📋 Grand tableau", desc: "+1 mot affiché en même temps", base: 150, growth: 10, max: 3 },
-    { id: "tampon", name: "🌀 Ressort à combo", desc: "+0,5 au multiplicateur de combo maximal", base: 300, growth: 6, max: 4 },
-    { id: "antenne", name: "🍀 Trèfle doré", desc: "+2 % de chance de mot doré (×5)", base: 400, growth: 4, max: 5 },
-    { id: "filet", name: "🦋 Filet à bulles", desc: "Bulles bonus 25 % plus fréquentes", base: 500, growth: 5, max: 4 }
+    { id: "clavier", name: "⌨️ Clavier magique", desc: "+25 % d'Essence par mot", base: 60, growth: 1.7, max: Infinity },
+    { id: "cpu", name: "🍲 Chaudron bouillonnant", desc: "+20 % de production des créatures", base: 150, growth: 1.8, max: Infinity },
+    { id: "ram", name: "📋 Grand tableau", desc: "+1 mot affiché en même temps", base: 500, growth: 10, max: 3 },
+    { id: "tampon", name: "🌀 Ressort à combo", desc: "+0,5 au multiplicateur de combo maximal", base: 800, growth: 6, max: 4 },
+    { id: "antenne", name: "🍀 Trèfle doré", desc: "+2 % de chance de mot doré (×5)", base: 1200, growth: 4, max: 5 },
+    { id: "filet", name: "🦋 Filet à bulles", desc: "Bulles bonus 25 % plus fréquentes", base: 1500, growth: 5, max: 4 }
   ];
 
   const QUESTS = [
-    { text: "Tapez 5 mots", hint: "Un mot se valide dès qu'il est complet, sans appuyer sur Entrée.", goal: 5, value: () => state.stats.words, reward: 15 },
-    { text: "Invoquez une créature", hint: "Onglet ✨ Invoquer : le premier tirage est offert, puis un toutes les 10 minutes.", goal: 1, value: () => state.stats.pulls, reward: 20 },
+    { text: "Tapez 10 mots", hint: "Un mot se valide dès qu'il est complet, sans appuyer sur Entrée.", goal: 10, value: () => state.stats.words, reward: 30 },
+    { text: "Invoquez une créature", hint: "Onglet ✨ Invoquer : le premier tirage est offert, puis un toutes les 10 minutes.", goal: 1, value: () => state.stats.pulls, reward: 25 },
     { text: "Atteignez un combo de 10", hint: "Chaque mot augmente le multiplicateur. Un mot raté divise le combo par deux.", goal: 10, value: () => state.stats.bestCombo, reward: 40 },
     { text: "Achetez une amélioration", hint: "Onglet 🛒 Boutique : les objets apparaissent à mesure que vous gagnez de l'Essence.", goal: 1, value: upgradeTotal, reward: 60 },
     { text: "Éclatez une bulle bonus", hint: "Une bulle 🎁 apparaît parfois dans le ciel : cliquez-la vite !", goal: 1, value: () => state.stats.bubbles, reward: 80 },
-    { text: "Possédez 5 créatures", hint: "Chaque créature produit de l'Essence en continu, même hors ligne (8 h max).", goal: 5, value: ownedCount, reward: 80 },
+    { text: "Possédez 5 créatures", hint: "Chaque créature produit de l'Essence en continu, même hors ligne (8 h max).", goal: 5, value: ownedCount, reward: 120 },
     { text: "Réussissez une fusion", hint: "Onglet 🧪 Fusion : choisissez deux créatures. Le bestiaire donne des indices.", goal: 1, value: () => state.stats.fusions, reward: 150 },
     { text: "Tapez un mot doré", hint: "Les mots dorés rapportent cinq fois plus.", goal: 1, value: () => state.stats.golden, reward: 200 },
     { text: "Produisez 10 Essence/s", hint: "Les créatures fusionnées produisent bien plus que leurs ingrédients.", goal: 10, value: () => mods.rate, reward: 400 },
@@ -511,6 +514,7 @@
   }
 
   function tickBubble(now) {
+    if (state.questIndex < BUBBLE_QUEST && !state.rebirths) return;
     if (bubble && now >= bubble.expiresAt) removeBubble(now);
     else if (!bubble && now >= nextBubbleAt) spawnBubble(now);
   }
@@ -737,7 +741,8 @@
     if (!quest || quest.value() < quest.goal) return;
     earn(quest.reward);
     state.questIndex += 1;
-    setMessage(`Objectif accompli : +${formatNumber(quest.reward)} Essence ! 🎉`);
+    const unlocked = Object.keys(TAB_UNLOCKS).find(key => TAB_UNLOCKS[key] === state.questIndex);
+    setMessage(`Objectif accompli : +${formatNumber(quest.reward)} Essence ! 🎉${unlocked ? ` Nouvel onglet : ${tabNodes[unlocked].tab.textContent} !` : ""}`);
     renderEssence();
     renderQuest();
     save();
@@ -1050,6 +1055,10 @@
   }
 
   function renderBadges(now) {
+    Object.entries(tabNodes).forEach(([key, { tab, panel }]) => {
+      tab.hidden = state.questIndex < TAB_UNLOCKS[key] && !state.rebirths;
+      if (tab.hidden && !panel.hidden) showTab("invoke");
+    });
     tabNodes.invoke.tab.classList.toggle("has-badge", freePullReady(now));
     tabNodes.shop.tab.classList.toggle("has-badge", upgrades.some(upgrade => upgradeVisible(upgrade) && canBuy(upgrade)));
     tabNodes.stars.tab.classList.toggle("has-badge", pendingStars() >= 1);
