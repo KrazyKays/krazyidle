@@ -1,0 +1,20 @@
+{
+  "name": "krazyidle",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Échos de Lignée — idle game dynastique à boucles temporelles",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}
