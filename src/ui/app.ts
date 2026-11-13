@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, HOUSE_NAMES, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, HOUSE_NAMES, isFeminine, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
@@ -845,7 +845,7 @@ export class App {
   }
 
   /**
-   * Cérémonie de fondation en trois temps : le Sablier, la forge du blason, le premier du nom.
+   * Cérémonie de fondation en trois temps : le Sablier, la forge du blason, le premier (ou la première) du nom.
    * Écran plein, sans formulaire : on doit sentir qu'on fonde une dynastie.
    */
   openIntro(onDone: () => void) {
@@ -918,7 +918,7 @@ export class App {
         shield,
         h('p', { class: 'intro-sub' }, `La Maison ${s.lineage.name} est fondée.`),
         h('h2', { class: 'intro-hero' }, s.hero.name),
-        h('p', { class: 'intro-line' }, 'premier du nom'),
+        h('p', { class: 'intro-line' }, isFeminine(s.hero.name) ? 'première du nom' : 'premier du nom'),
         t ? h('div', { class: 'intro-trait', style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${t.name}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)) : null,
         h('p', { class: 'muted small' }, 'Sa vie sera brève. Chacun de ses gestes deviendra un Écho.'),
         h('button', { class: 'btn btn-primary btn-lg intro-next', onclick: () => {

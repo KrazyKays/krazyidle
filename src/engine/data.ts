@@ -217,6 +217,12 @@ export const FIRST_NAMES = [
   'Roland', 'Sibylle', 'Tancrède', 'Thibaut', 'Ysolde', 'Yvain', 'Adélaïde', 'Godefroy', 'Hildegarde', 'Lancelot',
   'Morgane', 'Rodolphe', 'Séraphine', 'Tristan', 'Viviane', 'Baudouin', 'Iseult', 'Gauvain', 'Héloïse', 'Arnaud',
 ];
+/** Prénoms féminins de FIRST_NAMES, pour accorder les textes (« première du nom », etc.). */
+export const FEMININE_NAMES = new Set([
+  'Aliénor', 'Bérénice', 'Clothilde', 'Domitille', 'Ermengarde', 'Guenièvre', 'Isaure', 'Mahaut', 'Mélisende', 'Ombeline',
+  'Pétronille', 'Sibylle', 'Ysolde', 'Adélaïde', 'Hildegarde', 'Morgane', 'Séraphine', 'Viviane', 'Iseult', 'Héloïse',
+]);
+export const isFeminine = (name: string) => FEMININE_NAMES.has(name);
 export const HOUSE_NAMES = [
   'Valombre', 'Hautecour', 'Dorval', 'Montfaucon', 'Bellerive', 'Aubépine', 'Grisemont', 'Ventadour', 'Châtelfort', 'Clairval',
   'Brumefer', 'Corbenay', 'Sombreval', 'Ardanel', 'Fontclaire', 'Rochebrune', 'Givremont', 'Lunebois', 'Morvenant', 'Saint-Aubrac',

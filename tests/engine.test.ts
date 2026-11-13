@@ -240,3 +240,10 @@ describe('pronostic de vocation', () => {
     }
   });
 });
+
+describe('genre des prénoms', () => {
+  it('chaque prénom féminin existe dans FIRST_NAMES', async () => {
+    const { FIRST_NAMES, FEMININE_NAMES } = await import('../src/engine/data');
+    for (const n of FEMININE_NAMES) expect(FIRST_NAMES).toContain(n);
+  });
+});
