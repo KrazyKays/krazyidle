@@ -29,6 +29,8 @@ export interface LifeState {
   rec: number[]; // activité par seconde (-1 = rien, anciennes sauvegardes)
   pow: number[]; // puissance par seconde
   value: number; // valeur produite (pour l'Héritage)
+  /** valeur produite hors bonus d'événement : mesure la qualité intrinsèque de l'Écho */
+  baseValue?: number;
   extended: boolean; // bonus "Temps suspendu" utilisé
 }
 
@@ -106,7 +108,7 @@ export interface GameState {
   ancestors: Ancestor[];
   flags: Record<string, boolean>;
   settings: { notation: 'lettres' | 'scientifique'; reducedMotion: boolean };
-  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number };
+  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; sessions?: number; installAskAt?: number };
 }
 
 export const SAVE_VERSION = 1;
@@ -158,5 +160,5 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
 export function newLife(dur: number, startLvl: Record<ActId, number>, act: ActId | null = null): LifeState {
   const lvl = zeroActs();
   for (const a of ACTS) lvl[a] = startLvl[a];
-  return { t: 0, dur, act, lastAct: act, xp: zeroActs(), lvl, timeIn: zeroActs(), rec: [], pow: [], value: 0, extended: false };
+  return { t: 0, dur, act, lastAct: act, xp: zeroActs(), lvl, timeIn: zeroActs(), rec: [], pow: [], value: 0, baseValue: 0, extended: false };
 }

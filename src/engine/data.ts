@@ -217,5 +217,9 @@ export const FIRST_NAMES = [
   'Roland', 'Sibylle', 'Tancrède', 'Thibaut', 'Ysolde', 'Yvain', 'Adélaïde', 'Godefroy', 'Hildegarde', 'Lancelot',
   'Morgane', 'Rodolphe', 'Séraphine', 'Tristan', 'Viviane', 'Baudouin', 'Iseult', 'Gauvain', 'Héloïse', 'Arnaud',
 ];
+export const HOUSE_NAMES = [
+  'Valombre', 'Hautecour', 'Dorval', 'Montfaucon', 'Bellerive', 'Aubépine', 'Grisemont', 'Ventadour', 'Châtelfort', 'Clairval',
+  'Brumefer', 'Corbenay', 'Sombreval', 'Ardanel', 'Fontclaire', 'Rochebrune', 'Givremont', 'Lunebois', 'Morvenant', 'Saint-Aubrac',
+];
 export const CRESTS = ['🦁', '🦅', '🐺', '🐉', '🦌', '🌙', '☀️', '🌹', '🦉', '🐻', '⚔️', '🗝️'];
 export const CREST_COLORS = ['#c62828', '#1565c0', '#2e7d32', '#6a1b9a', '#ef6c00', '#37474f', '#ad1457', '#00838f'];

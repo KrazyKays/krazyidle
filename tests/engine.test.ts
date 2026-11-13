@@ -3,7 +3,7 @@ import { ACTS, type ActId } from '../src/engine/data';
 import { DailyRun, dailySetup, decodeRun, encodeRun, replay, verifyCode } from '../src/engine/daily';
 import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
 import { activeEvent, upcomingEvents } from '../src/engine/events';
-import { confirmSuccession, isPaused, newRuntime, resumeLife, setActivity, startLife, tick } from '../src/engine/game';
+import { confirmSuccession, isPaused, newRuntime, resumeLife, setActivity, startLife, tick, vocationOutlook } from '../src/engine/game';
 import { exportSave, importSave } from '../src/engine/save';
 import { newGame } from '../src/engine/state';
 
@@ -161,6 +161,82 @@ describe('enregistrement de la vie', () => {
         n++;
       }
       expect(s.succession!.newEcho.acts.length).toBe(dur);
+    }
+  });
+});
+
+describe('Échos et événements', () => {
+  /** Premier créneau « Marée d'or » à partir d'une date donnée. */
+  function findMaree(): number {
+    let t = Date.UTC(2026, 10, 1);
+    for (let i = 0; i < 400; i++, t += 4 * 3600_000) {
+      const w = upcomingEvents(t, 1)[0];
+      if (w.def.id === 'maree') return w.start + 60_000;
+    }
+    throw new Error('pas de Marée');
+  }
+
+  test('le ×3 d\'une Marée d\'or ne gonfle ni la puissance ni la valeur de l\'Écho', () => {
+    const play = (online: boolean) => {
+      const s = newGame(0, 7);
+      s.unlocked.push('commercer');
+      s.res.vivres = 1e6;
+      const rt = newRuntime();
+      rt.online = online;
+      startLife(s);
+      setActivity(s, 'commercer');
+      let now = findMaree();
+      while (s.life) { now += 100; tick(s, rt, 0.1, now); }
+      return s.succession!;
+    };
+    const ev = play(true), calm = play(false);
+    expect(ev.ancestor.value).toBeGreaterThan(calm.ancestor.value * 2.5); // la vraie vie a bien profité du ×3
+    expect(ev.newEcho.pow).toEqual(calm.newEcho.pow); // l'Écho rejoue à puissance normale
+    expect(ev.newEcho.value).toBeCloseTo(calm.newEcho.value, 3); // et sa valeur n'est pas gonflée
+  });
+});
+
+describe('pronostic de vocation', () => {
+  test('suit le seuil de la moitié de la vie', () => {
+    const s = newGame(0, 5);
+    startLife(s);
+    const life = s.life!;
+    const dur = life.dur;
+    life.t = dur * 0.3; life.timeIn.cultiver = dur * 0.3;
+    let o = vocationOutlook(life, s.hero)!;
+    expect(o.state).toBe('onTrack');
+    expect(o.act).toBe('cultiver');
+    expect(o.need).toBeCloseTo(dur * 0.2);
+    life.t = dur * 0.55; life.timeIn.cultiver = dur * 0.55;
+    o = vocationOutlook(life, s.hero)!;
+    expect(o.state).toBe('secured');
+    expect(o.result).toEqual({ act: 'cultiver', tier: 1 });
+  });
+
+  test('annonce une vocation affaiblie quand le seuil devient inatteignable', () => {
+    const s = newGame(0, 6);
+    s.hero.vocation = { act: 'chasser', tier: 3 };
+    startLife(s);
+    const life = s.life!;
+    const dur = life.dur;
+    life.t = dur * 0.9;
+    life.timeIn.chasser = dur * 0.3; life.timeIn.cultiver = dur * 0.3; life.timeIn.commercer = dur * 0.3;
+    const o = vocationOutlook(life, s.hero)!;
+    expect(o.state).toBe('lost');
+    expect(o.result).toEqual({ act: 'chasser', tier: 2 });
+  });
+
+  test('pronostic cohérent avec le résultat réel en fin de vie', () => {
+    const s = newGame(0, 8);
+    const rt = newRuntime();
+    rt.online = false;
+    startLife(s);
+    let now = 0, i = 0;
+    while (s.life) {
+      setActivity(s, (i++ % 10) < 6 ? 'cultiver' : 'chasser');
+      const last = vocationOutlook(s.life, s.hero);
+      now += 100; tick(s, rt, 0.1, now);
+      if (!s.life) expect(last?.result).toEqual(s.succession!.vocationEarned);
     }
   });
 });

@@ -15,6 +15,18 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstall = e;
 });
+window.addEventListener('appinstalled', () => {
+  deferredInstall = null;
+  state.flags.install_done = true;
+});
+
+function isStandalone(): boolean {
+  return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+}
+function isIos(): boolean {
+  const ua = navigator.userAgent;
+  return /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
 
 const app = new App(state, rt, {
   save: () => save(),
@@ -26,14 +38,21 @@ const app = new App(state, rt, {
     saveLocal(s);
     location.reload();
   },
-  installPrompt: () => {
-    if (!deferredInstall) return null;
-    const p = deferredInstall.prompt();
+  installMode: () => {
+    if (isStandalone()) return 'installed';
+    if (deferredInstall) return 'prompt';
+    if (isIos()) return 'ios';
+    return null;
+  },
+  installPrompt: async () => {
+    const ev = deferredInstall;
+    if (!ev) return false;
     deferredInstall = null;
-    return Promise.resolve(p).then(() => true);
+    await ev.prompt();
+    const choice = await Promise.resolve(ev.userChoice).catch(() => null);
+    return choice?.outcome === 'accepted';
   },
 });
-Object.defineProperty(app.hooks, 'installPrompt', { get: () => (deferredInstall ? () => { deferredInstall.prompt(); deferredInstall = null; return Promise.resolve(true); } : null) });
 
 function save() {
   state.lastTick = Date.now();
@@ -60,6 +79,7 @@ if (isNew) {
     save();
   });
 } else {
+  state.stats.sessions = (state.stats.sessions ?? 0) + 1;
   if (!state.life && !state.succession) startLife(state);
   // La pause ne survit pas à la fermeture : au lancement, la vie repart toujours.
   resumeLife(state);

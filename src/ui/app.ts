@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CRESTS, CREST_COLORS, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CRESTS, CREST_COLORS, HOUSE_NAMES, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
@@ -7,7 +7,7 @@ import { ECO_EQ, ecoFactor, ecoHealth, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford,
-  confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity,
+  VOCATION_SHARE, confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -32,7 +32,10 @@ export interface AppHooks {
   save: () => void;
   reset: () => void;
   replaceState: (s: GameState) => void;
-  installPrompt: () => Promise<boolean> | null;
+  /** 'prompt' : invite native (Chrome/Android) · 'ios' : à faire depuis Safari · 'installed' : déjà en appli · null : rien à proposer */
+  installMode: () => 'prompt' | 'ios' | 'installed' | null;
+  /** Ouvre l'invite native ; résout à true si le joueur a accepté. */
+  installPrompt: () => Promise<boolean>;
 }
 
 export class App {
@@ -232,7 +235,7 @@ export class App {
   // Panneau Vie
   sigLifeNow() {
     const s = this.s;
-    return [!!s.life, isPaused(s), s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length].join('|');
+    return [!!s.life, isPaused(s), s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length, this.installOffer(), s.ancestors.length > 0].join('|');
   }
 
   hint(): { id: string; text: string } | null {
@@ -244,7 +247,7 @@ export class App {
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, 'Ton ancêtre est devenu un Écho : il rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !'],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent héros ET Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans l\'onglet Lignée pour des bonus permanents.'],
-      ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, 'Ce héros a hérité d\'une Vocation : pratiquer la même activité plus de la moitié de sa vie la fait monter de rang.'],
+      ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, 'Ce héros a hérité d\'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.'],
       ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, cultiver ou réduire la chasse le rétablit.'],
       ['destin', s.hero.gen >= 3 && !s.daily[utcDateStr(Date.now())], 'Le Destin du jour t\'attend : la même vie pour tous les joueurs, compare ton score !'],
     ];
@@ -260,6 +263,8 @@ export class App {
     if (hint) {
       parts.push(h('div', { class: 'hint' }, h('span', { class: 'hint-i' }, '💡'), h('p', null, hint.text),
         h('button', { class: 'hint-x', 'aria-label': 'Compris', onclick: () => { s.flags['hint_' + hint.id] = true; this.sigLife = ''; } }, 'OK')));
+    } else if (this.installOffer()) {
+      parts.push(this.installCard());
     }
     parts.push(this.heroCard(s.hero, true));
 
@@ -289,6 +294,7 @@ export class App {
         h('div', { class: 'right' }, h('div', { class: 'label' }, 'Temps restant'), b.text(h('div', { class: 'timer-v' }), () => fmtDur(life.dur - life.t)))),
       h('div', { class: 'bar' }, bar),
       this.recStrip(b),
+      s.ancestors.length > 0 ? this.vocationGauge(b) : null,
       h('div', { class: 'row-end' }, tempsBtn, pauseBtn),
     ));
 
@@ -335,6 +341,81 @@ export class App {
       strip.style.background = stripGradient(life.rec, life.dur);
     });
     return h('div', { class: 'rec' }, h('div', { class: 'label' }, h('span', { class: 'rec-dot' }), 'Enregistrement de l\'Écho'), strip);
+  }
+
+  /** Jauge du seuil de vocation : où en est la vie en cours, et ce qui sera transmis. */
+  vocationGauge(b: Binder) {
+    const s = this.s;
+    const fill = h('div', { class: 'voc-fill' });
+    const txt = h('div', { class: 'voc-txt' });
+    const wrap = h('button', {
+      class: 'voc-gauge', 'aria-label': 'Vocation',
+      onclick: () => toast(`🎓 Consacre au moins ${Math.round(VOCATION_SHARE * 100)} % de la vie à une même activité : l'héritier pourra en recevoir la Vocation, un rang plus haut. Sinon, elle se transmet affaiblie d'un rang.`, 'info', 6000),
+    },
+      h('div', { class: 'label' }, '🎓 Vocation'),
+      h('div', { class: 'voc-bar', style: { '--mark': `${VOCATION_SHARE * 100}%` } }, fill, h('span', { class: 'voc-mark' })),
+      txt);
+    let last = '';
+    b.add(() => {
+      const life = s.life;
+      const o = life ? vocationOutlook(life, s.hero) : null;
+      wrap.hidden = !o;
+      if (!o) return;
+      const d = ACT[o.act];
+      const name = (v: { act: ActId; tier: number }) => `${ACT[v.act].vocation} ${roman(v.tier)}`;
+      let text: string;
+      if (o.state === 'secured') text = `✔ ${d.icon} ${name(o.result!)} acquise pour l'héritier`;
+      else if (o.state === 'onTrack') {
+        const cur = s.hero.vocation;
+        const tail = cur && cur.act !== o.act ? ` · sinon ${name(cur)} s'affaiblit` : '';
+        text = `${d.icon} Encore ${fmtDur(Math.ceil(o.need))} de ${d.name} pour ${name(o.result!)}${tail}`;
+      } else text = o.result ? `⚠️ ${d.icon} ${name(o.result)} : transmise affaiblie` : `⚠️ ${d.icon} Vocation ${d.vocation} perdue`;
+      const w = Math.min(100, o.share * 100).toFixed(1) + '%';
+      const key = text + w + o.state;
+      if (key === last) return;
+      last = key;
+      txt.textContent = text;
+      fill.style.width = w;
+      fill.style.background = d.color;
+      wrap.dataset.state = o.state;
+    });
+    return wrap;
+  }
+
+  /** Proposer l'installation : après la 1re succession, discrètement, et deux fois au plus. */
+  installOffer(): boolean {
+    const s = this.s, f = s.flags;
+    const mode = this.hooks.installMode();
+    if (mode !== 'prompt' && mode !== 'ios') return false;
+    if (f.install_done || f.install_never || s.ancestors.length === 0 || !s.life) return false;
+    if (!f.install_later) return true;
+    return (s.stats.sessions ?? 0) >= (s.stats.installAskAt ?? 0) + 2;
+  }
+
+  installCard() {
+    const s = this.s, f = s.flags;
+    const mode = this.hooks.installMode();
+    const later = () => {
+      if (!f.install_later) { f.install_later = true; s.stats.installAskAt = s.stats.sessions ?? 0; }
+      else f.install_never = true;
+      this.sigLife = '';
+    };
+    const how = h('p', { class: 'small install-how', hidden: true }, 'Dans Safari, touche ', h('strong', null, 'Partager ⬆️'), ' puis ', h('strong', null, '« Sur l\'écran d\'accueil »'), '.');
+    const main = mode === 'prompt'
+      ? h('button', { class: 'btn btn-sm btn-primary', onclick: async () => {
+        if (await this.hooks.installPrompt()) { f.install_done = true; toast('📲 Échos de Lignée est installé !', 'good'); }
+        this.sigLife = '';
+      } }, 'Installer')
+      : h('button', { class: 'btn btn-sm btn-primary', onclick: (e: Event) => {
+        if (how.hidden) { how.hidden = false; (e.target as HTMLElement).textContent = 'C\'est fait'; }
+        else { f.install_done = true; this.sigLife = ''; }
+      } }, 'Comment faire ?');
+    return h('div', { class: 'install-card' },
+      h('span', { class: 'install-i' }, '📲'),
+      h('div', { class: 'install-body' },
+        h('p', null, h('strong', null, 'Tes Échos travaillent même quand tu pars.'), ' Installe le jeu pour revenir en un geste.'),
+        how,
+        h('div', { class: 'row-end' }, h('button', { class: 'btn btn-sm btn-ghost', onclick: later }, 'Plus tard'), main)));
   }
 
   actCard(a: ActId, idx: number, b: Binder) {
@@ -674,31 +755,101 @@ export class App {
       h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Continuer')));
   }
 
+  /**
+   * Cérémonie de fondation en trois temps : le Sablier, la forge du blason, le premier du nom.
+   * Écran plein, sans formulaire : on doit sentir qu'on fonde une dynastie.
+   */
   openIntro(onDone: () => void) {
     const s = this.s;
-    const input = h('input', { class: 'input', maxlength: 20, placeholder: 'Nom de ta maison', value: '' }) as HTMLInputElement;
     let crest = s.lineage.crest, color = s.lineage.color;
-    const preview = h('div', { class: 'crest crest-xl' });
-    const upd = () => { preview.textContent = crest; preview.style.background = color; };
-    upd();
-    const crests = h('div', { class: 'pick-row' }, CRESTS.map((c) => h('button', { class: 'pick', onclick: () => { crest = c; upd(); } }, c)));
-    const colors = h('div', { class: 'pick-row' }, CREST_COLORS.map((c) => h('button', { class: 'pick pick-color', style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; upd(); } })));
-    const m = modal(h('div', { class: 'intro' },
-      h('div', { class: 'center' }, h('div', { class: 'logo' }, '⏳'), h('h1', { class: 'title' }, 'Échos de Lignée')),
-      h('p', null, 'Le Sablier des Ancêtres a choisi ta famille. Chaque héros ne vit qu\'un instant… mais rien ne se perd : chaque vie devient un ', h('strong', null, 'Écho'), ' qui rejoue ses gestes pour l\'éternité.'),
-      h('p', { class: 'muted' }, 'Spécialise tes héros, transmets leurs dons, garde ton domaine en équilibre et reviens aux heures des événements célestes.'),
-      h('div', { class: 'center' }, preview),
-      h('label', { class: 'label' }, 'Nom de ta maison'), input,
-      h('label', { class: 'label' }, 'Emblème'), crests,
-      h('label', { class: 'label' }, 'Couleur'), colors,
-      h('button', { class: 'btn btn-primary btn-lg', onclick: () => {
-        const name = input.value.trim().replace(/[<>]/g, '') || 'Dorval';
-        s.lineage = { name, crest, color };
-        m.close();
+    const pickName = (not?: string) => { let n = HOUSE_NAMES[Math.floor(Math.random() * HOUSE_NAMES.length)]; while (n === not) n = HOUSE_NAMES[Math.floor(Math.random() * HOUSE_NAMES.length)]; return n; };
+    let suggestion = pickName();
+    const root = h('div', { class: 'intro-screen', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Fondation de la lignée' });
+    const motes = h('div', { class: 'intro-motes', 'aria-hidden': 'true' },
+      Array.from({ length: 18 }, (_, i) => h('span', { style: { left: `${(i * 37) % 100}%`, animationDelay: `${(i * 0.73) % 6}s`, animationDuration: `${7 + (i % 5)}s` } })));
+    const stage = h('div', { class: 'intro-stage' });
+    root.append(motes, stage);
+    document.body.appendChild(root);
+    requestAnimationFrame(() => root.classList.add('show'));
+
+    const show = (el: HTMLElement) => { stage.replaceChildren(el); };
+
+    // --- 1. Le Sablier ------------------------------------------------------
+    const s1 = h('div', { class: 'intro-s1' },
+      h('div', { class: 'intro-glass', 'aria-hidden': 'true' }, '⏳'),
+      h('h1', { class: 'title intro-title' }, 'Échos de Lignée'),
+      h('p', { class: 'intro-line' }, 'Le Sablier des Ancêtres a choisi ta famille.'),
+      h('p', { class: 'intro-sub' }, 'Chaque vie ne dure qu\'un instant… mais aucune ne se perd.'),
+      h('button', { class: 'btn btn-primary btn-lg intro-next', onclick: () => forge() }, 'Ouvrir le registre'));
+    show(s1);
+
+    // --- 2. La forge du blason ----------------------------------------------
+    const forge = () => {
+      const shield = this.shieldEl(crest, color, 'intro-shield');
+      const banner = h('div', { class: 'intro-banner' });
+      const input = h('input', { class: 'input intro-input', maxlength: 20, placeholder: suggestion, value: '', 'aria-label': 'Nom de ta maison' }) as HTMLInputElement;
+      const houseName = () => input.value.trim().replace(/[<>]/g, '') || suggestion;
+      const upd = () => {
+        banner.textContent = `Maison ${houseName()}`;
+        shield.style.setProperty('--c', color);
+        shield.querySelector('.shield-emblem')!.textContent = crest;
+        shield.classList.remove('pop');
+        void shield.offsetWidth;
+        shield.classList.add('pop');
+        crestRow.querySelectorAll('.pick').forEach((x) => x.classList.toggle('on', x.textContent === crest));
+        colorRow.querySelectorAll('.pick').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.c === color));
+      };
+      input.addEventListener('input', () => { banner.textContent = `Maison ${houseName()}`; });
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') found(); });
+      const dice = h('button', { class: 'btn intro-dice', 'aria-label': 'Nom au hasard', title: 'Nom au hasard', onclick: () => { suggestion = pickName(input.value.trim() || suggestion); input.value = ''; input.placeholder = suggestion; banner.textContent = `Maison ${suggestion}`; } }, '🎲');
+      const crestRow = h('div', { class: 'pick-row intro-picks' }, CRESTS.map((c) => h('button', { class: 'pick', 'aria-label': `Emblème ${c}`, onclick: () => { crest = c; upd(); } }, c)));
+      const colorRow = h('div', { class: 'pick-row intro-picks' }, CREST_COLORS.map((c) => h('button', { class: 'pick pick-color', 'data-c': c, style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; upd(); } })));
+      const found = () => {
+        s.lineage = { name: houseName(), crest, color };
         this.sigTop = '';
-        onDone();
-      } }, 'Fonder la lignée')), { dismissable: false });
-    setTimeout(() => input.focus(), 250);
+        firstOfName();
+      };
+      show(h('div', { class: 'intro-s2' },
+        h('div', { class: 'intro-crestwrap' }, shield, banner),
+        h('label', { class: 'label' }, 'Nom de ta maison'),
+        h('div', { class: 'row intro-namerow' }, input, dice),
+        h('label', { class: 'label' }, 'Emblème'), crestRow,
+        h('label', { class: 'label' }, 'Couleur'), colorRow,
+        h('button', { class: 'btn btn-primary btn-lg intro-next', onclick: found }, 'Fonder la lignée')));
+      upd();
+      if (window.matchMedia('(pointer: fine)').matches) setTimeout(() => input.focus(), 300);
+    };
+
+    // --- 3. Le premier du nom -------------------------------------------------
+    const firstOfName = () => {
+      const t = TRAIT[s.hero.traits[0]];
+      const shield = this.shieldEl(s.lineage.crest, s.lineage.color, 'intro-shield intro-shield-sm');
+      show(h('div', { class: 'intro-s3' },
+        h('div', { class: 'intro-sand', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('span', { style: { left: `${46 + ((i * 13) % 9)}%`, animationDelay: `${(i * 0.17).toFixed(2)}s` } }))),
+        shield,
+        h('p', { class: 'intro-sub' }, `La Maison ${s.lineage.name} est fondée.`),
+        h('h2', { class: 'intro-hero' }, s.hero.name),
+        h('p', { class: 'intro-line' }, 'premier du nom'),
+        t ? h('div', { class: 'intro-trait', style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${t.name}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)) : null,
+        h('p', { class: 'muted small' }, 'Sa vie sera brève. Chacun de ses gestes deviendra un Écho.'),
+        h('button', { class: 'btn btn-primary btn-lg intro-next', onclick: () => {
+          root.classList.remove('show');
+          setTimeout(() => root.remove(), 450);
+          onDone();
+        } }, 'Commencer sa vie')));
+    };
+  }
+
+  /** Écu héraldique (SVG) teinté de la couleur de la maison, emblème au centre. */
+  shieldEl(crest: string, color: string, cls = '') {
+    const el = h('div', { class: `shield ${cls}`, style: { '--c': color } });
+    el.innerHTML = '<svg viewBox="0 0 120 140" aria-hidden="true"><defs><linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>'
+      + '<path class="shield-body" d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z"/>'
+      + '<path d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z" fill="url(#shine)"/>'
+      + '<path d="M60 13 L103 24 V64 C103 96 83 115 60 126 C37 115 17 96 17 64 V24 Z" fill="none" stroke="rgba(255,231,166,.55)" stroke-width="1.5"/>'
+      + '<path d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z" fill="none" stroke="#f2c45a" stroke-width="4"/></svg>';
+    el.appendChild(h('span', { class: 'shield-emblem' }, crest));
+    return el;
   }
 
   openRename() {
@@ -734,7 +885,12 @@ export class App {
     const ta = h('textarea', { class: 'input mono', rows: 3, readonly: true }) as HTMLTextAreaElement;
     ta.value = exportSave(s);
     const imp = h('textarea', { class: 'input mono', rows: 3, placeholder: 'Colle ici une sauvegarde exportée…' }) as HTMLTextAreaElement;
-    const install = this.hooks.installPrompt;
+    const mode = this.hooks.installMode();
+    const installSection = h('div', null, h('h3', { class: 'section-t' }, 'Application'),
+      mode === 'installed' ? h('p', { class: 'muted small' }, '✔ Le jeu est installé sur cet appareil.')
+        : mode === 'prompt' ? h('button', { class: 'btn btn-sm', onclick: async () => { if (await this.hooks.installPrompt()) { s.flags.install_done = true; toast('📲 Échos de Lignée est installé !', 'good'); m.close(); } } }, '📲 Installer sur cet appareil')
+          : mode === 'ios' ? h('p', { class: 'muted small' }, '📲 Dans Safari, touche Partager ⬆️ puis « Sur l\'écran d\'accueil » pour y jouer comme une application.')
+            : h('p', { class: 'muted small' }, '📲 Astuce : ajoute le jeu à ton écran d\'accueil depuis le menu du navigateur pour y jouer comme une application.'));
     const m = modal(h('div', { class: 'settings' },
       h('h2', null, '⚙️ Paramètres'),
       h('div', { class: 'row-between' }, h('span', null, 'Notation des grands nombres'),
@@ -753,7 +909,7 @@ export class App {
         if (!st) { toast('Sauvegarde invalide', 'bad'); return; }
         if (await confirmBox('Remplacer la partie actuelle par cette sauvegarde ?', 'Importer', true)) { m.close(); this.hooks.replaceState(st); }
       } }, '📥 Importer')),
-      install ? h('div', null, h('h3', { class: 'section-t' }, 'Application'), h('button', { class: 'btn btn-sm', onclick: () => install() }, '📲 Installer sur cet appareil')) : h('p', { class: 'muted small' }, '📲 Astuce : ajoute le jeu à ton écran d\'accueil depuis le menu du navigateur pour y jouer comme une application.'),
+      installSection,
       h('h3', { class: 'section-t' }, 'Statistiques'),
       h('div', { class: 'stats' },
         stat('Temps de jeu', fmtDur(s.stats.playTime)),

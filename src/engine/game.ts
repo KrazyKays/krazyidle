@@ -7,7 +7,7 @@ import { ecoStep, harmonyMult } from './ecosystem';
 import { activeEvent, type EventWindow } from './events';
 import { Rng } from './rng';
 import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
-import { newLife, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type Succession, type Vocation } from './state';
+import { newLife, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
 
 export interface Runtime {
   event: EventWindow | null;
@@ -96,10 +96,16 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
     eco: s.eco,
     prodMult: (a) => prodMult(s, rt, a),
     ecoImpactMult: ecoImpactMult(s),
-    onProduce: (r, amt, fromLife) => {
+    onProduce: (r, amt, fromLife, act) => {
       s.totalEver[r] += amt;
       rt.tickGross[r] += amt;
-      if (fromLife && s.life) s.life.value += amt * RES_INFO[r].value;
+      if (fromLife && s.life) {
+        const v = amt * RES_INFO[r].value;
+        s.life.value += v;
+        // L'Écho rejoue sans le bonus d'événement : sa valeur ne doit pas en tenir compte.
+        const evMult = rt.online ? rt.event?.def.act?.[act] ?? 1 : 1;
+        s.life.baseValue = (s.life.baseValue ?? 0) + v / evMult;
+      }
       if (rt.online && rt.event) {
         const ep = s.events[rt.event.key];
         if (ep && rt.event.def.goal === r) ep.progress += amt;
@@ -247,12 +253,56 @@ export function dominantAct(life: { timeIn: Record<ActId, number> }): { act: Act
   return { act: best, share: tot > 0 ? bt / tot : 0 };
 }
 
+/** Part de la vie à consacrer à une activité pour en obtenir (ou en faire monter) la Vocation. */
+export const VOCATION_SHARE = 0.5;
+
+export interface VocationOutlook {
+  act: ActId;
+  /** part de la vie déjà passée dans cette activité (0..1) */
+  share: number;
+  /** secondes encore nécessaires pour atteindre le seuil */
+  need: number;
+  state: 'secured' | 'onTrack' | 'lost';
+  /** vocation transmise si la vie s'achevait selon cet état (null = aucune) */
+  result: Vocation | null;
+}
+
+/**
+ * Pronostic de vocation pour la vie en cours. Le temps ne s'écoulant que pendant
+ * une activité, la part finale d'une activité vaut son temps cumulé / durée de vie.
+ */
+export function vocationOutlook(life: LifeState, hero: Hero): VocationOutlook | null {
+  const half = life.dur * VOCATION_SHARE;
+  const left = Math.max(0, life.dur - life.t);
+  const reachable = (a: ActId) => life.timeIn[a] + left >= half - 1e-6;
+  const cur = hero.vocation;
+  const tierFor = (a: ActId) => Math.min(VOCATION_MAX, (cur && cur.act === a ? cur.tier : 0) + 1);
+  const mk = (a: ActId, state: VocationOutlook['state']): VocationOutlook => {
+    let result: Vocation | null;
+    if (state === 'lost') result = cur && cur.tier > 1 ? { act: cur.act, tier: cur.tier - 1 } : null;
+    else result = { act: a, tier: tierFor(a) };
+    return { act: a, share: life.timeIn[a] / life.dur, need: Math.max(0, half - life.timeIn[a]), state, result };
+  };
+  const secured = ACTS.find((a) => life.timeIn[a] >= half - 1e-6);
+  if (secured) return mk(secured, 'secured');
+  if (cur && reachable(cur.act)) return mk(cur.act, 'onTrack');
+  // Sinon : l'activité atteignable la plus pratiquée (à égalité, celle en cours).
+  let best: ActId | null = null;
+  for (const a of ACTS) {
+    if (!reachable(a)) continue;
+    if (best === null || life.timeIn[a] > life.timeIn[best] || (life.timeIn[a] === life.timeIn[best] && a === life.act)) best = a;
+  }
+  if (best) return mk(best, 'onTrack');
+  if (cur) return mk(cur.act, 'lost');
+  return null;
+}
+
 export function endLife(s: GameState, now: number) {
   const life = s.life!;
   const hero = s.hero;
   const dom = dominantAct(life);
   let voc: Vocation | null = null;
-  if (dom.act && dom.share >= 0.5 && life.timeIn[dom.act] >= life.dur * 0.4) {
+  if (dom.act && dom.share >= VOCATION_SHARE) {
     const prev = hero.vocation && hero.vocation.act === dom.act ? hero.vocation.tier : 0;
     voc = { act: dom.act, tier: Math.min(VOCATION_MAX, prev + 1) };
   }
@@ -260,7 +310,7 @@ export function endLife(s: GameState, now: number) {
   const m = sumMods(hero.traits);
   const echo: Echo = {
     id: s.nextId++, heroId: hero.id, name: hero.name, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
-    acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.value,
+    acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
   };
   const ancestor: Ancestor = {
     id: hero.id, name: hero.name, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,

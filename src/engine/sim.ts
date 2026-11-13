@@ -8,7 +8,7 @@ export interface SimCtx {
   eco: Eco;
   prodMult: (a: ActId) => number;
   ecoImpactMult: number;
-  onProduce?: (r: ResId, amt: number, fromLife: boolean) => void;
+  onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
 }
 
 export const ECHO_ECO_STRENGTH = 0.6;
@@ -32,7 +32,7 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;
-    ctx.onProduce?.(r as ResId, amt, fromLife);
+    ctx.onProduce?.(r as ResId, amt, fromLife, act);
   }
   ecoImpact(ctx.eco, act, ecoStrength * frac * ctx.ecoImpactMult, dt);
   return frac;
