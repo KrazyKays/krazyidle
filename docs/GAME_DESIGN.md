@@ -23,6 +23,10 @@ Pour cadrer la v1, on a simulé un conseil avec les rôles clés d'un studio. Ch
 ### 2.1 La Vie (boucle courte)
 - Un héros vit **60 s** par défaut, durée allongée par les traits, l'Héritage et la Clepsydre.
 - À chaque instant, il pratique **une activité** : Cultiver, Chasser, Commercer, Étudier ou Méditer.
+- **Le temps du héros ne s'écoule que pendant une activité.** Recliquer sur l'activité en cours (ou la touche Espace) met la vie en pause : le sablier se fige et rien n'est enregistré, mais les Échos continuent de produire et le Domaine se repose. La pause coûte du tempo dynastique (succession, Héritage et nouvel Écho retardés) et ne survit pas à la fermeture du jeu : au lancement, la vie reprend sur la dernière activité.
+- À sa naissance, le héros commence directement l'activité de sa **vocation** héritée (Cultiver par défaut).
+- La **succession n'est pas bloquante** : à la mort, un bandeau « Succession en attente » apparaît et les Échos continuent de boucler jusqu'à ce que le joueur choisisse l'héritier.
+- Le Destin du jour reste en **temps réel**, sans pause.
 - Les compétences montent de niveau pendant la vie (XP ×1.3 par niveau) et repartent de zéro à la génération suivante.
 - **Vocation** : si une activité occupe au moins 50 % de la vie, le héros gagne la vocation correspondante (+20 % par rang, rang max X). Elle se transmet aux héritiers et monte de rang si on la pratique encore. Non entretenue, elle perd un rang.
 

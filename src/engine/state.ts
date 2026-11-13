@@ -19,11 +19,14 @@ export interface Hero {
 export interface LifeState {
   t: number;
   dur: number;
+  /** null = vie en pause : le temps du héros ne s'écoule pas. */
   act: ActId | null;
+  /** dernière activité choisie, reprise au lancement du jeu */
+  lastAct?: ActId | null;
   xp: Record<ActId, number>;
   lvl: Record<ActId, number>;
   timeIn: Record<ActId, number>;
-  rec: number[]; // activité par seconde (-1 = rien)
+  rec: number[]; // activité par seconde (-1 = rien, anciennes sauvegardes)
   pow: number[]; // puissance par seconde
   value: number; // valeur produite (pour l'Héritage)
   extended: boolean; // bonus "Temps suspendu" utilisé
@@ -152,8 +155,8 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
   return s;
 }
 
-export function newLife(dur: number, startLvl: Record<ActId, number>): LifeState {
+export function newLife(dur: number, startLvl: Record<ActId, number>, act: ActId | null = null): LifeState {
   const lvl = zeroActs();
   for (const a of ACTS) lvl[a] = startLvl[a];
-  return { t: 0, dur, act: null, xp: zeroActs(), lvl, timeIn: zeroActs(), rec: [], pow: [], value: 0, extended: false };
+  return { t: 0, dur, act, lastAct: act, xp: zeroActs(), lvl, timeIn: zeroActs(), rec: [], pow: [], value: 0, extended: false };
 }

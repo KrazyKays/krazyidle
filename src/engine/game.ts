@@ -108,14 +108,33 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
   };
 }
 
-export function startLife(s: GameState) {
-  s.life = newLife(lifeDuration(s, s.hero), startLevels(s, s.hero));
+/** Activité de départ : celle de la vocation héritée, sinon Cultiver. */
+export function defaultAct(s: GameState, hero: Hero): ActId {
+  const v = hero.vocation?.act;
+  return v && s.unlocked.includes(v) ? v : 'cultiver';
 }
 
+export function startLife(s: GameState) {
+  s.life = newLife(lifeDuration(s, s.hero), startLevels(s, s.hero), defaultAct(s, s.hero));
+}
+
+/** null met la vie en pause : le temps du héros ne s'écoule plus, les Échos continuent. */
 export function setActivity(s: GameState, a: ActId | null) {
   if (!s.life) return;
   if (a && !s.unlocked.includes(a)) return;
   s.life.act = a;
+  if (a) s.life.lastAct = a;
+}
+
+export function isPaused(s: GameState): boolean {
+  return !!s.life && !s.life.act;
+}
+
+/** Reprend la vie sur la dernière activité choisie (la pause ne survit pas à la session). */
+export function resumeLife(s: GameState) {
+  if (!s.life || s.life.act) return;
+  const last = s.life.lastAct;
+  setActivity(s, last && s.unlocked.includes(last) ? last : defaultAct(s, s.hero));
 }
 
 /** Un pas de simulation. dt en secondes, now en ms. */
@@ -154,8 +173,8 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
     }
   }
 
-  // Vie
-  if (s.life && !rt.pauseLife) {
+  // Vie : le temps du héros ne s'écoule que pendant une activité
+  if (s.life && s.life.act && !rt.pauseLife) {
     lifeTick(ctx, s.life, s.hero, xpMult(s, rt), dt);
     if (s.life.t >= s.life.dur - 1e-9) endLife(s, now);
   }
@@ -360,7 +379,7 @@ export function buyLegacy(s: GameState, id: string): boolean {
 }
 
 export const SHOP = {
-  temps: { cost: 2, name: 'Temps suspendu', icon: '⏸️', desc: '+30 s à la vie actuelle (1 fois par vie)' },
+  temps: { cost: 2, name: 'Temps suspendu', icon: '⌛', desc: '+30 s à la vie actuelle (1 fois par vie)' },
   crest: { cost: 1, name: 'Nouveau blason', icon: '🛡️', desc: 'Change l\'emblème et la couleur de la lignée' },
 };
 export const BLESSING_COST = [0, 3, 6, 12, 15];

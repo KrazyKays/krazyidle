@@ -1,5 +1,5 @@
 import './style.css';
-import { newRuntime, simulateOffline, startLife, tick } from './engine/game';
+import { newRuntime, resumeLife, simulateOffline, startLife, tick } from './engine/game';
 import { loadLocal, saveLocal, SAVE_KEY } from './engine/save';
 import { newGame, type GameState } from './engine/state';
 import { App } from './ui/app';
@@ -61,6 +61,8 @@ if (isNew) {
   });
 } else {
   if (!state.life && !state.succession) startLife(state);
+  // La pause ne survit pas à la fermeture : au lancement, la vie repart toujours.
+  resumeLife(state);
   catchUp();
 }
 

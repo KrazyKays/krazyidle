@@ -339,3 +339,11 @@ p { margin: 6px 0; }
   .acts-daily .act-head { flex-wrap: wrap; }
   .acts-daily .act-rate { white-space: normal; font-size: 0.74rem; }
 }
+
+/* Vie en pause */
+.timer.paused { border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
+.timer.paused .bar-fill { filter: saturate(0.3); opacity: 0.6; }
+.timer.paused .rec-dot { animation: none; opacity: 0.35; }
+.pause-banner { margin-bottom: 8px; color: var(--gold); }
+.btn-resume { animation: glow 2s ease-in-out infinite; }
+.life-pill { --c: var(--gold); }

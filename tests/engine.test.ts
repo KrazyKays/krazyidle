@@ -3,7 +3,7 @@ import { ACTS, type ActId } from '../src/engine/data';
 import { DailyRun, dailySetup, decodeRun, encodeRun, replay, verifyCode } from '../src/engine/daily';
 import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
 import { activeEvent, upcomingEvents } from '../src/engine/events';
-import { confirmSuccession, newRuntime, setActivity, startLife, tick } from '../src/engine/game';
+import { confirmSuccession, isPaused, newRuntime, resumeLife, setActivity, startLife, tick } from '../src/engine/game';
 import { exportSave, importSave } from '../src/engine/save';
 import { newGame } from '../src/engine/state';
 
@@ -82,6 +82,48 @@ describe('partie', () => {
     for (let i = 0; i < 100; i++) { now += 100; tick(s, rt, 0.1, now); }
     expect(s.res.vivres).toBeGreaterThan(v0); // l'Écho produit seul
     expect(ACTS.length).toBe(5);
+  });
+
+  test('la vie ne s\'écoule que pendant une activité, les Échos continuent', () => {
+    const s = newGame(0, 1);
+    const rt = newRuntime();
+    rt.online = false;
+    startLife(s);
+    expect(s.life!.act).toBe('cultiver'); // la vie démarre seule
+    let now = 0;
+    while (s.life) { now += 100; tick(s, rt, 0.1, now); }
+    confirmSuccession(s, 0, [s.succession!.newEcho.id]);
+    expect(s.echoes[0].acts.includes(-1)).toBe(false);
+    setActivity(s, null);
+    expect(isPaused(s)).toBe(true);
+    const t0 = s.life!.t, v0 = s.res.vivres;
+    for (let i = 0; i < 300; i++) { now += 100; tick(s, rt, 0.1, now); }
+    expect(s.life!.t).toBe(t0); // sablier figé
+    expect(s.life!.rec.length).toBe(0); // rien n'est enregistré
+    expect(s.res.vivres).toBeGreaterThan(v0); // l'Écho produit toujours
+    s.life!.lastAct = 'chasser';
+    resumeLife(s);
+    expect(s.life!.act).toBe('chasser');
+  });
+
+  test('l\'héritier commence par l\'activité de sa vocation', () => {
+    const s = newGame(0, 2);
+    s.hero.vocation = { act: 'chasser', tier: 2 };
+    startLife(s);
+    expect(s.life!.act).toBe('chasser');
+    s.hero.vocation = { act: 'mediter', tier: 1 }; // pas encore débloquée
+    startLife(s);
+    expect(s.life!.act).toBe('cultiver');
+  });
+
+  test('une vie en pause sauvegardée repart au chargement', () => {
+    const s = newGame(0, 4);
+    startLife(s);
+    setActivity(s, 'chasser');
+    setActivity(s, null);
+    const back = importSave(exportSave(s))!;
+    resumeLife(back);
+    expect(back.life!.act).toBe('chasser');
   });
 
   test('sauvegarde export/import', () => {

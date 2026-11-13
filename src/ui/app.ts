@@ -7,7 +7,7 @@ import { ECO_EQ, ecoFactor, ecoHealth, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford,
-  confirmSuccession, echoPower, echoPowerMult, echoSlots, lifeDuration, prodMult, setActivity,
+  confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -60,6 +60,7 @@ export class App {
   dailyAcc = 0;
   dailyBinder = new Binder();
   echoSel: Set<number> | null = null;
+  hadSuccession = false;
 
   constructor(s: GameState, rt: Runtime, hooks: AppHooks) {
     this.s = s;
@@ -112,7 +113,16 @@ export class App {
       const a = ACTS[n - 1];
       if (this.daily && !this.daily.done && this.dailyModal) this.daily.setAct(a);
       else if (this.s.life && this.s.unlocked.includes(a)) setActivity(this.s, a);
+    } else if (e.key === ' ' && !this.daily && this.s.life && !document.querySelector('.modal-back')) {
+      e.preventDefault();
+      this.togglePause();
     }
+  }
+
+  togglePause() {
+    const s = this.s;
+    if (!s.life) return;
+    if (isPaused(s)) resumeLife(s); else setActivity(s, null);
   }
 
   // =========================================================================
@@ -123,7 +133,10 @@ export class App {
       const n = this.rt.notices.shift()!;
       toast(n.text, n.kind === 'event' ? 'event' : 'good', 4000);
     }
-    if (this.s.succession && !this.successionModal) this.openSuccession();
+    // Succession non bloquante : on prévient, le joueur s'en occupe quand il veut.
+    const pending = !!this.s.succession;
+    if (pending && !this.hadSuccession) toast(`🕯️ ${this.s.succession!.ancestor.name} s'est éteint. Une succession t'attend.`, 'info', 5000);
+    this.hadSuccession = pending;
     if (now - this.lastHist > 2000) {
       this.lastHist = now;
       this.ecoHist.push({ ...this.s.eco });
@@ -172,9 +185,15 @@ export class App {
         evPill.style.setProperty('--c', ev.def.color);
       }
     });
+    const lifePill = h('button', { class: 'event-pill life-pill', onclick: () => { if (s.succession) this.openSuccession(); else resumeLife(s); } });
+    b.add(() => {
+      const t = s.succession ? '🕯️ Succession en attente' : isPaused(s) ? '▶ Reprendre la vie' : '';
+      lifePill.hidden = !t;
+      if (lifePill.textContent !== t) lifePill.textContent = t;
+    });
     const gear = h('button', { class: 'icon-btn', 'aria-label': 'Paramètres', onclick: () => this.openSettings() }, '⚙️');
     this.elTop.replaceChildren(
-      h('div', { class: 'top-row' }, brand, evPill, h('div', { class: 'top-meta' }, legacy, eclats, gear)),
+      h('div', { class: 'top-row' }, brand, evPill, lifePill, h('div', { class: 'top-meta' }, legacy, eclats, gear)),
       h('div', { class: 'res-row' }, chips),
     );
   }
@@ -197,7 +216,7 @@ export class App {
   badge(t: Tab): boolean {
     const s = this.s;
     switch (t) {
-      case 'vie': return !!s.life && !s.life.act;
+      case 'vie': return isPaused(s) || !!s.succession;
       case 'echos': return false;
       case 'domaine': return BUILDINGS.some((b) => this.buildingVisible(b.id) && !(b.max !== undefined && (s.buildings[b.id] ?? 0) >= b.max) && canAfford(s, buildingCost(b.id, s.buildings[b.id] ?? 0)));
       case 'lignee': return LEGACY.some((l) => !(l.max !== undefined && (s.upgrades[l.id] ?? 0) >= l.max) && s.legacy >= legacyCost(l, s.upgrades[l.id] ?? 0));
@@ -213,13 +232,14 @@ export class App {
   // Panneau Vie
   sigLifeNow() {
     const s = this.s;
-    return [!!s.life, s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length].join('|');
+    return [!!s.life, isPaused(s), s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length].join('|');
   }
 
   hint(): { id: string; text: string } | null {
     const s = this.s, f = s.flags;
     const list: [string, boolean, string][] = [
-      ['start', s.hero.gen === 1 && !!s.life && !s.life.act, 'Bienvenue, fondateur ! Choisis une activité : ton héros ne vit que quelques dizaines de secondes. Spécialise-le pour qu\'il progresse vite.'],
+      ['start', s.hero.gen === 1 && !!s.life, 'Bienvenue, fondateur ! Ton héros cultive déjà ses terres. Change d\'activité quand tu veux, ou recliques-y pour mettre sa vie en pause : son temps ne s\'écoule que lorsqu\'il agit.'],
+      ['pause', s.hero.gen <= 3 && isPaused(s), 'Vie en pause : ton héros attend, mais tes Échos continuent de produire et le Domaine se repose. Prends le temps de bâtir !'],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, 'Ton ancêtre est devenu un Écho : il rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !'],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent héros ET Échos.'],
@@ -247,7 +267,7 @@ export class App {
       parts.push(h('div', { class: 'card death-card' },
         h('div', { class: 'big-i' }, '🕯️'),
         h('h3', null, `La vie de ${s.hero.name} s'achève.`),
-        h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Choisis qui reprendra le flambeau.'),
+        h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu seras prêt.'),
         h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir l\'héritier')));
       this.elLife.replaceChildren(...parts);
       return;
@@ -256,15 +276,20 @@ export class App {
     // Chronomètre
     const bar = b.width(h('div', { class: 'bar-fill' }), () => life.t / life.dur);
     b.cls(bar, 'late', () => life.t / life.dur > 0.8);
+    const paused = isPaused(s);
     const tempsBtn = !life.extended && s.eclats >= SHOP.temps.cost
-      ? h('button', { class: 'btn btn-sm btn-ghost', onclick: () => { if (buyTemps(s)) { toast('⏸️ +30 s de vie', 'good'); this.sigLife = ''; } } }, `⏸️ +30 s (${SHOP.temps.cost} ✦)`) : null;
-    parts.push(h('div', { class: 'card timer' },
+      ? h('button', { class: 'btn btn-sm btn-ghost', onclick: () => { if (buyTemps(s)) { toast('⌛ +30 s de vie', 'good'); this.sigLife = ''; } } }, `⌛ +30 s (${SHOP.temps.cost} ✦)`) : null;
+    const pauseBtn = paused
+      ? h('button', { class: 'btn btn-primary btn-resume', onclick: () => resumeLife(s) }, `▶ Reprendre${this.desktop ? ' (Espace)' : ''}`)
+      : h('button', { class: 'btn btn-sm btn-ghost', onclick: () => setActivity(s, null) }, `⏸️ Pause${this.desktop ? ' (Espace)' : ''}`);
+    parts.push(h('div', { class: `card timer ${paused ? 'paused' : ''}` },
+      paused ? h('div', { class: 'pause-banner' }, h('strong', null, '⏸️ Vie en pause'), h('span', { class: 'muted small' }, ' · le sablier est figé, tes Échos continuent · 🌿 le Domaine se repose')) : null,
       h('div', { class: 'row-between' },
         h('div', null, h('div', { class: 'label' }, 'Âge'), b.text(h('div', { class: 'timer-v' }), () => `${Math.floor(life.t)} / ${Math.round(life.dur)} ans`)),
         h('div', { class: 'right' }, h('div', { class: 'label' }, 'Temps restant'), b.text(h('div', { class: 'timer-v' }), () => fmtDur(life.dur - life.t)))),
       h('div', { class: 'bar' }, bar),
       this.recStrip(b),
-      tempsBtn ? h('div', { class: 'row-end' }, tempsBtn) : null,
+      h('div', { class: 'row-end' }, tempsBtn, pauseBtn),
     ));
 
     // Activités
@@ -634,7 +659,7 @@ export class App {
         h('div', { class: 'row-end sticky-bottom' }, ok)].filter((x): x is HTMLElement => !!x));
     };
     render();
-    this.successionModal = modal(content, { dismissable: false, wide: true });
+    this.successionModal = modal(content, { wide: true, onClose: () => { this.successionModal = null; } });
   }
 
   showOffline(r: OfflineReport) {
