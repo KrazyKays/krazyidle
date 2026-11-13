@@ -32,7 +32,7 @@ export const ACT: Record<ActId, ActDef> = {
   },
   chasser: {
     id: 'chasser', name: 'Chasser', icon: '🏹', color: '#d84315',
-    desc: 'Rendement élevé selon le Gibier disponible… mais le prélève.',
+    desc: 'Rendement selon le Gibier et sa vigueur : les Prédateurs gardent les hardes saines. Trophées d\'Or s\'ils pullulent.',
     vocation: 'Chasseur', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
   },
   commercer: {
@@ -146,7 +146,7 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
   { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5, savoir: 20 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
   { id: 'clepsydre', name: 'Clepsydre', icon: '⌛', desc: 'Durée de vie +4 s / niv.', cost: { savoir: 40, essence: 8 }, growth: 2.4, max: 15, effect: (l) => `Vie +${l * 4} s` },
-  { id: 'garde', name: 'Garde forestier', icon: '🌲', desc: 'Impact écologique −7% / niv.', cost: { or: 60, vivres: 100 }, growth: 2.0, max: 10, effect: (l) => `Impact −${l * 7}%` },
+  { id: 'garde', name: 'Garde forestier', icon: '🌲', desc: 'Le Domaine se régénère vers l\'équilibre (+0,4 %/s / niv.)', cost: { or: 60, vivres: 100 }, growth: 2.0, max: 10, effect: (l) => `Régénération ${(l * 0.4).toFixed(1).replace('.', ',')} %/s` },
 ];
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 export const BUILDING_FOR_ACT: Record<ActId, string> = {

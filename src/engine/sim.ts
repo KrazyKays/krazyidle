@@ -1,6 +1,6 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
 import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActId, type Mods, type ResId } from './data';
-import { ecoFactor, ecoImpact, type Eco } from './ecosystem';
+import { TROPHY_OR, ecoFactor, ecoImpact, ecoPressure, trophyFactor, type Eco, type EcoRules } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
 export interface SimCtx {
@@ -8,6 +8,8 @@ export interface SimCtx {
   eco: Eco;
   prodMult: (a: ActId) => number;
   ecoImpactMult: number;
+  /** Règles de l'écosystème (2 par défaut). */
+  ecoRules?: EcoRules;
   onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
 }
 
@@ -28,13 +30,22 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
     const need = def.consume[r as ResId]! * consumeScale * dt * frac;
     ctx.res[r as ResId] = Math.max(0, ctx.res[r as ResId] - need);
   }
-  const mult = ctx.prodMult(act) * ecoFactor(act, ctx.eco) * power * frac * dt;
+  const rules = ctx.ecoRules ?? 2;
+  const base = ctx.prodMult(act) * power * frac * dt;
+  const mult = base * ecoFactor(act, ctx.eco, rules);
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;
     ctx.onProduce?.(r as ResId, amt, fromLife, act);
   }
-  ecoImpact(ctx.eco, act, ecoStrength * frac * ctx.ecoImpactMult, dt);
+  if (act === 'chasser' && rules === 2) {
+    const tro = TROPHY_OR * trophyFactor(ctx.eco) * base;
+    if (tro > 0) {
+      ctx.res.or += tro;
+      ctx.onProduce?.('or', tro, fromLife, act);
+    }
+  }
+  ecoImpact(ctx.eco, act, ecoStrength * ecoPressure(power, rules) * frac * ctx.ecoImpactMult, dt, rules);
   return frac;
 }
 

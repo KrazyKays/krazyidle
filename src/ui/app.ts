@@ -1,12 +1,12 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CRESTS, CREST_COLORS, HOUSE_NAMES, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, HOUSE_NAMES, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
-import { ECO_EQ, ecoFactor, ecoHealth, harmonyMult } from '../engine/ecosystem';
+import { ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford,
+  BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
   VOCATION_SHARE, confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -15,8 +15,12 @@ import { heroActMult, lifePower } from '../engine/sim';
 import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
+import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
 
 type Tab = 'vie' | 'echos' | 'domaine' | 'lignee' | 'destin';
+/** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
+type Layout = 'mobile' | 'two' | 'three';
+const ANCESTORS_SHOWN = 5;
 const TABS: { id: Tab; icon: string; name: string }[] = [
   { id: 'vie', icon: '⏳', name: 'Vie' },
   { id: 'echos', icon: '🌀', name: 'Échos' },
@@ -44,10 +48,16 @@ export class App {
   hooks: AppHooks;
   tab: Tab = 'vie';
   desktop = false;
+  layout: Layout = 'mobile';
   bTop = new Binder();
   bLife = new Binder();
   bTab = new Binder();
   bNav = new Binder();
+  bEcho = new Binder();
+  sigEcho = '';
+  elEcho!: HTMLElement;
+  elTabCol!: HTMLElement;
+  elMain!: HTMLElement;
   sigTop = '';
   sigLife = '';
   sigTab = '';
@@ -77,29 +87,48 @@ export class App {
     this.elTop = h('header', { class: 'topbar' });
     this.elLife = h('section', { class: 'panel panel-life', id: 'panel-life' });
     this.elTab = h('section', { class: 'panel panel-tab', id: 'panel-tab' });
+    this.elEcho = h('section', { class: 'panel panel-echoes', id: 'panel-echoes', 'aria-label': 'Échos' });
     this.elNav = h('nav', { class: 'tabbar', 'aria-label': 'Navigation' });
-    root.append(this.elTop, h('main', { class: 'layout' }, this.elLife, this.elTab), this.elNav);
-    const mq = window.matchMedia('(min-width: 900px)');
+    // Sur ordinateur, les onglets sont accrochés à la colonne qu'ils pilotent.
+    this.elTabCol = h('div', { class: 'tab-col' }, this.elTab);
+    this.elMain = h('main', { class: 'layout' }, this.elLife, this.elEcho, this.elTabCol);
+    root.append(this.elTop, this.elMain, this.elNav);
+    const mq2 = window.matchMedia('(min-width: 900px)');
+    const mq3 = window.matchMedia('(min-width: 1280px)');
     const apply = () => {
-      this.desktop = mq.matches;
-      if (this.desktop && this.tab === 'vie') this.tab = 'echos';
+      this.layout = mq3.matches ? 'three' : mq2.matches ? 'two' : 'mobile';
+      this.desktop = this.layout !== 'mobile';
+      this.tab = this.normTab(this.tab);
+      if (this.desktop) this.elTabCol.prepend(this.elNav); else root.append(this.elNav);
+      this.elMain.dataset.layout = this.layout;
       this.renderNav();
       this.sigTab = '';
+      this.sigLife = '';
+      this.sigEcho = '';
       this.applyTabVisibility();
     };
-    mq.addEventListener('change', apply);
+    mq2.addEventListener('change', apply);
+    mq3.addEventListener('change', apply);
     apply();
     document.body.classList.toggle('reduced-motion', this.s.settings.reducedMotion);
     window.addEventListener('keydown', (e) => this.onKey(e));
   }
 
+  /** Onglets proposés : sur ordinateur la Vie est toujours visible, et les Échos aussi en 3 colonnes. */
+  tabsShown(): typeof TABS {
+    return TABS.filter((t) => !(this.desktop && t.id === 'vie') && !(this.layout === 'three' && t.id === 'echos'));
+  }
+
+  normTab(t: Tab): Tab {
+    return this.tabsShown().some((x) => x.id === t) ? t : this.layout === 'three' ? 'domaine' : this.desktop ? 'echos' : t;
+  }
+
   setTab(t: Tab) {
-    if (this.desktop && t === 'vie') t = 'echos';
-    this.tab = t;
+    this.tab = this.normTab(t);
     this.renderNav();
     this.applyTabVisibility();
     this.sigTab = '';
-    window.scrollTo({ top: 0 });
+    if (this.desktop) this.elTab.scrollTop = 0; else window.scrollTo({ top: 0 });
   }
 
   applyTabVisibility() {
@@ -107,6 +136,7 @@ export class App {
     const showTab = this.desktop || this.tab !== 'vie';
     this.elLife.hidden = !showLife;
     this.elTab.hidden = !showTab;
+    this.elEcho.hidden = this.layout !== 'three';
   }
 
   onKey(e: KeyboardEvent) {
@@ -155,19 +185,24 @@ export class App {
     this.bNav.run();
     if (!this.elLife.hidden) this.bLife.run();
     if (!this.elTab.hidden) this.bTab.run();
+    if (!this.elEcho.hidden) {
+      const se = this.sigEchoNow();
+      if (se !== this.sigEcho) { this.sigEcho = se; this.bEcho.reset(); this.elEcho.replaceChildren(this.panelEchoes(this.bEcho)); }
+      this.bEcho.run();
+    }
     if (this.dailyModal) this.dailyBinder.run();
   }
 
   // =========================================================================
   // Barre du haut
   sigTopNow() {
-    return RES.filter((r) => this.s.totalEver[r] > 0 || r === 'vivres').join() + '|' + this.s.lineage.crest + this.s.lineage.color + this.s.lineage.name;
+    return RES.filter((r) => this.s.totalEver[r] > 0 || r === 'vivres').join() + '|' + this.lineageSig();
   }
 
   renderTop() {
     const s = this.s, b = this.bTop;
     b.reset();
-    const crest = h('div', { class: 'crest', style: { background: s.lineage.color } }, s.lineage.crest);
+    const crest = this.crestEl('crest');
     const genEl = b.text(h('span'), () => `Génération ${s.hero.gen}`);
     const brand = h('button', { class: 'brand', onclick: () => this.setTab('lignee'), 'aria-label': 'Lignée' }, crest, h('div', null, h('div', { class: 'brand-name' }, `Maison ${s.lineage.name}`), h('div', { class: 'brand-sub' }, genEl)));
     const chips = RES.filter((r) => s.totalEver[r] > 0 || r === 'vivres').map((r) => {
@@ -204,7 +239,7 @@ export class App {
   renderNav() {
     const b = this.bNav;
     b.reset();
-    const tabs = TABS.filter((t) => !(this.desktop && t.id === 'vie'));
+    const tabs = this.tabsShown();
     this.elNav.replaceChildren(
       ...tabs.map((t) => {
         const dot = h('span', { class: 'dot' });
@@ -260,12 +295,15 @@ export class App {
     b.reset();
     const parts: HTMLElement[] = [];
     const hint = this.hint();
+    let notice: HTMLElement | null = null;
     if (hint) {
-      parts.push(h('div', { class: 'hint' }, h('span', { class: 'hint-i' }, '💡'), h('p', null, hint.text),
-        h('button', { class: 'hint-x', 'aria-label': 'Compris', onclick: () => { s.flags['hint_' + hint.id] = true; this.sigLife = ''; } }, 'OK')));
+      notice = h('div', { class: 'hint' }, h('span', { class: 'hint-i' }, '💡'), h('p', null, hint.text),
+        h('button', { class: 'hint-x', 'aria-label': 'Compris', onclick: () => { s.flags['hint_' + hint.id] = true; this.sigLife = ''; } }, 'OK'));
     } else if (this.installOffer()) {
-      parts.push(this.installCard());
+      notice = this.installCard();
     }
+    // Sur téléphone l'astuce passe en tête ; sur ordinateur elle ne repousse pas le héros et va en bas de colonne.
+    if (notice && !this.desktop) parts.push(notice);
     parts.push(this.heroCard(s.hero, true));
 
     if (!s.life) {
@@ -274,6 +312,7 @@ export class App {
         h('h3', null, `La vie de ${s.hero.name} s'achève.`),
         h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu seras prêt.'),
         h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir l\'héritier')));
+      if (notice && this.desktop) parts.push(notice);
       this.elLife.replaceChildren(...parts);
       return;
     }
@@ -302,6 +341,7 @@ export class App {
     const grid = h('div', { class: 'acts' });
     ACTS.forEach((a, i) => grid.appendChild(this.actCard(a, i, b)));
     parts.push(h('h3', { class: 'section-t' }, 'Activités', h('span', { class: 'muted small' }, this.desktop ? ' — touches 1 à 5' : '')), grid);
+    if (notice && this.desktop) parts.push(notice);
     this.elLife.replaceChildren(...parts);
   }
 
@@ -309,7 +349,7 @@ export class App {
     const s = this.s;
     const voc = hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${ACT[hero.vocation.act].vocation} ${roman(hero.vocation.tier)}`) : null;
     return h('div', { class: 'card hero-card' },
-      h('div', { class: 'avatar', style: { background: s.lineage.color } }, s.lineage.crest, h('span', { class: 'avatar-gen' }, roman(hero.gen))),
+      h('div', { class: 'avatar' }, this.crestEl('avatar-shield'), h('span', { class: 'avatar-gen' }, roman(hero.gen))),
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
@@ -428,7 +468,7 @@ export class App {
     const lvl = b.text(h('span', { class: 'lvl' }), () => `Niv. ${s.life?.lvl[a] ?? 0}`);
     const xp = b.width(h('div', { class: 'bar-fill', style: { background: def.color } }), () => (s.life ? s.life.xp[a] / xpToNext(s.life.lvl[a]) : 0));
     const rate = b.text(h('div', { class: 'act-rate' }), () => this.actPreview(a));
-    const btn = h('button', { class: 'act', style: { '--c': def.color }, onclick: () => { setActivity(s, s.life?.act === a ? null : a); } },
+    const btn = h('button', { class: 'act', title: this.desktop ? def.desc : undefined, style: { '--c': def.color }, onclick: () => { setActivity(s, s.life?.act === a ? null : a); } },
       h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(idx + 1))),
       h('div', { class: 'act-body' },
         h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl),
@@ -447,6 +487,8 @@ export class App {
     const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
+    const tro = a === 'chasser' ? TROPHY_OR * trophyFactor(s.eco) * prodMult(s, this.rt, a) * p : 0;
+    if (tro > 0.005) out.push(`+${fmt(tro)} ${RES_INFO.or.icon}/s`);
     for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
     return out.join('  ');
   }
@@ -459,20 +501,25 @@ export class App {
       case 'vie':
       case 'echos': return 'E' + s.echoes.map((e) => e.id + (e.pinned ? 'p' : '')).join() + '|' + echoSlots(s);
       case 'domaine': return 'D' + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
-      case 'lignee': return 'L' + JSON.stringify(s.upgrades) + s.ancestors.length + s.lineage.name + s.lineage.crest + s.lineage.color;
+      case 'lignee': return 'L' + JSON.stringify(s.upgrades) + s.ancestors.length + this.lineageSig();
       case 'destin': {
         const ev = this.rt.event;
-        return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(s.daily[utcDateStr(Date.now())] ?? null) + s.blessings.join() + Math.floor(Date.now() / 60000);
+        return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(s.daily[utcDateStr(Date.now())] ?? null) + s.blessings.join() + s.partitions.join() + this.lineageSig() + Math.floor(Date.now() / 60000);
       }
     }
   }
 
+  sigEchoNow(): string {
+    const s = this.s;
+    return 'E' + s.echoes.map((e) => e.id + (e.pinned ? 'p' : '')).join() + '|' + echoSlots(s);
+  }
+
   renderTabPanel() {
     this.bTab.reset();
-    const t = this.desktop && this.tab === 'vie' ? 'echos' : this.tab;
+    const t = this.normTab(this.tab);
     let el: HTMLElement;
     switch (t) {
-      case 'echos': el = this.panelEchoes(); break;
+      case 'echos': el = this.panelEchoes(this.bTab); break;
       case 'domaine': el = this.panelDomaine(); break;
       case 'lignee': el = this.panelLignee(); break;
       case 'destin': el = this.panelDestin(); break;
@@ -482,8 +529,8 @@ export class App {
   }
 
   // --- Échos ----------------------------------------------------------------
-  panelEchoes() {
-    const s = this.s, b = this.bTab;
+  panelEchoes(b: Binder) {
+    const s = this.s;
     const head = h('div', { class: 'card panel-head' },
       h('h2', null, '🌀 Échos ancestraux'),
       h('p', { class: 'muted' }, 'Chaque ancêtre rejoue sa vie en boucle. Leur production profite de tous tes bonus actuels.'),
@@ -494,11 +541,11 @@ export class App {
     if (!s.echoes.length) {
       return h('div', null, head, h('div', { class: 'card empty' }, h('div', { class: 'big-i' }, '👻'), h('p', null, 'Aucun Écho pour l\'instant. Quand ton héros mourra, sa vie deviendra une boucle éternelle.')));
     }
-    const list = h('div', { class: 'echo-list' }, s.echoes.map((e) => this.echoCard(e, b)));
+    const list = h('div', { class: 'echo-list' }, s.echoes.map((e) => this.echoCard(e, b, () => { this.sigTab = ''; this.sigEcho = ''; })));
     return h('div', null, head, list);
   }
 
-  echoCard(e: Echo, b: Binder) {
+  echoCard(e: Echo, b: Binder, refresh: () => void) {
     const s = this.s;
     const head = h('div', { class: 'act-head' },
       h('span', { class: 'echo-name' }, `${e.name} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
@@ -520,8 +567,8 @@ export class App {
         doing,
         h('span', { class: 'muted' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s`),
         h('span', { class: 'row' },
-          h('button', { class: 'icon-btn sm', title: e.pinned ? 'Désépingler' : 'Épingler (protégé lors des successions)', onclick: () => { e.pinned = !e.pinned; this.sigTab = ''; } }, e.pinned ? '📌' : '📍'),
-          h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); this.sigTab = ''; } } }, '🗑️'))));
+          h('button', { class: 'icon-btn sm', title: e.pinned ? 'Désépingler' : 'Épingler (protégé lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '📌' : '📍'),
+          h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
   }
 
   // --- Domaine --------------------------------------------------------------
@@ -551,11 +598,24 @@ export class App {
     });
     const health = b.text(h('span'), () => `${Math.round(ecoHealth(s.eco) * 100)}%`);
     const harm = b.text(h('span'), () => `×${harmonyMult(s.eco).toFixed(2)}`);
+    const vigor = b.text(h('span'), () => `×${gameVigor(s.eco).toFixed(2)}`);
+    // Trophées exprimés en part du butin de chasse (Or valorisé ×2 face aux Vivres).
+    const trophy = b.text(h('span'), () => {
+      const pct = Math.round((TROPHY_OR * trophyFactor(s.eco) * RES_INFO.or.value) / (ACT.chasser.produce.vivres! * RES_INFO.vivres.value) * 100);
+      return pct >= 1 ? `+${pct} % du butin en 🪙` : 'aucun';
+    });
+    const regen = ecoRegenRate(s);
     const harmCard = h('div', { class: 'card' },
       h('h2', null, '🌳 Écosystème du Domaine'),
-      h('p', { class: 'muted' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre. Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Tes Échos aussi influencent le Domaine !'),
+      h('p', { class: 'muted' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre. Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes héros et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
       h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
-      bars, canvas);
+      bars,
+      h('div', { class: 'stats' },
+        stat('Vigueur du Gibier', vigor),
+        stat('Trophées', trophy),
+        regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
+      h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
+      canvas);
     const builds = h('div', { class: 'grid-cards' }, BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((d) => {
       const lvl = s.buildings[d.id] ?? 0;
       const maxed = d.max !== undefined && lvl >= d.max;
@@ -579,7 +639,7 @@ export class App {
   panelLignee() {
     const s = this.s, b = this.bTab;
     const head = h('div', { class: 'card panel-head' },
-      h('div', { class: 'row' }, h('div', { class: 'crest crest-lg', style: { background: s.lineage.color } }, s.lineage.crest),
+      h('div', { class: 'row' }, this.crestEl('crest crest-lg'),
         h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`))),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
@@ -597,16 +657,31 @@ export class App {
         h('div', { class: 'row-end' }, btn));
     }));
     const anc = [...s.ancestors].reverse();
-    const tree = h('div', { class: 'tree' }, anc.slice(0, 60).map((a) => h('div', { class: 'tree-node' },
+    const tree = this.ancestorTree(anc.slice(0, ANCESTORS_SHOWN));
+    const more = anc.length > ANCESTORS_SHOWN
+      ? h('button', { class: 'btn btn-sm btn-ghost tree-more', onclick: () => this.openGenealogy() }, `📜 Voir toute la généalogie (${anc.length} ancêtres)`)
+      : null;
+    return h('div', null, head, h('h3', { class: 'section-t' }, 'Arbre de Lignée'), ups,
+      h('h3', { class: 'section-t' }, 'Généalogie'),
+      anc.length ? h('div', null, tree, more) : h('p', { class: 'card muted' }, 'Les ancêtres apparaîtront ici.'));
+  }
+
+  openGenealogy() {
+    const anc = [...this.s.ancestors].reverse();
+    modal(h('div', null,
+      h('h2', null, `📜 Généalogie de la Maison ${this.s.lineage.name}`),
+      h('p', { class: 'muted small' }, `${anc.length} ancêtres, du plus récent au fondateur${anc.length > 200 ? ' (les 200 derniers)' : ''}.`),
+      this.ancestorTree(anc.slice(0, 200))), { wide: true });
+  }
+
+  ancestorTree(anc: GameState['ancestors']) {
+    return h('div', { class: 'tree' }, anc.map((a) => h('div', { class: 'tree-node' },
       h('div', { class: 'tree-gen' }, roman(a.gen)),
       h('div', { class: 'tree-body' },
         h('div', { class: 'row-between' }, h('strong', null, a.name), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
         h('div', { class: 'row-wrap small' },
           a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${ACT[a.vocation.act].vocation} ${roman(a.vocation.tier)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
           this.traitChips(a.traits, true))))));
-    return h('div', null, head, h('h3', { class: 'section-t' }, 'Arbre de Lignée'), ups,
-      h('h3', { class: 'section-t' }, 'Généalogie'),
-      anc.length ? tree : h('p', { class: 'card muted' }, 'Les ancêtres apparaîtront ici.'));
   }
 
   // --- Destin (événements, défi du jour, bazar) -----------------------------
@@ -668,6 +743,20 @@ export class App {
         const btn = h('button', { class: 'shop-item', style: { '--c': RARITY[t.rarity].color }, onclick: () => { if (buyBlessing(s, t.id)) { toast(`${t.icon} Bénédiction « ${t.name} » réservée`, 'good'); this.sigTab = ''; } else toast('Impossible : Éclats insuffisants, déjà choisie ou 2 bénédictions max.', 'bad'); } },
           h('span', { class: 'shop-i' }, t.icon), h('span', { class: 'shop-n' }, t.name), h('span', { class: 'muted small' }, t.desc), h('span', { class: 'shop-c' }, `${c} ✦`));
         b.cls(btn, 'off', () => s.eclats < c || s.blessings.includes(t.id) || s.blessings.length >= 2);
+        return btn;
+      })),
+      h('h3', { class: 'section-t' }, 'Héraldique'),
+      h('p', { class: 'muted small' }, `Divise l'écu de ta maison : ${SHOP.partition.cost} ✦ la partition, puis libre de changer quand tu veux.`),
+      h('div', { class: 'shop shop-parts' }, PARTITIONS.filter((p) => p.id !== 'plein').map((p) => {
+        const owned = s.partitions.includes(p.id);
+        const art = h('span', { class: 'shop-shield', style: { '--c': s.lineage.color } });
+        art.innerHTML = shieldSvg(s.lineage.crest, p.id, { border: false });
+        const btn = h('button', { class: `shop-item ${owned ? 'owned' : ''}`, onclick: () => {
+          if (owned) { s.lineage.partition = p.id; this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; toast(`🛡️ Écu ${p.name.toLowerCase()}`, 'good'); return; }
+          if (buyPartition(s, p.id)) { toast(`🛡️ Partition « ${p.name} » débloquée et appliquée`, 'good'); this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; }
+          else toast(`Éclats insuffisants (${SHOP.partition.cost} ✦)`, 'bad');
+        } }, art, h('span', { class: 'shop-n' }, p.name), h('span', { class: 'shop-c' }, owned ? (s.lineage.partition === p.id ? '✔ portée' : 'Porter') : `${SHOP.partition.cost} ✦`));
+        if (!owned) b.cls(btn, 'off', () => s.eclats < SHOP.partition.cost);
         return btn;
       }))));
     return h('div', null, parts);
@@ -792,20 +881,20 @@ export class App {
       const upd = () => {
         banner.textContent = `Maison ${houseName()}`;
         shield.style.setProperty('--c', color);
-        shield.querySelector('.shield-emblem')!.textContent = crest;
+        shield.innerHTML = shieldSvg(crest, 'plein');
         shield.classList.remove('pop');
         void shield.offsetWidth;
         shield.classList.add('pop');
-        crestRow.querySelectorAll('.pick').forEach((x) => x.classList.toggle('on', x.textContent === crest));
+        crestRow.querySelectorAll('.pick').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.k === crest));
         colorRow.querySelectorAll('.pick').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.c === color));
       };
       input.addEventListener('input', () => { banner.textContent = `Maison ${houseName()}`; });
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') found(); });
       const dice = h('button', { class: 'btn intro-dice', 'aria-label': 'Nom au hasard', title: 'Nom au hasard', onclick: () => { suggestion = pickName(input.value.trim() || suggestion); input.value = ''; input.placeholder = suggestion; banner.textContent = `Maison ${suggestion}`; } }, '🎲');
-      const crestRow = h('div', { class: 'pick-row intro-picks' }, CRESTS.map((c) => h('button', { class: 'pick', 'aria-label': `Emblème ${c}`, onclick: () => { crest = c; upd(); } }, c)));
+      const crestRow = h('div', { class: 'pick-row intro-picks' }, CHARGE_IDS.map((c) => this.chargePick(c, () => { crest = c; upd(); })));
       const colorRow = h('div', { class: 'pick-row intro-picks' }, CREST_COLORS.map((c) => h('button', { class: 'pick pick-color', 'data-c': c, style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; upd(); } })));
       const found = () => {
-        s.lineage = { name: houseName(), crest, color };
+        s.lineage = { name: houseName(), crest, color, partition: 'plein' };
         this.sigTop = '';
         firstOfName();
       };
@@ -823,7 +912,7 @@ export class App {
     // --- 3. Le premier du nom -------------------------------------------------
     const firstOfName = () => {
       const t = TRAIT[s.hero.traits[0]];
-      const shield = this.shieldEl(s.lineage.crest, s.lineage.color, 'intro-shield intro-shield-sm');
+      const shield = this.shieldEl(s.lineage.crest, s.lineage.color, 'intro-shield intro-shield-sm', s.lineage.partition);
       show(h('div', { class: 'intro-s3' },
         h('div', { class: 'intro-sand', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('span', { style: { left: `${46 + ((i * 13) % 9)}%`, animationDelay: `${(i * 0.17).toFixed(2)}s` } }))),
         shield,
@@ -840,15 +929,30 @@ export class App {
     };
   }
 
-  /** Écu héraldique (SVG) teinté de la couleur de la maison, emblème au centre. */
-  shieldEl(crest: string, color: string, cls = '') {
+  /** Écu héraldique (SVG) teinté de la couleur de la maison, meuble d'or au centre. */
+  shieldEl(crest: string, color: string, cls = '', partition = 'plein') {
     const el = h('div', { class: `shield ${cls}`, style: { '--c': color } });
-    el.innerHTML = '<svg viewBox="0 0 120 140" aria-hidden="true"><defs><linearGradient id="shine" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>'
-      + '<path class="shield-body" d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z"/>'
-      + '<path d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z" fill="url(#shine)"/>'
-      + '<path d="M60 13 L103 24 V64 C103 96 83 115 60 126 C37 115 17 96 17 64 V24 Z" fill="none" stroke="rgba(255,231,166,.55)" stroke-width="1.5"/>'
-      + '<path d="M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z" fill="none" stroke="#f2c45a" stroke-width="4"/></svg>';
-    el.appendChild(h('span', { class: 'shield-emblem' }, crest));
+    el.innerHTML = shieldSvg(crest, partition);
+    return el;
+  }
+
+  /** Petit écu de la maison (barre du haut, avatar, Lignée). */
+  crestEl(cls: string) {
+    const l = this.s.lineage;
+    const el = h('div', { class: `crest-svg ${cls}`, style: { '--c': l.color }, title: `${chargeName(l.crest)} — Maison ${l.name}` });
+    el.innerHTML = shieldSvg(l.crest, l.partition ?? 'plein', { border: false });
+    return el;
+  }
+
+  lineageSig() {
+    const l = this.s.lineage;
+    return [l.name, l.crest, l.color, l.partition].join('|');
+  }
+
+  /** Pastille de choix d'un meuble. */
+  chargePick(c: string, onclick: () => void) {
+    const el = h('button', { class: 'pick pick-charge', 'data-k': c, 'aria-label': `Emblème : ${chargeName(c)}`, title: chargeName(c), onclick });
+    el.innerHTML = chargeSvg(c);
     return el;
   }
 
@@ -861,23 +965,65 @@ export class App {
 
   openCrest() {
     const s = this.s;
-    const free = !s.flags.crestChanged;
-    const m = modal(h('div', null,
-      h('h2', null, '🛡️ Blason de la maison'),
-      h('p', { class: 'muted small' }, free ? 'Le premier changement est gratuit.' : `Coût : ${SHOP.crest.cost} ✦ (tu en as ${fmt(s.eclats, 0)})`),
-      h('div', { class: 'pick-row' }, CRESTS.flatMap((c) => CREST_COLORS.slice(0, 1).map(() => h('button', { class: 'pick', onclick: () => apply(c, s.lineage.color) }, c)))),
-      h('div', { class: 'pick-row' }, CREST_COLORS.map((c) => h('button', { class: 'pick pick-color', style: { background: c }, 'aria-label': 'Couleur', onclick: () => apply(s.lineage.crest, c) })))));
-    const apply = (crest: string, color: string) => {
-      if (!s.flags.crestChanged) s.flags.crestChanged = true;
-      else if (s.eclats >= SHOP.crest.cost) s.eclats -= SHOP.crest.cost;
-      else { toast('Éclats insuffisants', 'bad'); return; }
-      s.lineage.crest = crest;
-      s.lineage.color = color;
-      this.sigTop = '';
-      this.sigTab = '';
-      this.sigLife = '';
-      m.close();
+    let crest = s.lineage.crest, color = s.lineage.color, partition = s.lineage.partition ?? 'plein';
+    const content = h('div', { class: 'crest-modal' });
+    const m = modal(content);
+    const render = () => {
+      const free = !s.flags.crestChanged;
+      const changedArms = crest !== s.lineage.crest || color !== s.lineage.color;
+      const changed = changedArms || partition !== (s.lineage.partition ?? 'plein');
+      const cost = changedArms && !free ? SHOP.crest.cost : 0;
+      const preview = this.shieldEl(crest, color, 'crest-preview', partition);
+      const crestRow = h('div', { class: 'pick-row' }, CHARGE_IDS.map((c) => {
+        const b = this.chargePick(c, () => { crest = c; render(); });
+        b.classList.toggle('on', c === crest);
+        return b;
+      }));
+      const colorRow = h('div', { class: 'pick-row' }, CREST_COLORS.map((c) => h('button', {
+        class: `pick pick-color ${c === color ? 'on' : ''}`, style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; render(); },
+      })));
+      const partRow = h('div', { class: 'pick-row' }, PARTITIONS.map((p) => {
+        const owned = s.partitions.includes(p.id);
+        const el = h('button', {
+          class: `pick pick-part ${p.id === partition ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? p.name : `${p.name} — ${SHOP.partition.cost} ✦ au Bazar céleste`,
+          'aria-label': `Partition : ${p.name}`,
+          onclick: async () => {
+            if (owned) { partition = p.id; render(); return; }
+            if (s.eclats < SHOP.partition.cost) { toast(`${p.name} : ${SHOP.partition.cost} ✦ nécessaires (tu en as ${fmt(s.eclats, 0)}).`, 'bad'); return; }
+            if (await confirmBox(`Débloquer la partition « ${p.name} » pour ${SHOP.partition.cost} ✦ ?`, 'Débloquer')) {
+              if (buyPartition(s, p.id)) { partition = p.id; this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; toast(`🛡️ Partition « ${p.name} » débloquée`, 'good'); }
+              render();
+            }
+          },
+        });
+        el.innerHTML = shieldSvg('', p.id, { border: false, charge: false }) + (owned ? '' : '<span class="pick-lock">🔒</span>');
+        return el;
+      }));
+      const ok = h('button', { class: 'btn btn-primary', disabled: !changed || (cost > 0 && s.eclats < cost) || undefined, onclick: () => {
+        if (changedArms) {
+          if (!s.flags.crestChanged) s.flags.crestChanged = true;
+          else if (s.eclats >= SHOP.crest.cost) s.eclats -= SHOP.crest.cost;
+          else { toast('Éclats insuffisants', 'bad'); return; }
+        }
+        s.lineage.crest = crest;
+        s.lineage.color = color;
+        s.lineage.partition = partition;
+        this.sigTop = '';
+        this.sigTab = '';
+        this.sigLife = '';
+        m.close();
+      } }, cost ? `Appliquer (${cost} ✦)` : 'Appliquer');
+      content.replaceChildren(
+        h('h2', null, '🛡️ Blason de la maison'),
+        preview,
+        h('p', { class: 'muted small center' }, `${chargeName(crest)} · ${PARTITIONS.find((p) => p.id === partition)?.name ?? ''}`),
+        h('label', { class: 'label' }, 'Emblème'), crestRow,
+        h('label', { class: 'label' }, 'Couleur'), colorRow,
+        h('label', { class: 'label' }, `Partition (${SHOP.partition.cost} ✦ chacune, changement libre ensuite)`), partRow,
+        h('p', { class: 'muted small' }, free ? 'Le premier changement d\'emblème ou de couleur est gratuit.' : `Changer d'emblème ou de couleur : ${SHOP.crest.cost} ✦ (tu en as ${fmt(s.eclats, 0)}).`),
+        h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost', onclick: () => m.close() }, 'Annuler'), ok));
     };
+    render();
   }
 
   openSettings() {

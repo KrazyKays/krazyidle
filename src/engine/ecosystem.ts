@@ -13,12 +13,13 @@ export const ECO_EQ: Eco = { F: 62.5, G: 29, P: 11.2 };
 const rF = 0.15, K = 100, aFG = 0.002;
 const bG = 0.1 / 60, mG = 0.05, cGP = 0.005;
 const dP = 0.05 / 30, mP = 0.05;
+const rP = 0.05, kP = ECO_EQ.P / ECO_EQ.G;
 
 export function newEco(): Eco {
   return { ...ECO_EQ };
 }
 
-export function ecoStep(e: Eco, dt: number) {
+export function ecoStep(e: Eco, dt: number, rules: EcoRules = 2) {
   let left = dt;
   while (left > 0) {
     const h = Math.min(0.5, left);
@@ -26,15 +27,49 @@ export function ecoStep(e: Eco, dt: number) {
     const { F, G, P } = e;
     const dF = rF * F * (1 - F / K) - aFG * F * G + 0.1;
     const dG = bG * F * G - mG * G - cGP * G * P + 0.05;
-    const dPp = dP * G * P - mP * P + 0.02;
+    // v2 : la capacité d'accueil des Prédateurs suit le Gibier (déclin graduel, plus d'effondrement
+    // exponentiel au moindre prélèvement). Même point d'équilibre que v1.
+    const dPp = rules === 1 ? dP * G * P - mP * P + 0.02 : rP * P * (1 - P / (kP * Math.max(G, 0.2))) + 0.02;
     e.F = clamp(F + dF * h, 0.5, 140);
     e.G = clamp(G + dG * h, 0.2, 140);
     e.P = clamp(P + dPp * h, 0.1, 100);
   }
 }
 
+/**
+ * Règles de l'écosystème. v1 : règles d'origine, conservées pour rejouer à l'identique les
+ * Destins du jour joués avant leur refonte. v2 : prédateurs utiles et pression croissante.
+ */
+export type EcoRules = 1 | 2;
+export const ECO_RULES_DAILY_SINCE = '2026-11-14';
+
+/** v2 : un héros ou un Écho puissant pèse davantage sur le Domaine (croissance logarithmique). */
+export function ecoPressure(power: number, rules: EcoRules = 2): number {
+  return rules === 1 ? 1 : 1 + 0.5 * Math.log(Math.max(1, power));
+}
+
+/** v2 : les Prédateurs gardent les hardes saines. Sans eux, le Gibier s'affaiblit (0.55 → 1.13). */
+export function gameVigor(e: Eco): number {
+  return 0.55 + 0.45 * Math.min(1.3, e.P / ECO_EQ.P);
+}
+
+/** v2 : Or rapporté par Chasser (trophées) quand les Prédateurs pullulent, par unité de production. */
+export const TROPHY_OR = 1.5;
+export function trophyFactor(e: Eco): number {
+  return clamp(e.P / ECO_EQ.P - 1, 0, 1.5);
+}
+
+/** v2 : régénération apportée par le Garde forestier (rappel vers l'équilibre, par seconde). */
+export function ecoRegen(e: Eco, rate: number, dt: number) {
+  if (rate <= 0) return;
+  const k = 1 - Math.exp(-rate * dt);
+  e.F += (ECO_EQ.F - e.F) * k;
+  e.G += (ECO_EQ.G - e.G) * k;
+  e.P += (ECO_EQ.P - e.P) * k;
+}
+
 /** Impact d'une activité sur l'écosystème. strength ≈ 1 pour le héros vivant. */
-export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
+export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number, rules: EcoRules = 2) {
   const s = strength * dt;
   switch (act) {
     case 'cultiver':
@@ -42,7 +77,7 @@ export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
       break;
     case 'chasser':
       e.G = Math.max(0.2, e.G - 0.035 * e.G * s);
-      e.P = Math.max(0.1, e.P - 0.005 * e.P * s);
+      e.P = Math.max(0.1, e.P - (rules === 1 ? 0.005 : 0.001) * e.P * s);
       break;
     case 'commercer':
       // les caravanes défrichent un peu
@@ -71,9 +106,9 @@ export function harmonyMult(e: Eco): number {
 }
 
 /** Facteur de rendement propre à l'activité (dépend des populations). */
-export function ecoFactor(act: ActId, e: Eco): number {
+export function ecoFactor(act: ActId, e: Eco, rules: EcoRules = 2): number {
   if (act === 'cultiver') return clamp(e.F / ECO_EQ.F, 0.2, 1.6);
-  if (act === 'chasser') return clamp(e.G / ECO_EQ.G, 0.05, 2.2);
+  if (act === 'chasser') return clamp(e.G / ECO_EQ.G, 0.05, 2.2) * (rules === 1 ? 1 : gameVigor(e));
   return 1;
 }
 

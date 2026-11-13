@@ -3,7 +3,7 @@ import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, RES, RES_INFO, TRAIT, TRAITS,
   VOCATION_MAX, bMult, legacyCost, type ActId, type ResId,
 } from './data';
-import { ecoStep, harmonyMult } from './ecosystem';
+import { ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { activeEvent, type EventWindow } from './events';
 import { Rng } from './rng';
 import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
@@ -60,7 +60,13 @@ export function xpMult(s: GameState, rt: Runtime): number {
 
 export function ecoImpactMult(s: GameState): number {
   const m = sumMods(s.hero.traits);
-  return Math.max(0.2, 1 - 0.07 * bl(s, 'garde')) * Math.max(0.3, 1 - m.eco);
+  return Math.max(0.3, 1 - m.eco);
+}
+
+/** Garde forestier : le Domaine revient de lui-même vers l'équilibre (0,4 %/s par niveau). */
+export const GARDE_REGEN = 0.004;
+export function ecoRegenRate(s: GameState): number {
+  return GARDE_REGEN * bl(s, 'garde');
 }
 
 export function lifeDuration(s: GameState, hero: Hero): number {
@@ -153,6 +159,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
 
   // Écosystème
   ecoStep(s.eco, dt);
+  ecoRegen(s.eco, ecoRegenRate(s), dt);
   if (rt.online && rt.event?.def.id === 'migration') s.eco.G = Math.min(140, s.eco.G + 0.25 * dt);
 
   // Échos
@@ -431,7 +438,17 @@ export function buyLegacy(s: GameState, id: string): boolean {
 export const SHOP = {
   temps: { cost: 2, name: 'Temps suspendu', icon: '⌛', desc: '+30 s à la vie actuelle (1 fois par vie)' },
   crest: { cost: 1, name: 'Nouveau blason', icon: '🛡️', desc: 'Change l\'emblème et la couleur de la lignée' },
+  partition: { cost: 3, name: 'Partition d\'écu', icon: '🛡️', desc: 'Divise l\'écu de la maison en deux teintes' },
 };
+
+/** Débloque une partition d'écu (Bazar céleste) et l'applique au blason. */
+export function buyPartition(s: GameState, id: string): boolean {
+  if (s.partitions.includes(id) || s.eclats < SHOP.partition.cost) return false;
+  s.eclats -= SHOP.partition.cost;
+  s.partitions.push(id);
+  s.lineage.partition = id;
+  return true;
+}
 export const BLESSING_COST = [0, 3, 6, 12, 15];
 
 export function buyBlessing(s: GameState, traitId: string): boolean {

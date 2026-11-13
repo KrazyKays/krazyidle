@@ -87,7 +87,9 @@ export interface GameState {
   seed: number;
   createdAt: number;
   lastTick: number;
-  lineage: { name: string; crest: string; color: string };
+  lineage: { name: string; crest: string; color: string; partition?: string };
+  /** Partitions d'écu débloquées au Bazar céleste ('plein' est offert). */
+  partitions: string[];
   res: Record<ResId, number>;
   totalEver: Record<ResId, number>;
   unlocked: ActId[];
@@ -131,7 +133,8 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     seed: rng.s,
     createdAt: now,
     lastTick: now,
-    lineage: { name: 'Sansnom', crest, color },
+    lineage: { name: 'Sansnom', crest, color, partition: 'plein' },
+    partitions: ['plein'],
     res: zeroRes(),
     totalEver: zeroRes(),
     unlocked: ['cultiver', 'chasser'],

@@ -1,6 +1,6 @@
 // Destin du jour : une vie identique pour tous les joueurs, rejouable et vérifiable par code.
 import { ACTS, FIRST_NAMES, RES, RES_INFO, TRAITS, type ActId, type ResId } from './data';
-import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
+import { ECO_RULES_DAILY_SINCE, ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 import { lifeTick, sumMods, type SimCtx } from './sim';
 import { newLife, zeroActs, zeroRes, type LifeState } from './state';
@@ -90,6 +90,7 @@ export class DailyRun {
       res: this.res,
       eco: this.eco,
       ecoImpactMult: Math.max(0.3, 1 - m.eco),
+      ecoRules: setup.date < ECO_RULES_DAILY_SINCE ? 1 : 2,
       prodMult: (a) => {
         let x = harmonyMult(this.eco);
         for (const md of mods) if (md.act?.[a]) x *= md.act[a]!;
@@ -116,7 +117,7 @@ export class DailyRun {
 
   step() {
     if (this.done) return;
-    ecoStep(this.eco, DAILY_DT);
+    ecoStep(this.eco, DAILY_DT, this.ctx.ecoRules);
     lifeTick(this.ctx, this.life, this.hero, this.xpMult, DAILY_DT);
     this.tickN++;
   }
