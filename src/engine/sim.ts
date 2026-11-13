@@ -84,10 +84,12 @@ export function lifeTick(ctx: SimCtx, life: LifeState, hero: Pick<Hero, 'traits'
     }
     life.timeIn[a] += step;
   }
-  const before = Math.floor(life.t);
   life.t += step;
-  const after = Math.floor(life.t + 1e-9);
-  for (let s = before; s < after; s++) {
+  // Une entrée par seconde écoulée. On se base sur la longueur déjà enregistrée
+  // (et non sur floor(t) avant le pas) : avec des pas de 0.1 s, t vaut souvent
+  // 2.9999999999999996, ce qui faisait enregistrer certaines secondes deux fois.
+  const after = Math.floor(life.t + 1e-6);
+  while (life.rec.length < after) {
     life.rec.push(a ? ACTS.indexOf(a) : -1);
     life.pow.push(a ? Math.round(p * 1000) / 1000 : 0);
   }

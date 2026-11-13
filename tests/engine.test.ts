@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { ACTS, type ActId } from '../src/engine/data';
 import { DailyRun, dailySetup, decodeRun, encodeRun, replay, verifyCode } from '../src/engine/daily';
 import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
@@ -100,5 +100,25 @@ describe('événements', () => {
     expect(e.key).toBe('2026-11-12T12');
     expect(activeEvent(Date.UTC(2026, 10, 12, 13, 0))).toBeNull();
     expect(upcomingEvents(t, 4).length).toBe(4);
+  });
+});
+
+describe('enregistrement de la vie', () => {
+  it('enregistre exactement une entrée par seconde, même si la vie est rallongée', () => {
+    for (const extra of [0, 30]) {
+      const s = newGame(0, 42);
+      const rt = newRuntime();
+      rt.online = false;
+      startLife(s);
+      setActivity(s, 'cultiver');
+      const dur = s.life!.dur + extra;
+      let n = 0;
+      while (s.life) {
+        if (n === 50 && extra) s.life.dur += extra;
+        tick(s, rt, 0.1, 0);
+        n++;
+      }
+      expect(s.succession!.newEcho.acts.length).toBe(dur);
+    }
   });
 });

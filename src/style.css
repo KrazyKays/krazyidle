@@ -319,3 +319,23 @@ p { margin: 6px 0; }
 }
 
 .daily-head { padding-right: 40px; }
+
+/* --- Défi du jour en cours ------------------------------------------------- */
+.best-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #fff; box-shadow: 0 0 6px #fff; }
+.daily-ctx { margin: 4px 0; }
+.daily-idle { color: var(--gold); background: rgba(242, 196, 90, 0.1); border: 1px solid rgba(242, 196, 90, 0.4); border-radius: 10px; padding: 6px 10px; }
+.act-val { font-size: 0.78rem; font-weight: 700; color: var(--good); font-variant-numeric: tabular-nums; }
+.act-val.bad { color: var(--bad); }
+.act-note { color: var(--muted); font-size: 0.72rem; }
+.act-note.bad { color: var(--bad); }
+.stats-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stat-mini { padding: 6px 8px; min-width: 0; }
+.stat-mini .stat-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-mini .small { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 599px) {
+  .acts-daily { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .acts-daily .act { flex-direction: column; align-items: stretch; gap: 4px; padding: 8px; }
+  .acts-daily .act-i { width: 100%; height: 26px; font-size: 20px; border-radius: 10px; }
+  .acts-daily .act-head { flex-wrap: wrap; }
+  .acts-daily .act-rate { white-space: normal; font-size: 0.74rem; }
+}

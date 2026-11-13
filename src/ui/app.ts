@@ -25,6 +25,7 @@ const TABS: { id: Tab; icon: string; name: string }[] = [
   { id: 'destin', icon: '🌠', name: 'Destin' },
 ];
 
+const MEDALS = ['🥉', '🥈', '🥇'];
 const GAME_URL = 'https://krazykays.github.io/krazyidle/';
 
 export interface AppHooks {
@@ -212,7 +213,7 @@ export class App {
   // Panneau Vie
   sigLifeNow() {
     const s = this.s;
-    return [!!s.life, s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length].join('|');
+    return [!!s.life, s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length].join('|');
   }
 
   hint(): { id: string; text: string } | null {
@@ -280,7 +281,7 @@ export class App {
       h('div', { class: 'avatar', style: { background: s.lineage.color } }, s.lineage.crest, h('span', { class: 'avatar-gen' }, roman(hero.gen))),
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
-        h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
+        h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
         this.traitChips(hero.traits)));
   }
 
@@ -298,11 +299,14 @@ export class App {
   recStrip(b: Binder) {
     const s = this.s;
     const strip = h('div', { class: 'strip' });
-    let lastLen = -1;
+    let lastKey = '';
     b.add(() => {
       const life = s.life;
-      if (!life || life.rec.length === lastLen) return;
-      lastLen = life.rec.length;
+      if (!life) return;
+      // Redessiner aussi quand la durée change (Temps suspendu, Longévité, Clepsydre).
+      const key = life.rec.length + '/' + life.dur;
+      if (key === lastKey) return;
+      lastKey = key;
       strip.style.background = stripGradient(life.rec, life.dur);
     });
     return h('div', { class: 'rec' }, h('div', { class: 'label' }, h('span', { class: 'rec-dot' }), 'Enregistrement de l\'Écho'), strip);
@@ -757,32 +761,103 @@ export class App {
       this.dailyAcc = 0;
       this.rt.pauseLife = true;
       const run = this.daily;
+      const best = this.s.daily[date]?.best ?? 0;
       b.reset();
-      const bar = b.width(h('div', { class: 'bar-fill' }), () => run.tickN / run.totalTicks);
+
+      // Score et paliers de médaille
+      const scaleMax = Math.max(DAILY_TIERS[2] * 1.15, best * 1.05);
+      const scoreFill = b.width(h('div', { class: 'bar-fill' }), () => run.score() / scaleMax);
+      const marks = DAILY_TIERS.map((t, i) => h('div', { class: 'tier-mark', style: { left: (t / scaleMax * 100) + '%' } }, h('span', null, MEDALS[i])));
+      const bestMark = best > 0 ? h('div', { class: 'best-mark', style: { left: Math.min(100, best / scaleMax * 100) + '%' }, title: `Ton record du jour : ${fmtInt(best)} pts` }) : null;
+      const tierText = b.text(h('div', { class: 'small' }), () => {
+        const sc = run.score();
+        const next = DAILY_TIERS.findIndex((t) => sc < t);
+        const goal = next < 0 ? `${MEDALS[2]} Or atteint !` : `Prochain palier ${MEDALS[next]} ${DAILY_TIERS[next]} pts : encore ${fmtInt(DAILY_TIERS[next] - sc)}`;
+        return goal + (best > 0 ? ` · Record du jour : ${fmtInt(best)}` : '');
+      });
+      const rate = b.text(h('span', null), () => {
+        const v = this.dailyNetValue(run, run.life.act);
+        return run.life.act ? `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))} pts/s` : '';
+      });
+
+      // Temps et ligne de vie
+      const timeFill = b.width(h('div', { class: 'bar-fill' }), () => run.tickN / run.totalTicks);
+      b.cls(timeFill, 'late', () => run.tickN / run.totalTicks > 0.8);
+      const strip = h('div', { class: 'strip' });
+      let lastLen = -1;
+      b.add(() => {
+        if (run.life.rec.length === lastLen) return;
+        lastLen = run.life.rec.length;
+        strip.style.background = stripGradient(run.life.rec, DAILY_DUR);
+      });
+      const idle = h('div', { class: 'daily-idle small' }, '⏸️ Aucune activité : le temps passe sans rien produire ! Choisis une activité (touches 1 à 5).');
+      b.add(() => { idle.hidden = !!run.life.act || run.done; });
+
+      // Ressources (avec leur valeur en points)
+      const mini = (label: string, value: HTMLElement, sub: HTMLElement, title?: string) =>
+        h('div', { class: 'stat stat-mini', title }, h('div', { class: 'stat-l' }, label), value, sub);
+      const res = h('div', { class: 'stats stats-4' }, RES.map((r) => mini(`${RES_INFO[r].icon} ×${RES_INFO[r].value}`,
+        b.text(h('div', { class: 'stat-v' }), () => fmt(run.res[r])),
+        b.text(h('div', { class: 'muted small' }), () => `${fmtInt(run.res[r] * RES_INFO[r].value)} pts`),
+        `${RES_INFO[r].name} : chaque unité vaut ${RES_INFO[r].value} pt${RES_INFO[r].value > 1 ? 's' : ''}`)));
+
+      // Écosystème
+      const ecoMini = (icon: string, name: string, k: 'F' | 'G' | 'P') => mini(`${icon} ${name}`,
+        b.text(h('div', { class: 'stat-v' }), () => fmt(run.eco[k])),
+        b.text(h('div', { class: 'muted small' }), () => { const r = run.eco[k] / ECO_EQ[k]; return r > 1.25 ? '▲ abondant' : r < 0.75 ? '▼ rare' : '≈ équilibre'; }));
+      const harm = b.text(h('div', { class: 'stat-v' }), () => `×${harmonyMult(run.eco).toFixed(2)}`);
+      b.cls(harm, 'good', () => harmonyMult(run.eco) >= 1.15);
+      b.cls(harm, 'bad', () => harmonyMult(run.eco) < 0.9);
+      const eco = h('div', { class: 'stats stats-4' }, ecoMini('🌳', 'Flore', 'F'), ecoMini('🦌', 'Gibier', 'G'), ecoMini('🐺', 'Prédat.', 'P'),
+        mini('☯️ Harmonie', harm, h('div', { class: 'muted small' }, 'toute prod.'), 'Multiplie toute la production. Maximale quand Flore, Gibier et Prédateurs sont à l\'équilibre.'));
+
+      // Activités
       const acts = h('div', { class: 'acts acts-daily' }, ACTS.map((a, i) => {
         const def = ACT[a];
         const lvl = b.text(h('span', { class: 'lvl' }), () => `Niv. ${run.life.lvl[a]}`);
-        const rate = b.text(h('div', { class: 'act-rate' }), () => {
+        const xp = b.width(h('div', { class: 'bar-fill', style: { background: def.color } }), () => run.life.xp[a] / xpToNext(run.life.lvl[a]));
+        const rateEl = b.text(h('div', { class: 'act-rate' }), () => {
           const p = lifePower(run.life, run.hero, a);
           const m = run.ctx.prodMult(a) * ecoFactor(a, run.eco) * p;
           const o: string[] = [];
-          for (const r in def.produce) o.push(`+${fmt(def.produce[r as ResId]! * m)}${RES_INFO[r as ResId].icon}`);
-          for (const r in def.consume) o.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))}${RES_INFO[r as ResId].icon}`);
+          for (const r in def.produce) o.push(`+${fmt(def.produce[r as ResId]! * m)}${RES_INFO[r as ResId].icon}/s`);
+          for (const r in def.consume) o.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))}${RES_INFO[r as ResId].icon}/s`);
           return o.join(' ');
         });
+        const val = b.text(h('div', { class: 'act-val' }), () => {
+          const v = this.dailyNetValue(run, a);
+          return `≈ ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))} pts/s`;
+        });
+        b.cls(val, 'bad', () => this.dailyNetValue(run, a) < 0);
+        const note = b.text(h('div', { class: 'act-note small' }), () => {
+          const out: string[] = [];
+          const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
+          if (lack.length) out.push(`⚠️ Manque de ${lack.map((r) => RES_INFO[r].icon).join('')}`);
+          if (a === 'cultiver' || a === 'chasser') out.push(`${a === 'cultiver' ? '🌳 Flore' : '🦌 Gibier'} ×${ecoFactor(a, run.eco).toFixed(2)}`);
+          const md = setup.mods.find((x) => x.act?.[a]);
+          if (md) out.push(`${md.icon} ×${md.act![a]}`);
+          return out.join(' · ');
+        });
+        b.cls(note, 'bad', () => note.textContent?.includes('⚠️') ?? false);
         const btn = h('button', { class: 'act', style: { '--c': def.color }, onclick: () => run.setAct(run.life.act === a ? null : a) },
           h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(i + 1))),
-          h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), rate));
+          h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), h('div', { class: 'bar bar-thin' }, xp), rateEl, val, note));
         b.cls(btn, 'active', () => run.life.act === a);
         return btn;
       }));
-      const res = h('div', { class: 'stats' }, RES.map((r) => stat(`${RES_INFO[r].icon} ${RES_INFO[r].name}`, b.text(h('span'), () => fmt(run.res[r])))));
-      const eco = h('div', { class: 'small muted' }, b.text(h('span'), () => `🌳 ${fmt(run.eco.F)} · 🦌 ${fmt(run.eco.G)} · 🐺 ${fmt(run.eco.P)} · Harmonie ×${harmonyMult(run.eco).toFixed(2)}`));
+
       content.replaceChildren(
-        h('div', { class: 'row-between daily-head' }, h('h2', null, `🎲 ${setup.name}`), b.text(h('div', { class: 'score' }), () => `${fmtInt(run.score())} pts`)),
-        h('div', { class: 'bar' }, bar),
-        b.text(h('div', { class: 'muted small' }), () => `${fmtDur(DAILY_DUR - run.tickN / 10)} restantes`),
-        res, eco, acts,
+        h('div', { class: 'row-between daily-head' }, h('h2', null, `🎲 ${setup.name}`),
+          h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${fmtInt(run.score())} pts`), b.cls(h('div', { class: 'small good' }, rate), 'bad', () => this.dailyNetValue(run, run.life.act) < 0))),
+        h('div', { class: 'bar bar-tiers' }, scoreFill, marks, bestMark),
+        tierText,
+        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
+          run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
+        h('div', { class: 'row-between small' }, b.text(h('span'), () => `Âge ${Math.floor(run.tickN / 10)} / ${DAILY_DUR} ans`), b.text(h('span', { class: 'muted' }), () => `${fmtDur(DAILY_DUR - run.tickN / 10)} restantes`)),
+        h('div', { class: 'bar' }, timeFill),
+        strip,
+        idle,
+        res, acts, eco,
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost btn-sm', onclick: () => { this.endDaily(false); this.dailyModal?.close(); } }, 'Abandonner')));
     };
     const finish = () => {
@@ -822,6 +897,24 @@ export class App {
   }
 
   dailyFinish: (() => void) | null = null;
+
+  /** Variation estimée du score par seconde si le héros du défi fait l'activité a. */
+  dailyNetValue(run: DailyRun, a: ActId | null): number {
+    if (!a) return 0;
+    const def = ACT[a];
+    const p = lifePower(run.life, run.hero, a);
+    let frac = 1;
+    for (const r in def.consume) {
+      const need = def.consume[r as ResId]! * Math.sqrt(Math.max(p, 0.01)) * 0.1;
+      if (need > 0) frac = Math.min(frac, run.res[r as ResId] / need);
+    }
+    frac = Math.max(0, Math.min(1, frac));
+    const m = run.ctx.prodMult(a) * ecoFactor(a, run.eco) * p * frac;
+    let v = 0;
+    for (const r in def.produce) v += def.produce[r as ResId]! * m * RES_INFO[r as ResId].value;
+    for (const r in def.consume) v -= def.consume[r as ResId]! * Math.sqrt(Math.max(p, 0.01)) * frac * RES_INFO[r as ResId].value;
+    return v;
+  }
 
   /** Appelé par la boucle principale avec le temps réel écoulé. */
   dailyStep(dtSec: number) {
