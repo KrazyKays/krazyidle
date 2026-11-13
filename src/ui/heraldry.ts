@@ -79,6 +79,28 @@ const CHARGES: Record<string, { name: string; svg: string }> = {
   },
 };
 
+/**
+ * Boîte englobante réelle de chaque meuble [x, y, largeur, hauteur], mesurée dans le navigateur
+ * (getBBox). Les dessins ne sont pas centrés dans leur repère : on s'en sert pour les recentrer.
+ */
+const BOX: Record<string, [number, number, number, number]> = {
+  '🦁': [5.2, 4, 89.6, 92], '🦅': [2, 12, 96, 80], '🐺': [17, 14, 66.1, 73], '🐉': [21, 20, 63, 76.3],
+  '🦌': [18, 14, 64, 74], '🌙': [11.5, 10, 52.5, 80], '☀️': [4, 4, 92, 92], '🌹': [6.7, 10, 86.6, 82.4],
+  '🦉': [22, 14, 56, 72], '🐻': [10.5, 14, 79, 70], '⚔️': [7.1, 2.7, 85.7, 89.2], '🗝️': [32, 6, 36, 84],
+};
+
+/** Zone utile de l'écu (repère 120×140) : centre optique et taille maximale du meuble. */
+const FIELD = { cx: 60, cy: 64, w: 64, h: 68, maxScale: 0.8 };
+
+/** Transformation qui centre le meuble sur l'écu et l'ajuste à la zone utile. */
+function chargeTransform(id: string): string {
+  const [x, y, w, h] = BOX[id] ?? [0, 0, 100, 100];
+  const k = Math.min(FIELD.w / w, FIELD.h / h, FIELD.maxScale);
+  const tx = FIELD.cx - (x + w / 2) * k;
+  const ty = FIELD.cy - (y + h / 2) * k;
+  return `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${k.toFixed(4)})`;
+}
+
 export const CHARGE_IDS = Object.keys(CHARGES);
 export const chargeName = (id: string) => CHARGES[id]?.name ?? 'Emblème';
 
@@ -113,12 +135,16 @@ export function shieldSvg(crest: string, partition = 'plein', opts: { border?: b
     + (part ? `<path class="shield-part" clip-path="url(#${id}c)" d="${part}"/>` : '')
     + `<path d="${S}" fill="url(#${id}g)"/>`
     + (border ? `<path d="M60 13 L103 24 V64 C103 96 83 115 60 126 C37 115 17 96 17 64 V24 Z" fill="none" stroke="rgba(255,231,166,.5)" stroke-width="1.5"/><path d="${S}" fill="none" stroke="#f2c45a" stroke-width="5"/>` : `<path d="${S}" fill="none" stroke="#f2c45a" stroke-width="7"/>`)
-    + (opts.charge === false || !charge ? '' : `<g class="hd-charge" transform="translate(23 26) scale(.74)">${charge.svg}</g>`)
+    + (opts.charge === false || !charge ? '' : `<g transform="${chargeTransform(crest)}"><g class="hd-charge">${charge.svg}</g></g>`)
     + `</svg>`;
 }
 
 /** Meuble seul (pour les pastilles de choix). */
 export function chargeSvg(crest: string): string {
   const c = CHARGES[crest];
-  return `<svg viewBox="0 0 100 100" aria-hidden="true" class="hd-svg hd-only"><g class="hd-charge">${c ? c.svg : ''}</g></svg>`;
+  // viewBox carré centré sur la boîte englobante du meuble
+  const [x, y, w, h] = BOX[crest] ?? [0, 0, 100, 100];
+  const side = Math.max(w, h) + 8;
+  const vb = `${(x + w / 2 - side / 2).toFixed(1)} ${(y + h / 2 - side / 2).toFixed(1)} ${side.toFixed(1)} ${side.toFixed(1)}`;
+  return `<svg viewBox="${vb}" aria-hidden="true" class="hd-svg hd-only"><g class="hd-charge">${c ? c.svg : ''}</g></svg>`;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ECO_EQ, ecoRegen, ecoStep, gameVigor, harmonyMult, newEco, trophyFactor, type Eco } from '../src/engine/ecosystem';
-import { dailySetup, DailyRun } from '../src/engine/daily';
+import { dailySetup, DailyRun, encodeRun, verifyCode } from '../src/engine/daily';
 import { runActivity, type SimCtx } from '../src/engine/sim';
 import { buyPartition } from '../src/engine/game';
 import { importSave, exportSave } from '../src/engine/save';
@@ -63,15 +63,19 @@ describe('écosystème v2', () => {
   });
 });
 
-describe('Destin du jour et règles de l\'écosystème', () => {
-  test('les Destins joués avant la refonte gardent les règles d\'origine', () => {
-    expect(new DailyRun(dailySetup('2026-11-13')).ctx.ecoRules).toBe(1);
-    expect(new DailyRun(dailySetup('2026-11-14')).ctx.ecoRules).toBe(2);
+describe('remise à zéro de la 0.1.0', () => {
+  test('les codes du Destin d\'avant la sortie ne sont plus reconnus', () => {
+    const run = new DailyRun(dailySetup('2026-11-14'));
+    while (!run.done) { run.setAct('cultiver'); run.step(); }
+    const code = encodeRun('2026-11-14', run.actions, run.score());
+    expect(verifyCode(code)!.ok).toBe(true);
+    // un code au format d'avant la sortie (préfixe KI1) est refusé
+    expect(verifyCode(btoa('KI1|2026-11-14|0x|10').replace(/=+$/, ''))).toBeNull();
   });
 });
 
 describe('héraldique', () => {
-  test('une ancienne sauvegarde reçoit l\'écu plein', () => {
+  test('une sauvegarde sans champs d\'héraldique reçoit l\'écu plein', () => {
     const s = newGame(0, 3) as any;
     delete s.partitions;
     delete s.lineage.partition;

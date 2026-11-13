@@ -1,5 +1,5 @@
 // Service worker : jeu jouable hors connexion.
-const CACHE = 'krazyidle-v1';
+const CACHE = 'echos-de-lignee-0.1.0';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg'])).then(() => self.skipWaiting()));
 });

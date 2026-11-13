@@ -1,12 +1,12 @@
-# Échos de Lignée — Game Design Document (v1)
+# Échos de Lignée — Game Design Document (0.1)
 
 > *« Chaque héros ne vit qu'un instant… mais rien ne se perd. »*
 
 ## 1. Le conseil de production
 
-Pour cadrer la v1, on a simulé un conseil avec les rôles clés d'un studio. Chaque rôle a apporté ses arbitrages, résumés ci-dessous.
+Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. Chaque rôle a apporté ses arbitrages, résumés ci-dessous.
 
-| Rôle | Responsabilité | Décisions clés pour la v1 |
+| Rôle | Responsabilité | Décisions clés pour la 0.1 |
 |---|---|---|
 | **Game Director** | Vision et piliers | Trois piliers : **(1)** chaque vie compte, puisqu'elle devient un Écho éternel ; **(2)** la dynastie a une mémoire (gènes, vocations, arbre généalogique) ; **(3)** le monde vit au même rythme pour tous (événements planifiés, Destin du jour). On écarte tout ce qui ne sert pas ces piliers. |
 | **Lead Game Designer** | Boucles de jeu | Boucle courte : une vie de 60 s ou plus. Boucle moyenne : succession, choix de l'héritier et des Échos. Boucle longue : Héritage, bâtiments, vocations sur plusieurs générations. Boucle sociale : événements toutes les 4 h et défi quotidien. |
@@ -51,7 +51,6 @@ Pour cadrer la v1, on a simulé un conseil avec les rôles clés d'un studio. Ch
 - **La pression grandit avec la puissance** : l'impact d'un héros ou d'un Écho est multiplié par 1 + ½·ln(puissance). Les Échos de fin de partie pèsent donc vraiment sur le Domaine.
 - Le **Garde forestier** ne réduit plus l'impact : il régénère le Domaine vers l'équilibre (+0,4 %/s par niveau). Il amortit la pression sans la neutraliser.
 - Exemple : un héros et deux Échos chasseurs puissants épuisent le Gibier (moins de 5) et font tomber l'Harmonie à ×0.7.
-- Les Destins du jour antérieurs au 14 novembre 2026 se rejouent avec les règles d'origine, pour que leurs codes restent vérifiables.
 
 ### 2.5 Le monde partagé
 - **Événements** : à 0 h, 4 h, 8 h, 12 h, 16 h et 20 h UTC (soit 1 h, 5 h, 9 h, 13 h, 17 h et 21 h en France l'hiver), pendant 45 min. Le type d'événement est tiré de façon déterministe à partir de la date et de l'heure, donc identique pour tous. Chaque événement a trois paliers (Bronze, Argent, Or) qui rapportent des Éclats ✦, et son objectif s'adapte à l'économie du joueur.
@@ -62,11 +61,11 @@ Pour cadrer la v1, on a simulé un conseil avec les rôles clés d'un studio. Ch
 
 | Version | Contenu |
 |---|---|
-| **v1 (actuelle)** | Tout ce qui précède. PWA, sauvegarde export/import, hors ligne jusqu'à 6 h (+2 h par niveau de Patience). |
-| v1.1 | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
-| v1.2 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
-| v1.3 | Classement en ligne optionnel (backend léger) qui réutilise les codes vérifiables du Destin du jour. |
-| v2 | Mariages entre lignées (croisement génétique choisi), nouveaux biomes du Domaine, notifications push. |
+| **0.1 (sortie)** | Tout ce qui précède. PWA, sauvegarde export/import, hors ligne jusqu'à 6 h (+2 h par niveau de Patience). |
+| 0.2 | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
+| 0.3 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
+| 0.4 | Classement en ligne optionnel (backend léger) qui réutilise les codes vérifiables du Destin du jour. |
+| 1.0 | Mariages entre lignées (croisement génétique choisi), nouveaux biomes du Domaine, notifications push. |
 
 ## 4. Architecture technique
 

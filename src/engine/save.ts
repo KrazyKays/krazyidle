@@ -1,6 +1,8 @@
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
-export const SAVE_KEY = 'krazyidle-save-v1';
+export const SAVE_KEY = 'echos-de-lignee-save';
+/** Sauvegardes d'avant la sortie (0.1.0) : effacées, tout le monde repart de zéro. */
+const OBSOLETE_KEYS = ['krazyidle-save-v1'];
 
 export function serialize(s: GameState): string {
   return JSON.stringify(s);
@@ -43,6 +45,7 @@ export function importSave(code: string): GameState | null {
 
 export function loadLocal(): GameState | null {
   try {
+    for (const k of OBSOLETE_KEYS) localStorage.removeItem(k);
     const raw = localStorage.getItem(SAVE_KEY);
     return raw ? deserialize(raw) : null;
   } catch {
