@@ -343,6 +343,11 @@ p { margin: 6px 0; }
 .intro-picks .pick-color.on { border-color: #fff; }
 .intro-shield-sm { width: 96px; height: 112px; margin-top: 30px; animation: stageIn 0.6s ease both; }
 .intro-hero { font-family: var(--title); font-size: 2rem; margin: 6px 0 0; background: linear-gradient(180deg, #ffe7a6, var(--gold2)); -webkit-background-clip: text; background-clip: text; color: transparent; animation: stageIn 0.8s ease 0.4s both; }
+.intro-heirow { justify-content: center; gap: 10px; }
+.intro-heirow::before { content: ""; width: 40px; flex: none; } /* contrepoids du dé : le prénom reste centré */
+.intro-hero-dice { min-width: 40px; min-height: 40px; font-size: 18px; margin-top: 6px; animation: stageIn 0.6s ease 1.3s both; }
+.intro-hero.reroll { animation: heroReroll 0.35s ease both; }
+@keyframes heroReroll { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .intro-s3 .intro-line { margin-top: -4px; font-size: 0.95rem; color: var(--muted); font-style: italic; animation-delay: 0.7s; }
 .intro-s3 .intro-sub { animation-delay: 0.1s; margin: 10px 0 0; }
 .intro-trait { --c: #b0bec5; border: 1px solid color-mix(in srgb, var(--c) 60%, transparent); background: color-mix(in srgb, var(--c) 12%, transparent); border-radius: 12px; padding: 6px 12px; margin: 8px 0 2px; animation: stageIn 0.8s ease 1s both; }

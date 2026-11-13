@@ -1,6 +1,6 @@
 // Logique de la partie principale : vie, Échos, Domaine, succession, événements.
 import {
-  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, RES, RES_INFO, TRAIT, TRAITS,
+  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   VOCATION_MAX, bMult, legacyCost, type ActId, type ResId,
 } from './data';
 import { ecoRegen, ecoStep, harmonyMult } from './ecosystem';
@@ -316,11 +316,11 @@ export function endLife(s: GameState, now: number) {
   const legacyGain = legacyFor(life.value);
   const m = sumMods(hero.traits);
   const echo: Echo = {
-    id: s.nextId++, heroId: hero.id, name: hero.name, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
+    id: s.nextId++, heroId: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
   };
   const ancestor: Ancestor = {
-    id: hero.id, name: hero.name, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
+    id: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now,
   };
   // Vocation non entretenue : elle se transmet affaiblie d'un rang.
@@ -365,7 +365,7 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     let name = rng.pick(FIRST_NAMES);
     for (let k = 0; k < 5 && used.has(name); k++) name = rng.pick(FIRST_NAMES);
     used.add(name);
-    out.push({ id: s.nextId++, name, gen: parent.gen + 1, traits, vocation, parentId: parent.id });
+    out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id });
   }
   return out;
 }

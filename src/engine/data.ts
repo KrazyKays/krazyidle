@@ -19,6 +19,8 @@ export interface ActDef {
   color: string;
   desc: string;
   vocation: string;
+  /** forme féminine, si elle diffère */
+  vocationF?: string;
   produce: Partial<Record<ResId, number>>;
   consume: Partial<Record<ResId, number>>;
   unlockText: string;
@@ -28,22 +30,22 @@ export const ACT: Record<ActId, ActDef> = {
   cultiver: {
     id: 'cultiver', name: 'Cultiver', icon: '🌱', color: '#7cb342',
     desc: 'Produit des Vivres selon la Flore du domaine. Fait pousser la Flore.',
-    vocation: 'Paysan', produce: { vivres: 1.2 }, consume: {}, unlockText: '',
+    vocation: 'Paysan', vocationF: 'Paysanne', produce: { vivres: 1.2 }, consume: {}, unlockText: '',
   },
   chasser: {
     id: 'chasser', name: 'Chasser', icon: '🏹', color: '#d84315',
     desc: 'Rendement selon le Gibier et sa vigueur : les Prédateurs gardent les hardes saines. Trophées d\'Or s\'ils pullulent.',
-    vocation: 'Chasseur', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
+    vocation: 'Chasseur', vocationF: 'Chasseresse', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
   },
   commercer: {
     id: 'commercer', name: 'Commercer', icon: '⚖️', color: '#f9a825',
     desc: 'Échange des Vivres contre de l\'Or. Plus rentable avec l\'expérience.',
-    vocation: 'Marchand', produce: { or: 1.5 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
+    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.5 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
   },
   etudier: {
     id: 'etudier', name: 'Étudier', icon: '📖', color: '#0288d1',
     desc: 'Investit de l\'Or dans le Savoir.',
-    vocation: 'Érudit', produce: { savoir: 0.6 }, consume: { or: 2 }, unlockText: 'Amasser 50 Or',
+    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.6 }, consume: { or: 2 }, unlockText: 'Amasser 50 Or',
   },
   mediter: {
     id: 'mediter', name: 'Méditer', icon: '🕯️', color: '#8e24aa',
@@ -80,6 +82,8 @@ export interface Mods {
 export interface TraitDef {
   id: string;
   name: string;
+  /** forme féminine, si elle diffère */
+  nameF?: string;
   icon: string;
   rarity: 0 | 1 | 2 | 3 | 4; // commun, rare, épique, légendaire, mythique
   neg?: boolean;
@@ -103,24 +107,24 @@ export const TRAITS: TraitDef[] = [
   { id: 'rat_biblio', name: 'Rat de bibliothèque', icon: '🐭', rarity: 0, desc: 'Étudier +40%', mods: { act: { etudier: 0.4 } } },
   { id: 'ame_calme', name: 'Âme calme', icon: '🍃', rarity: 0, desc: 'Méditer +40%', mods: { act: { mediter: 0.4 } } },
   { id: 'robuste', name: 'Robuste', icon: '💪', rarity: 0, desc: 'Durée de vie +8 s', mods: { life: 8 } },
-  { id: 'curieux', name: 'Curieux', icon: '🔍', rarity: 0, desc: 'Expérience +25%', mods: { xp: 0.25 } },
+  { id: 'curieux', name: 'Curieux', nameF: 'Curieuse', icon: '🔍', rarity: 0, desc: 'Expérience +25%', mods: { xp: 0.25 } },
   { id: 'fragile', name: 'Fragile', icon: '🥀', rarity: 0, neg: true, desc: 'Durée de vie −8 s', mods: { life: -8 } },
-  { id: 'distrait', name: 'Distrait', icon: '💭', rarity: 0, neg: true, desc: 'Expérience −20%', mods: { xp: -0.2 } },
-  { id: 'maladroit', name: 'Maladroit', icon: '🤕', rarity: 0, neg: true, desc: 'Production −10%', mods: { all: -0.1 } },
+  { id: 'distrait', name: 'Distrait', nameF: 'Distraite', icon: '💭', rarity: 0, neg: true, desc: 'Expérience −20%', mods: { xp: -0.2 } },
+  { id: 'maladroit', name: 'Maladroit', nameF: 'Maladroite', icon: '🤕', rarity: 0, neg: true, desc: 'Production −10%', mods: { all: -0.1 } },
   { id: 'prodige', name: 'Prodige', icon: '⭐', rarity: 1, desc: 'Compétences niveau +1 au départ', mods: { start: 1 } },
   { id: 'longevite', name: 'Longévité', icon: '🐢', rarity: 1, desc: 'Durée de vie +15 s', mods: { life: 15 } },
-  { id: 'harmonieux', name: 'Harmonieux', icon: '☯️', rarity: 1, desc: 'Impact écologique −40%', mods: { eco: 0.4 } },
+  { id: 'harmonieux', name: 'Harmonieux', nameF: 'Harmonieuse', icon: '☯️', rarity: 1, desc: 'Impact écologique −40%', mods: { eco: 0.4 } },
   { id: 'echo_vibrant', name: 'Écho vibrant', icon: '🔔', rarity: 1, desc: 'Puissance de son Écho +40%', mods: { echo: 0.4 } },
-  { id: 'fertile', name: 'Fertile', icon: '👶', rarity: 1, desc: '+1 héritier proposé', mods: { heirs: 1 } },
-  { id: 'polyvalent', name: 'Polyvalent', icon: '🎭', rarity: 1, desc: 'Production +15%', mods: { all: 0.15 } },
-  { id: 'maudit', name: 'Maudit', icon: '💀', rarity: 1, neg: true, desc: 'Puissance de son Écho −40%', mods: { echo: -0.4 } },
+  { id: 'fertile', name: 'Fertile', icon: '👶', rarity: 1, desc: '+1 enfant proposé', mods: { heirs: 1 } },
+  { id: 'polyvalent', name: 'Polyvalent', nameF: 'Polyvalente', icon: '🎭', rarity: 1, desc: 'Production +15%', mods: { all: 0.15 } },
+  { id: 'maudit', name: 'Maudit', nameF: 'Maudite', icon: '💀', rarity: 1, neg: true, desc: 'Puissance de son Écho −40%', mods: { echo: -0.4 } },
   { id: 'genie', name: 'Génie', icon: '🧠', rarity: 2, desc: 'Expérience +60%', mods: { xp: 0.6 } },
   { id: 'memoire', name: 'Mémoire ancestrale', icon: '🌀', rarity: 2, desc: 'Puissance de son Écho +80%', mods: { echo: 0.8 } },
   { id: 'centenaire', name: 'Centenaire', icon: '⏳', rarity: 2, desc: 'Durée de vie +30 s', mods: { life: 30 } },
   { id: 'sang_dore', name: 'Sang doré', icon: '🩸', rarity: 2, desc: 'Production +35%, transmission +10%', mods: { all: 0.35, inherit: 0.1 } },
-  { id: 'elu', name: 'Élu', icon: '👑', rarity: 3, desc: 'Production +60%, expérience +40%', mods: { all: 0.6, xp: 0.4 } },
-  { id: 'eternel', name: 'Éternel', icon: '♾️', rarity: 3, desc: 'Vie +45 s, Écho +50%', mods: { life: 45, echo: 0.5 } },
-  { id: 'astres', name: 'Béni des astres', icon: '🌠', rarity: 4, shop: true, desc: 'Production +50%, Écho +50%, transmission +20%', mods: { all: 0.5, echo: 0.5, inherit: 0.2 } },
+  { id: 'elu', name: 'Élu', nameF: 'Élue', icon: '👑', rarity: 3, desc: 'Production +60%, expérience +40%', mods: { all: 0.6, xp: 0.4 } },
+  { id: 'eternel', name: 'Éternel', nameF: 'Éternelle', icon: '♾️', rarity: 3, desc: 'Vie +45 s, Écho +50%', mods: { life: 45, echo: 0.5 } },
+  { id: 'astres', name: 'Béni des astres', nameF: 'Bénie des astres', icon: '🌠', rarity: 4, shop: true, desc: 'Production +50%, Écho +50%, transmission +20%', mods: { all: 0.5, echo: 0.5, inherit: 0.2 } },
 ];
 export const TRAIT: Record<string, TraitDef> = Object.fromEntries(TRAITS.map((t) => [t.id, t]));
 
@@ -178,7 +182,7 @@ export const LEGACY: LegacyDef[] = [
   { id: 'crypte', name: 'Crypte ancestrale', icon: '⚰️', desc: '+1 emplacement d\'Écho', base: 12, growth: 2.6, max: 6 },
   { id: 'eveil', name: 'Éveil précoce', icon: '🌅', desc: 'Toutes compétences niv. +1 au départ', base: 10, growth: 2.2, max: 6 },
   { id: 'transmission', name: 'Transmission', icon: '🧬', desc: 'Chance d\'hériter des traits +8%', base: 6, growth: 1.9, max: 5 },
-  { id: 'sang', name: 'Sang fécond', icon: '👪', desc: '+1 héritier proposé', base: 9, growth: 2.8, max: 3 },
+  { id: 'sang', name: 'Sang fécond', icon: '👪', desc: '+1 enfant proposé', base: 9, growth: 2.8, max: 3 },
   { id: 'etoile', name: 'Bonne étoile', icon: '🍀', desc: 'Mutations plus rares et positives', base: 8, growth: 2.1, max: 5 },
   { id: 'patience', name: 'Patience', icon: '🌙', desc: 'Temps hors-ligne max +2 h', base: 5, growth: 1.8, max: 9 },
 ];
@@ -217,12 +221,32 @@ export const FIRST_NAMES = [
   'Roland', 'Sibylle', 'Tancrède', 'Thibaut', 'Ysolde', 'Yvain', 'Adélaïde', 'Godefroy', 'Hildegarde', 'Lancelot',
   'Morgane', 'Rodolphe', 'Séraphine', 'Tristan', 'Viviane', 'Baudouin', 'Iseult', 'Gauvain', 'Héloïse', 'Arnaud',
 ];
-/** Prénoms féminins de FIRST_NAMES, pour accorder les textes (« première du nom », etc.). */
+/** Prénoms féminins de FIRST_NAMES : le genre d'un personnage en est déduit à sa naissance. */
 export const FEMININE_NAMES = new Set([
   'Aliénor', 'Bérénice', 'Clothilde', 'Domitille', 'Ermengarde', 'Guenièvre', 'Isaure', 'Mahaut', 'Mélisende', 'Ombeline',
   'Pétronille', 'Sibylle', 'Ysolde', 'Adélaïde', 'Hildegarde', 'Morgane', 'Séraphine', 'Viviane', 'Iseult', 'Héloïse',
 ]);
 export const isFeminine = (name: string) => FEMININE_NAMES.has(name);
+
+// --- Accords ---------------------------------------------------------------
+export type Sex = 'f' | 'm';
+/** Tout ce qui porte un prénom : héros, héritier, Écho, ancêtre, Destin du jour. */
+export interface Named { name: string; sex?: Sex }
+export const sexFor = (name: string): Sex => (isFeminine(name) ? 'f' : 'm');
+/** Le genre stocké, ou à défaut celui du prénom (anciennes sauvegardes). */
+export const sexOf = (p: Named): Sex => p.sex ?? sexFor(p.name);
+/** Accorde selon le personnage : acc(hero, 'Élu', 'Élue'). */
+export const acc = (p: Named, m: string, f: string) => (sexOf(p) === 'f' ? f : m);
+/** Nom d'un trait accordé au personnage ; sans personnage, les deux formes. */
+export function traitName(t: TraitDef, p?: Named | null): string {
+  if (!t.nameF) return t.name;
+  return p ? acc(p, t.name, t.nameF) : `${t.name} / ${t.nameF}`;
+}
+/** Titre de vocation (« Paysanne III ») accordé au personnage. */
+export function vocationName(v: { act: ActId; tier: number }, p: Named, roman: (n: number) => string): string {
+  const d = ACT[v.act];
+  return `${d.vocationF ? acc(p, d.vocation, d.vocationF) : d.vocation} ${roman(v.tier)}`;
+}
 export const HOUSE_NAMES = [
   'Valombre', 'Hautecour', 'Dorval', 'Montfaucon', 'Bellerive', 'Aubépine', 'Grisemont', 'Ventadour', 'Châtelfort', 'Clairval',
   'Brumefer', 'Corbenay', 'Sombreval', 'Ardanel', 'Fontclaire', 'Rochebrune', 'Givremont', 'Lunebois', 'Morvenant', 'Saint-Aubrac',

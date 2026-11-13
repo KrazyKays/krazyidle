@@ -1,5 +1,5 @@
 import { describe, expect, it, test } from 'vitest';
-import { ACTS, type ActId } from '../src/engine/data';
+import { ACTS, FEMININE_NAMES, FIRST_NAMES, TRAIT, acc, sexFor, traitName, vocationName, type ActId } from '../src/engine/data';
 import { DailyRun, dailySetup, decodeRun, encodeRun, replay, verifyCode } from '../src/engine/daily';
 import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
 import { activeEvent, upcomingEvents } from '../src/engine/events';
@@ -241,9 +241,50 @@ describe('pronostic de vocation', () => {
   });
 });
 
-describe('genre des prénoms', () => {
-  it('chaque prénom féminin existe dans FIRST_NAMES', async () => {
-    const { FIRST_NAMES, FEMININE_NAMES } = await import('../src/engine/data');
+describe('genre des personnages', () => {
+  it('chaque prénom féminin existe dans FIRST_NAMES, et il y a des deux', () => {
     for (const n of FEMININE_NAMES) expect(FIRST_NAMES).toContain(n);
+    expect(FEMININE_NAMES.size).toBeGreaterThan(5);
+    expect(FIRST_NAMES.length - FEMININE_NAMES.size).toBeGreaterThan(5);
+  });
+
+  it('le genre est fixé à la naissance et suit le prénom, jusqu\'aux héritiers', () => {
+    const s = newGame(0, 42);
+    expect(s.hero.sex).toBe(sexFor(s.hero.name));
+    const rt = newRuntime();
+    startLife(s);
+    let now = 0;
+    while (!s.succession) { now += 100; tick(s, rt, 0.1, now); }
+    const sc = s.succession!;
+    expect(sc.ancestor.sex).toBe(s.hero.sex);
+    expect(sc.newEcho.sex).toBe(s.hero.sex);
+    for (const h of sc.heirs) expect(h.sex).toBe(sexFor(h.name));
+  });
+
+  it('les anciennes sauvegardes sans genre le retrouvent par le prénom', () => {
+    const s = newGame(0, 7);
+    s.hero.name = 'Mahaut';
+    delete (s.hero as { sex?: string }).sex;
+    const back = importSave(exportSave(s))!;
+    expect(back.hero.sex).toBe('f');
+  });
+
+  it('accords des traits, vocations et formules', () => {
+    const f = { name: 'Iseult' }, m = { name: 'Tristan' };
+    expect(acc(f, 'premier du nom', 'première du nom')).toBe('première du nom');
+    expect(acc(m, 'premier du nom', 'première du nom')).toBe('premier du nom');
+    expect(traitName(TRAIT.elu, f)).toBe('Élue');
+    expect(traitName(TRAIT.elu, m)).toBe('Élu');
+    expect(traitName(TRAIT.elu)).toBe('Élu / Élue');
+    expect(traitName(TRAIT.robuste, f)).toBe('Robuste');
+    expect(vocationName({ act: 'chasser', tier: 2 }, f, String)).toBe('Chasseresse 2');
+    expect(vocationName({ act: 'mediter', tier: 1 }, f, String)).toBe('Mystique 1');
+  });
+
+  it('le Destin du jour reste identique (aucun tirage ajouté)', () => {
+    // valeurs relevées avant l'ajout du genre : les codes partagés doivent rester valides
+    const d = dailySetup('2026-01-01');
+    expect(d.name).toBe('Tancrède');
+    expect(d.traits).toEqual(['rat_biblio', 'prodige', 'distrait']);
   });
 });

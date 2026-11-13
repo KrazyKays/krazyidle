@@ -1,4 +1,4 @@
-import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, TRAITS, type ActId, type ResId } from './data';
+import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, TRAITS, sexFor, type ActId, type ResId, type Sex } from './data';
 import { newEco, type Eco } from './ecosystem';
 import { Rng } from './rng';
 
@@ -10,6 +10,8 @@ export interface Vocation {
 export interface Hero {
   id: number;
   name: string;
+  /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
+  sex?: Sex;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -38,6 +40,8 @@ export interface Echo {
   id: number;
   heroId: number;
   name: string;
+  /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
+  sex?: Sex;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -53,6 +57,8 @@ export interface Echo {
 export interface Ancestor {
   id: number;
   name: string;
+  /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
+  sex?: Sex;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -127,7 +133,8 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
   const crest = rng.pick(CRESTS);
   const color = rng.pick(CREST_COLORS);
   const starter = rng.pick(TRAITS.filter((t) => t.rarity === 0 && !t.neg));
-  const hero: Hero = { id: 1, name: rng.pick(FIRST_NAMES), gen: 1, traits: [starter.id], vocation: null, parentId: null };
+  const name = rng.pick(FIRST_NAMES);
+  const hero: Hero = { id: 1, name, sex: sexFor(name), gen: 1, traits: [starter.id], vocation: null, parentId: null };
   const s: GameState = {
     v: SAVE_VERSION,
     seed: rng.s,

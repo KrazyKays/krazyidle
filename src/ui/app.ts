@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, HOUSE_NAMES, isFeminine, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
@@ -168,7 +168,7 @@ export class App {
     }
     // Succession non bloquante : on prévient, le joueur s'en occupe quand il veut.
     const pending = !!this.s.succession;
-    if (pending && !this.hadSuccession) toast(`🕯️ ${this.s.succession!.ancestor.name} s'est éteint. Une succession t'attend.`, 'info', 5000);
+    if (pending && !this.hadSuccession) toast(`🕯️ ${this.s.succession!.ancestor.name} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
     this.hadSuccession = pending;
     if (now - this.lastHist > 2000) {
       this.lastHist = now;
@@ -274,15 +274,17 @@ export class App {
   }
 
   hint(): { id: string; text: string } | null {
-    const s = this.s, f = s.flags;
+    const s = this.s, f = s.flags, hero = s.hero, n = hero.name;
+    const il = acc(hero, 'il', 'elle');
+    const last = s.ancestors[s.ancestors.length - 1];
     const list: [string, boolean, string][] = [
-      ['start', s.hero.gen === 1 && !!s.life, 'Bienvenue, fondateur ! Ton héros cultive déjà ses terres. Change d\'activité quand tu veux, ou recliques-y pour mettre sa vie en pause : son temps ne s\'écoule que lorsqu\'il agit.'],
-      ['pause', s.hero.gen <= 3 && isPaused(s), 'Vie en pause : ton héros attend, mais tes Échos continuent de produire et le Domaine se repose. Prends le temps de bâtir !'],
+      ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} cultive déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
+      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, mais tes Échos continuent de produire et le Domaine se repose. Prends le temps de bâtir !`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
-      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, 'Ton ancêtre est devenu un Écho : il rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !'],
-      ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent héros ET Échos.'],
+      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !` : ''],
+      ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans l\'onglet Lignée pour des bonus permanents.'],
-      ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, 'Ce héros a hérité d\'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.'],
+      ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
       ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, cultiver ou réduire la chasse le rétablit.'],
       ['destin', s.hero.gen >= 3 && !s.daily[utcDateStr(Date.now())], 'Le Destin du jour t\'attend : la même vie pour tous les joueurs, compare ton score !'],
     ];
@@ -310,8 +312,8 @@ export class App {
       parts.push(h('div', { class: 'card death-card' },
         h('div', { class: 'big-i' }, '🕯️'),
         h('h3', null, `La vie de ${s.hero.name} s'achève.`),
-        h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu seras prêt.'),
-        h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir l\'héritier')));
+        h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu le souhaites.'),
+        h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir la relève')));
       if (notice && this.desktop) parts.push(notice);
       this.elLife.replaceChildren(...parts);
       return;
@@ -347,23 +349,25 @@ export class App {
 
   heroCard(hero: Hero, current: boolean) {
     const s = this.s;
-    const voc = hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${ACT[hero.vocation.act].vocation} ${roman(hero.vocation.tier)}`) : null;
+    const voc = hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : null;
     return h('div', { class: 'card hero-card' },
       h('div', { class: 'avatar' }, this.crestEl('avatar-shield'), h('span', { class: 'avatar-gen' }, roman(hero.gen))),
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
-        this.traitChips(hero.traits)));
+        this.traitChips(hero.traits, false, hero)));
   }
 
-  traitChips(ids: string[], small = false) {
+  /** Pastilles de traits, accordées au personnage qui les porte (sans personnage : les deux formes). */
+  traitChips(ids: string[], small = false, who: Named | null = null) {
     return h('div', { class: `traits ${small ? 'traits-sm' : ''}` }, ids.map((id) => {
       const t = TRAIT[id];
       if (!t) return null;
+      const name = traitName(t, who);
       return h('button', {
-        class: `trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color }, title: `${t.name} — ${t.desc}`,
-        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${t.name} (${RARITY[t.rarity].name}) : ${t.desc}`, t.neg ? 'bad' : 'info'); },
-      }, t.icon, small ? null : h('span', null, t.name));
+        class: `trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color }, title: `${name} — ${t.desc}`,
+        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${name} (${RARITY[t.rarity].name}) : ${t.desc}`, t.neg ? 'bad' : 'info'); },
+      }, t.icon, small ? null : h('span', null, name));
     }));
   }
 
@@ -390,7 +394,7 @@ export class App {
     const txt = h('div', { class: 'voc-txt' });
     const wrap = h('button', {
       class: 'voc-gauge', 'aria-label': 'Vocation',
-      onclick: () => toast(`🎓 Consacre au moins ${Math.round(VOCATION_SHARE * 100)} % de la vie à une même activité : l'héritier pourra en recevoir la Vocation, un rang plus haut. Sinon, elle se transmet affaiblie d'un rang.`, 'info', 6000),
+      onclick: () => toast(`🎓 Consacre au moins ${Math.round(VOCATION_SHARE * 100)} % de la vie à une même activité : la relève pourra en recevoir la Vocation, un rang plus haut. Sinon, elle se transmet affaiblie d'un rang.`, 'info', 6000),
     },
       h('div', { class: 'label' }, '🎓 Vocation'),
       h('div', { class: 'voc-bar', style: { '--mark': `${VOCATION_SHARE * 100}%` } }, fill, h('span', { class: 'voc-mark' })),
@@ -402,9 +406,9 @@ export class App {
       wrap.hidden = !o;
       if (!o) return;
       const d = ACT[o.act];
-      const name = (v: { act: ActId; tier: number }) => `${ACT[v.act].vocation} ${roman(v.tier)}`;
+      const name = (v: { act: ActId; tier: number }) => vocationName(v, s.hero, roman);
       let text: string;
-      if (o.state === 'secured') text = `✔ ${d.icon} ${name(o.result!)} acquise pour l'héritier`;
+      if (o.state === 'secured') text = `✔ ${d.icon} ${name(o.result!)} acquise pour la relève`;
       else if (o.state === 'onTrack') {
         const cur = s.hero.vocation;
         const tail = cur && cur.act !== o.act ? ` · sinon ${name(cur)} s'affaiblit` : '';
@@ -539,7 +543,7 @@ export class App {
         stat('Puissance de base', b.text(h('span'), () => `×${echoPowerMult(s, this.rt).toFixed(2)}`)),
         stat('Production des Échos', b.text(h('span'), () => `${fmt(this.rt.echoRate)} pts/s`))));
     if (!s.echoes.length) {
-      return h('div', null, head, h('div', { class: 'card empty' }, h('div', { class: 'big-i' }, '👻'), h('p', null, 'Aucun Écho pour l\'instant. Quand ton héros mourra, sa vie deviendra une boucle éternelle.')));
+      return h('div', null, head, h('div', { class: 'card empty' }, h('div', { class: 'big-i' }, '👻'), h('p', null, `Aucun Écho pour l'instant. Quand ${s.hero.name} s'éteindra, sa vie deviendra une boucle éternelle.`)));
     }
     const list = h('div', { class: 'echo-list' }, s.echoes.map((e) => this.echoCard(e, b, () => { this.sigTab = ''; this.sigEcho = ''; })));
     return h('div', null, head, list);
@@ -558,10 +562,10 @@ export class App {
       const a = e.acts[Math.floor(e.pos)];
       return a >= 0 ? `${ACT[ACTS[a]].icon} ${ACT[ACTS[a]].name}` : '💤 Repos';
     });
-    const voc = e.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[e.vocation.act].color } }, `${ACT[e.vocation.act].icon} ${ACT[e.vocation.act].vocation} ${roman(e.vocation.tier)}`) : null;
+    const voc = e.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[e.vocation.act].color } }, `${ACT[e.vocation.act].icon} ${vocationName(e.vocation, e, roman)}`) : null;
     return h('div', { class: `card echo-card ${e.pinned ? 'pinned' : ''}` },
       head,
-      h('div', { class: 'row-wrap' }, voc, this.traitChips(e.traits, true)),
+      h('div', { class: 'row-wrap' }, voc, this.traitChips(e.traits, true, e)),
       timeline,
       h('div', { class: 'row-between small' },
         doing,
@@ -607,7 +611,7 @@ export class App {
     const regen = ecoRegenRate(s);
     const harmCard = h('div', { class: 'card' },
       h('h2', null, '🌳 Écosystème du Domaine'),
-      h('p', { class: 'muted' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre. Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes héros et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
+      h('p', { class: 'muted' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre. Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
       h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
       bars,
       h('div', { class: 'stats' },
@@ -645,7 +649,7 @@ export class App {
         h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
         h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason')),
       h('div', { class: 'stats' }, stat('Héritage disponible', b.text(h('span', { class: 'accent' }), () => `${fmt(s.legacy, 0)} ⚜️`))),
-      h('p', { class: 'muted small' }, 'L\'Héritage est gagné à chaque mort selon la valeur produite par le héros. Il améliore définitivement ta lignée.'));
+      h('p', { class: 'muted small' }, 'L\'Héritage est gagné à chaque mort selon la valeur produite par chaque vie. Il améliore définitivement ta lignée.'));
     const ups = h('div', { class: 'grid-cards' }, LEGACY.map((d) => {
       const lvl = s.upgrades[d.id] ?? 0;
       const maxed = d.max !== undefined && lvl >= d.max;
@@ -670,7 +674,7 @@ export class App {
     const anc = [...this.s.ancestors].reverse();
     modal(h('div', null,
       h('h2', null, `📜 Généalogie de la Maison ${this.s.lineage.name}`),
-      h('p', { class: 'muted small' }, `${anc.length} ancêtres, du plus récent au fondateur${anc.length > 200 ? ' (les 200 derniers)' : ''}.`),
+      h('p', { class: 'muted small' }, `${anc.length} ancêtres, du plus récent ${this.s.ancestors[0] ? acc(this.s.ancestors[0], 'au fondateur', 'à la fondatrice') : 'au fondateur'}${anc.length > 200 ? ' (les 200 derniers)' : ''}.`),
       this.ancestorTree(anc.slice(0, 200))), { wide: true });
   }
 
@@ -680,8 +684,8 @@ export class App {
       h('div', { class: 'tree-body' },
         h('div', { class: 'row-between' }, h('strong', null, a.name), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
         h('div', { class: 'row-wrap small' },
-          a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${ACT[a.vocation.act].vocation} ${roman(a.vocation.tier)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
-          this.traitChips(a.traits, true))))));
+          a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${vocationName(a.vocation, a, roman)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
+          this.traitChips(a.traits, true, a))))));
   }
 
   // --- Destin (événements, défi du jour, bazar) -----------------------------
@@ -721,7 +725,7 @@ export class App {
       h('div', { class: 'label' }, `Destin du jour · ${new Date(now).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`),
       h('h2', null, `🎲 La vie de ${setup.name}`),
       h('p', { class: 'muted small' }, `Une vie de ${DAILY_DUR} s, identique pour tous les joueurs. Maximise la valeur finale (🌾×1, 🪙×2, 📜×8, ✨×20) et partage ton score vérifiable.`),
-      this.traitChips(setup.traits),
+      this.traitChips(setup.traits, false, setup),
       h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
       h('div', { class: 'stats' },
         stat('Meilleur score', rec ? fmtInt(rec.best) : '—'),
@@ -736,12 +740,12 @@ export class App {
     const bless = TRAITS.filter((t) => !t.neg && t.rarity >= 1 && BLESSING_COST[t.rarity]);
     parts.push(h('div', { class: 'card' },
       h('h2', null, '✦ Bazar céleste'),
-      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les héritiers de la prochaine succession (max 2).`),
+      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les enfants de la prochaine succession (max 2).`),
       s.blessings.length ? h('p', { class: 'small accent' }, 'Bénédictions en attente : ', this.traitChips(s.blessings, true)) : null,
       h('div', { class: 'shop' }, bless.map((t) => {
         const c = BLESSING_COST[t.rarity];
-        const btn = h('button', { class: 'shop-item', style: { '--c': RARITY[t.rarity].color }, onclick: () => { if (buyBlessing(s, t.id)) { toast(`${t.icon} Bénédiction « ${t.name} » réservée`, 'good'); this.sigTab = ''; } else toast('Impossible : Éclats insuffisants, déjà choisie ou 2 bénédictions max.', 'bad'); } },
-          h('span', { class: 'shop-i' }, t.icon), h('span', { class: 'shop-n' }, t.name), h('span', { class: 'muted small' }, t.desc), h('span', { class: 'shop-c' }, `${c} ✦`));
+        const btn = h('button', { class: 'shop-item', style: { '--c': RARITY[t.rarity].color }, onclick: () => { if (buyBlessing(s, t.id)) { toast(`${t.icon} Bénédiction « ${traitName(t)} » réservée`, 'good'); this.sigTab = ''; } else toast('Impossible : Éclats insuffisants, déjà choisie ou 2 bénédictions max.', 'bad'); } },
+          h('span', { class: 'shop-i' }, t.icon), h('span', { class: 'shop-n' }, traitName(t)), h('span', { class: 'muted small' }, t.desc), h('span', { class: 'shop-c' }, `${c} ✦`));
         b.cls(btn, 'off', () => s.eclats < c || s.blessings.includes(t.id) || s.blessings.length >= 2);
         return btn;
       })),
@@ -786,8 +790,8 @@ export class App {
         const best = ACTS[m.indexOf(Math.max(...m))];
         return h('button', { class: `heir ${i === chosen ? 'chosen' : ''}`, onclick: () => { chosen = i; render(); } },
           h('div', { class: 'heir-name' }, hero.name),
-          hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${ACT[hero.vocation.act].vocation} ${roman(hero.vocation.tier)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
-          h('div', { class: 'heir-traits' }, hero.traits.map((id) => { const t = TRAIT[id]; return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${t.name}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)); })),
+          hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
+          h('div', { class: 'heir-traits' }, hero.traits.map((id) => { const t = TRAIT[id]; return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)); })),
           h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`));
       }));
       const echoList = h('div', { class: 'echo-pick' }, all.map((e) => {
@@ -819,12 +823,12 @@ export class App {
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
         h('div', { class: 'stats' },
           stat('Héritage gagné', `+${sc.legacyGain} ⚜️`),
-          stat('Vocation', sc.vocationEarned ? `${ACT[sc.vocationEarned.act].icon} ${ACT[sc.vocationEarned.act].vocation} ${roman(sc.vocationEarned.tier)}` : 'Aucune'),
+          stat('Vocation', sc.vocationEarned ? `${ACT[sc.vocationEarned.act].icon} ${vocationName(sc.vocationEarned, a, roman)}` : 'Aucune'),
           stat('Prochain palier ⚜️', `${fmt(Math.pow(sc.legacyGain + 1, 3) * 20)} pts`)),
         h('h3', { class: 'section-t' }, `Échos à conserver (${sel.size}/${slots})`),
         over ? h('p', { class: 'muted small' }, 'Tu as plus d\'Échos que d\'emplacements : choisis ceux qui continueront de boucler.') : null,
         echoList,
-        h('h3', { class: 'section-t' }, 'Choisis ton héritier'),
+        h('h3', { class: 'section-t' }, 'Choisis qui portera le nom'),
         heirs,
         h('div', { class: 'row-end sticky-bottom' }, ok)].filter((x): x is HTMLElement => !!x));
     };
@@ -839,7 +843,7 @@ export class App {
       h('h2', null, 'Pendant ton absence…'),
       h('p', { class: 'muted' }, `${fmtDur(r.seconds)} se sont écoulées. Tes Échos ont bouclé ${fmtInt(r.loops)} fois.`),
       h('div', { class: 'stats' }, gains.length ? gains : h('p', { class: 'muted' }, 'Rien n\'a été produit : il te faut des Échos !')),
-      r.died ? h('p', { class: 'accent' }, '🕯️ Ton héros s\'est éteint en ton absence. Une succession t\'attend.') : null,
+      r.died ? h('p', { class: 'accent' }, (() => { const a = this.s.succession?.ancestor; return a ? `🕯️ ${a.name} s'est ${acc(a, 'éteint', 'éteinte')} en ton absence. Une succession t'attend.` : '🕯️ Une vie s\'est achevée en ton absence. Une succession t\'attend.'; })()) : null,
       h('p', { class: 'muted small' }, 'Les événements ne comptent qu\'en ta présence. Reviens aux heures d\'événement !'),
       h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Continuer')));
   }
@@ -909,17 +913,37 @@ export class App {
       if (window.matchMedia('(pointer: fine)').matches) setTimeout(() => input.focus(), 300);
     };
 
-    // --- 3. Le premier du nom -------------------------------------------------
+    // --- 3. Le premier (ou la première) du nom -------------------------------------------------
     const firstOfName = () => {
       const t = TRAIT[s.hero.traits[0]];
       const shield = this.shieldEl(s.lineage.crest, s.lineage.color, 'intro-shield intro-shield-sm', s.lineage.partition);
+      const nameEl = h('h2', { class: 'intro-hero' });
+      const lineEl = h('p', { class: 'intro-line' });
+      const traitEl = t ? h('span') : null;
+      const fill = () => {
+        nameEl.textContent = s.hero.name;
+        lineEl.textContent = acc(s.hero, 'premier du nom', 'première du nom');
+        if (t && traitEl) traitEl.textContent = `${t.icon} ${traitName(t, s.hero)}`;
+      };
+      fill();
+      // Le Sablier a choisi… mais on peut lui demander un autre prénom.
+      const dice = h('button', { class: 'btn intro-dice intro-hero-dice', 'aria-label': 'Autre prénom', title: 'Autre prénom', onclick: () => {
+        let n = s.hero.name;
+        while (n === s.hero.name) n = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+        s.hero.name = n;
+        s.hero.sex = sexFor(n);
+        fill();
+        nameEl.classList.remove('reroll');
+        void nameEl.offsetWidth;
+        nameEl.classList.add('reroll');
+      } }, '🎲');
       show(h('div', { class: 'intro-s3' },
         h('div', { class: 'intro-sand', 'aria-hidden': 'true' }, Array.from({ length: 14 }, (_, i) => h('span', { style: { left: `${46 + ((i * 13) % 9)}%`, animationDelay: `${(i * 0.17).toFixed(2)}s` } }))),
         shield,
         h('p', { class: 'intro-sub' }, `La Maison ${s.lineage.name} est fondée.`),
-        h('h2', { class: 'intro-hero' }, s.hero.name),
-        h('p', { class: 'intro-line' }, isFeminine(s.hero.name) ? 'première du nom' : 'premier du nom'),
-        t ? h('div', { class: 'intro-trait', style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${t.name}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)) : null,
+        h('div', { class: 'row intro-heirow' }, nameEl, dice),
+        lineEl,
+        t ? h('div', { class: 'intro-trait', style: { '--c': RARITY[t.rarity].color } }, traitEl, h('span', { class: 'muted small' }, ` — ${t.desc}`)) : null,
         h('p', { class: 'muted small' }, 'Sa vie sera brève. Chacun de ses gestes deviendra un Écho.'),
         h('button', { class: 'btn btn-primary btn-lg intro-next', onclick: () => {
           root.classList.remove('show');
@@ -1077,8 +1101,8 @@ export class App {
       b.reset();
       content.replaceChildren(
         h('div', { class: 'center' }, h('div', { class: 'big-i' }, '🎲'), h('h2', null, `Destin du jour : ${setup.name}`)),
-        h('p', null, `Tu as ${DAILY_DUR} secondes. Même héros, même monde, mêmes règles pour tous. Ta lignée principale est mise en pause (tes Échos continuent).`),
-        this.traitChips(setup.traits),
+        h('p', null, `Tu as ${DAILY_DUR} secondes. Même destin, même monde, mêmes règles pour tous. Ta lignée principale est mise en pause (tes Échos continuent).`),
+        this.traitChips(setup.traits, false, setup),
         h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
         h('p', { class: 'muted small' }, 'Score = valeur finale des ressources : 🌾×1, 🪙×2, 📜×8, ✨×20. Les compétences repartent de zéro.'),
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary btn-lg', onclick: start }, 'Commencer')));
@@ -1178,7 +1202,7 @@ export class App {
           h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${fmtInt(run.score())} pts`), b.cls(h('div', { class: 'small good' }, rate), 'bad', () => this.dailyNetValue(run, run.life.act) < 0))),
         h('div', { class: 'bar bar-tiers' }, scoreFill, marks, bestMark),
         tierText,
-        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
+        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
           run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
         h('div', { class: 'row-between small' }, b.text(h('span'), () => `Âge ${Math.floor(run.tickN / 10)} / ${DAILY_DUR} ans`), b.text(h('span', { class: 'muted' }), () => `${fmtDur(DAILY_DUR - run.tickN / 10)} restantes`)),
         h('div', { class: 'bar' }, timeFill),

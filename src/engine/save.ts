@@ -1,3 +1,4 @@
+import { sexOf } from './data';
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
 export const SAVE_KEY = 'echos-de-lignee-save';
@@ -27,6 +28,12 @@ function migrate(d: any): GameState {
   s.settings = { ...base.settings, ...d.settings };
   s.stats = { ...base.stats, ...d.stats };
   s.lineage = { ...base.lineage, ...d.lineage };
+  // Genre des personnages : absent des sauvegardes d'avant, déduit du prénom.
+  const sexed = (p: { name: string; sex?: 'f' | 'm' } | null | undefined) => { if (p && !p.sex) p.sex = sexOf(p); };
+  sexed(s.hero);
+  s.echoes?.forEach(sexed);
+  s.ancestors?.forEach(sexed);
+  if (s.succession) { s.succession.heirs?.forEach(sexed); sexed(s.succession.newEcho); sexed(s.succession.ancestor); }
   s.v = SAVE_VERSION;
   return s;
 }
