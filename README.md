@@ -18,6 +18,8 @@ Tu fondes une lignée. Chaque héros ne vit que quelques dizaines de secondes, p
 
 ## Développement
 
+Node.js 24 ou plus récent.
+
 ```bash
 npm install
 npm run dev      # serveur de développement
@@ -26,7 +28,5 @@ npm run build    # build de production dans dist/
 ```
 
 Chaque push sur `main` déclenche `.github/workflows/deploy.yml` (tests, build, déploiement sur GitHub Pages).
-
-> Première mise en place : dans **Settings → Pages**, choisir **Source : GitHub Actions** si le premier déploiement ne l'a pas activé automatiquement.
 
 Conception détaillée et décisions du « conseil » de production : [`docs/GAME_DESIGN.md`](docs/GAME_DESIGN.md).
