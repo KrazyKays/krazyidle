@@ -1,19 +1,33 @@
 // Profils supplémentaires du Player Behavior Analyst (phase 1, audit 2026-11-14).
 // N'altère NI le jeu NI lab/sim : ajoute des entrées à PROFILES et instrumente les successions.
 // Toutes les hypothèses (temps de réaction, fréquence, règles de décision) sont dans `desc`.
-import { ACTS, BUILDINGS, LEGACY, RES_INFO, TRAIT, legacyCost, type ActId } from '../../src/engine/data';
+import { ACT, ACTS, BUILDINGS, LEGACY, RES_INFO, TRAIT, legacyCost, type ActId, type ResId } from '../../src/engine/data';
 import {
-  buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford, confirmSuccession, echoSlots, echoValueRate,
+  buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford, confirmSuccession, echoSlots, echoValueRate, prodMult,
   type Runtime,
 } from '../../src/engine/game';
 import { acceptProposal, canMarry, countyHouses, dowry, encodeProposal, marry, suitorFor } from '../../src/engine/alliances';
 import { activeEvent } from '../../src/engine/events';
-import { ecoHealth } from '../../src/engine/ecosystem';
-import { sumMods } from '../../src/engine/sim';
+import { ecoFactor, ecoHealth } from '../../src/engine/ecosystem';
+import { EPITHET } from '../../src/engine/epithets';
+import { lifePower, sumMods } from '../../src/engine/sim';
 import { zeroRes, type GameState, type Hero } from '../../src/engine/state';
-import { PROFILES, actNetValue, feasible, type Ctx, type Profile } from '../sim/profiles';
+import { PROFILES, feasible, type Ctx, type Profile } from '../sim/profiles';
 
 const has = (s: GameState, a: ActId) => s.unlocked.includes(a);
+/** Valeur nette instantanée lue dans ACT : identique à actNetValue (lab/sim) sans surcharge, mais suit BAL_OBJ (phase 2). */
+function actNetValue(s: GameState, rt: Runtime, a: ActId): number {
+  if (!s.life || !has(s, a)) return -Infinity;
+  const p = lifePower(s.life, s.hero, a);
+  const base = prodMult(s, rt, a) * p * ecoFactor(a, s.eco);
+  let v = 0;
+  for (const r in ACT[a].produce) v += ACT[a].produce[r as ResId]! * RES_INFO[r as ResId].value * base;
+  for (const r in ACT[a].consume) v -= ACT[a].consume[r as ResId]! * RES_INFO[r as ResId].value * Math.sqrt(Math.max(p, 0.01));
+  return v;
+}
+/** Force réelle d'un Écho (GD-02) : pts/s × max(0,2 ; 1 + force) × (1 + surnom). */
+const echoTrueRate = (e: { value: number; acts: number[]; strength: number; epithet?: string }) =>
+  echoValueRate(e) * Math.max(0.2, 1 + e.strength) * (1 + (EPITHET[e.epithet ?? '']?.mods.pow ?? 0));
 
 // ---------------------------------------------------------------------------
 // Briques (copies locales des helpers non exportés de lab/sim/profiles.ts)
@@ -35,12 +49,13 @@ const heirScoreOpti = (h: Hero) => {
   const m = sumMods(h.traits);
   return m.all * 1.5 + m.xp * 0.6 + m.life / 60 + m.echo * 0.5 + m.start * 0.3 + (h.vocation ? h.vocation.tier * 0.25 : 0);
 };
-function successionBest(s: GameState, score: (h: Hero) => number, key: 'value' | 'rate' | 'recent') {
+function successionBest(s: GameState, score: (h: Hero) => number, key: 'value' | 'rate' | 'recent' | 'true') {
   const sc = s.succession!;
   let best = 0;
   sc.heirs.forEach((h, i) => { if (score(h) > score(sc.heirs[best])) best = i; });
   const all = [...s.echoes, sc.newEcho];
   if (key === 'recent') all.sort((a, b) => b.id - a.id);
+  else if (key === 'true') all.sort((a, b) => echoTrueRate(b) - echoTrueRate(a));
   else all.sort((a, b) => (key === 'rate' ? echoValueRate(b) - echoValueRate(a) : b.value - a.value));
   confirmSuccession(s, best, all.slice(0, echoSlots(s)).map((e) => e.id));
 }
@@ -353,6 +368,23 @@ P['sans-vocation-piege'] = {
     if (v && (v === 'commercer' || v === 'cultiver') && life.timeIn[v] < life.dur * 0.5 && life.timeIn[v] + (life.dur - life.t) <= life.dur * 0.5 + 2) return feasible(s, v);
     if (has(s, 'commercer') && s.res.vivres > 30) return 'commercer';
     return feasible(s, 'cultiver');
+  },
+};
+
+// --- Phase 2 (confrontation B1, B2) : variantes d'opti-epargne (profil non piégé) ---
+P['ep-recent'] = { ...P['opti-epargne'], id: 'ep-recent', desc: 'opti-epargne, Échos les plus récents.', succession: (s) => successionBest(s, heirScoreOpti, 'recent') };
+P['ep-vraie-force'] = { ...P['opti-epargne'], id: 'ep-vraie-force', desc: 'opti-epargne, Échos triés par force réelle (pts/s × force × surnom, GD-02).', succession: (s) => successionBest(s, heirScoreOpti, 'true') };
+P['ep-sans-mariage'] = { ...P['opti-epargne'], id: 'ep-sans-mariage', desc: 'opti-epargne sans aucun mariage.', buy: (s) => { buySaving(s); bazaar(s); } };
+P['ep-mariage-max'] = {
+  ...P['opti-epargne'], id: 'ep-mariage-max',
+  desc: 'opti-epargne qui se marie à chaque vie dès que la dot est payable : maison dont la spécialité = vocation du héros (union de métier), sinon maison prestigieuse (don épique/légendaire).',
+  buy: (s, c) => {
+    buySaving(s); bazaar(s);
+    if (canMarry(s) && s.res.or > 1.05 * dowry(s, 'pnj')) {
+      const hs = countyHouses(c.now);
+      const ch = hs.find((h) => h.spec === s.hero.vocation?.act) ?? hs[0];
+      marry(s, suitorFor(s, ch, c.now));
+    }
   },
 };
 

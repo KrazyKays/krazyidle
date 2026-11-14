@@ -8,7 +8,8 @@ import { startLife } from '../../src/engine/game';
 import { arg, f, parseSeeds, runBal, stats } from './lib';
 import './profiles-extra';
 
-const OUT = 'lab/balance/results/traits-runs.jsonl';
+const OUT = arg('out', 'lab/balance/results/traits-runs.jsonl')!;
+const ONLY = arg('only')?.split(',');
 const CASES: [string, string[]][] = [
   ['mono-commercer', ['', 'langue_argent', 'polyvalent', 'robuste', 'curieux', 'echo_vibrant', 'prodige', 'harmonieux', 'fertile', 'longevite', 'genie', 'memoire', 'centenaire', 'sang_dore', 'elu', 'eternel', 'main_verte']],
   ['mono-cultiver', ['', 'main_verte', 'polyvalent', 'robuste', 'curieux', 'echo_vibrant', 'harmonieux', 'elu']],
@@ -33,7 +34,7 @@ if (arg('summarize')) {
     for (const l of lines) o.push(l.line);
     o.push('');
   }
-  writeFileSync('lab/balance/results/traits.md', o.join('\n'));
+  writeFileSync(OUT.replace(/-runs\.jsonl$/, '.md'), o.join('\n'));
   console.log(o.join('\n'));
 } else {
   const seeds = parseSeeds(arg('seeds', '1-30')!);
@@ -41,6 +42,7 @@ if (arg('summarize')) {
   const [K, N] = arg('shard', '0/1')!.split('/').map(Number);
   let i = 0;
   for (const [p, traits] of CASES) for (const t of traits) for (const seed of seeds) {
+    if (ONLY && !ONLY.includes(`${p}:${t}`)) continue;
     if (i++ % N !== K) continue;
     const r = runBal({
       profile: p, seed, hours,

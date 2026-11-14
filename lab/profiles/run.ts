@@ -41,7 +41,7 @@ await new Promise<void>((resolve, reject) => {
   }
 });
 results.sort((a, b) => a.profile.localeCompare(b.profile) || a.seed - b.seed);
-const meta = { id, commit, date: new Date().toISOString(), profiles, seeds: arg('seeds', '1-20'), hours, dt, events, startH, runs: results.length, wallMs: Date.now() - t0,
+const meta = { id, commit, date: new Date().toISOString(), profiles, seeds: arg('seeds', '1-20'), hours, dt, events, startH, balObj: process.env.BAL_OBJ ?? '', runs: results.length, wallMs: Date.now() - t0,
   command: 'node --import ./lab/sim/register.mjs lab/profiles/run.ts ' + process.argv.slice(2).join(' ') };
 writeFileSync(join(outDir, 'runs.jsonl'), results.map((r) => JSON.stringify(r)).join('\n') + '\n');
 const summary = summarize(results);
