@@ -1,0 +1,19 @@
+{
+ "id": "C201-balance-dt01",
+ "commit": "6f47e27",
+ "srcDirty": false,
+ "date": "2026-11-14T15:33:35.708Z",
+ "profiles": [
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-mediter",
+  "experimente"
+ ],
+ "seeds": "1-50",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "runs": 200,
+ "wallMs": 180574,
+ "command": "npm run sim -- --profiles=mono-cultiver,mono-commercer,mono-mediter,experimente --seeds=1-50 --hours=6 --dt=0.1 --workers=2 --id=C201-balance-dt01"
+}

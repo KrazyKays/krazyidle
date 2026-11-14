@@ -1,0 +1,17 @@
+{
+ "id": "C103-qa-dt1",
+ "commit": "6f47e27",
+ "srcDirty": false,
+ "date": "2026-11-14T15:32:12.324Z",
+ "profiles": [
+  "experimente",
+  "optimiseur"
+ ],
+ "seeds": "1-30",
+ "hours": 3,
+ "dt": 1,
+ "events": false,
+ "runs": 60,
+ "wallMs": 6246,
+ "command": "npm run sim -- --profiles=experimente,optimiseur --seeds=1-30 --hours=3 --dt=1 --workers=2 --id=C103-qa-dt1"
+}
