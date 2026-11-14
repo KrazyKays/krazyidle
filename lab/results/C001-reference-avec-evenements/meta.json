@@ -1,0 +1,18 @@
+{
+ "id": "C001-reference-avec-evenements",
+ "commit": "a53d1b5",
+ "srcDirty": false,
+ "date": "2026-11-14T15:24:01.846Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "occasionnel"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "runs": 600,
+ "wallMs": 43886,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel --seeds=1-200 --hours=6 --events --id=C001-reference-avec-evenements"
+}
