@@ -90,3 +90,13 @@ Il est implémenté dans `lab/metrics/epithet-guard.ts`, sur `extra.jsonl` (C404
 - **DATA-04** : le contrôle de comparabilité existe dans `compare.ts:15`.
 - **Réserve 1.** Changer la définition de l'Harmonie et de `echoShare` pour l'occasionnel rend toute campagne au runner corrigé **incomparable avec C000 pour ce profil** sur ces deux KPI. Il faut régénérer une référence sans événements au runner corrigé (C000 bis) avant tout `sim:guard` qui inclut l'occasionnel.
 - **Réserve 2.** `harmonyMin` reste dans `summary.md`, alors que DATA-05 recommande de ne pas l'utiliser.
+
+## Complément B7 : variante prudente C406 (Commercer 1,25 ; Méditer 0,15)
+
+C406 : `BAL_OBJ='ACT.commercer.produce.or=1.25;ACT.mediter.produce.essence=0.15' node --import ./lab/balance/register.mjs lab/metrics/run-patched.ts --profiles=experimente,mono-cultiver,mono-commercer,mono-mediter,mono-chasser,mono-etudier,optimiseur,debutant --seeds=1-50 --hours=6 --id=C406-fix1-prudent --shard={0,1}/2`, puis `--merge`. 400 parties, dt 0,5. `guardrails.ts C000 C406` : **69 VERT, 3 ROUGE, 9 DETTE**, code 1. [SIMULÉ]
+
+- **experimente** : valeur −1,8 % (8,259 → 8,251) au lieu de −7,7 % ; générations −4,7 % ; Héritage −2,5 %. VERT.
+- **Écart entre vocations** : ×6,5 (C000 : ×26,6). mono-commercer et mono-cultiver sont à égalité (8,835 contre 8,818 ; Cultiver gagne sur 19/50 graines). Il n'y a plus d'activité dominante.
+- **ROUGE 1** : Méditer débloqué en 321 s (p90) pour experimente, contre 154 s dans C000 et 343 s avec fix1. Il reste légèrement au-dessus du seuil de 300 s. Abaisser le seuil de Méditer à 20 Savoir devrait suffire [HYPOTHÈSE].
+- **ROUGE 2 et 3** : ce sont des effets voulus, pas des régressions. Héritage de mono-mediter +39 % (z 49,5), parce que Méditer devient viable. Part des vies surnommées de mono-mediter 0,80 : ce profil achète désormais Chroniques et tombe sur le défaut DATA-01 (« le Vénérable »).
+- **Verdict** : C406 est préférable à fix1. Il reste à traiter le délai de Méditer (seuil à 20 Savoir) et à confirmer à dt 0,1.
