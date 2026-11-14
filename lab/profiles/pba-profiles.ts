@@ -388,6 +388,14 @@ P['ep-mariage-max'] = {
   },
 };
 
+// B2 : le mariage passe AVANT les achats (l'Or n'est pas mangé par les bâtiments) — joueur qui veut vraiment s'unir.
+const marryFirst = (pick: (s: GameState, now: number) => ReturnType<typeof countyHouses>[number] | undefined) => (s: GameState, c: Ctx) => {
+  if (canMarry(s) && s.res.or >= dowry(s, 'pnj')) { const ch = pick(s, c.now); if (ch) marry(s, suitorFor(s, ch, c.now)); }
+  buySaving(s); bazaar(s);
+};
+P['ep-mariage-force'] = { ...P['opti-epargne'], id: 'ep-mariage-force', desc: 'opti-epargne qui paie la dot avant tout achat, à chaque vie, maison prestigieuse (don épique/légendaire).', buy: marryFirst((_s, now) => countyHouses(now)[0]) };
+P['ep-mariage-metier'] = { ...P['opti-epargne'], id: 'ep-mariage-metier', desc: 'opti-epargne qui paie la dot avant tout achat, uniquement avec une maison dont la spécialité = vocation du héros (union de métier : rang +1 à 35 %).', buy: marryFirst((s, now) => countyHouses(now).find((h) => h.spec === s.hero.vocation?.act)) };
+
 for (const [k, p] of Object.entries(P)) PROFILES[k] = instrument(p);
 // Les profils de référence sont aussi instrumentés (mêmes décisions) sous un alias.
 for (const k of ['experimente', 'debutant', 'occasionnel', 'optimiseur', 'mono-cultiver', 'mono-chasser', 'mono-commercer', 'mono-etudier', 'mono-mediter']) {
