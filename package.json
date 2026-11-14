@@ -11,7 +11,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "sim": "node --import ./lab/sim/register.mjs lab/sim/cli.ts",
-    "sim:compare": "node --import ./lab/sim/register.mjs lab/sim/compare.ts"
+    "sim:compare": "node --import ./lab/sim/register.mjs lab/sim/compare.ts",
+    "sim:guard": "node --import ./lab/sim/register.mjs lab/metrics/guardrails.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

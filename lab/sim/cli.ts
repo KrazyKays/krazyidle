@@ -1,6 +1,6 @@
 // Lanceur de campagnes de simulation (parallèle, graines reproductibles).
 //
-//   npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 [--dt=0.5] [--events] [--id=nom] [--workers=4]
+//   npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 [--dt=0.5] [--events] [--start-offset-min=50] [--id=nom] [--workers=4]
 //
 // Sorties : lab/results/<id>/runs.jsonl (une partie par ligne), summary.json, summary.md, meta.json.
 import { execSync } from 'node:child_process';
@@ -41,6 +41,7 @@ async function main() {
   const hours = Number(arg('hours', '6'));
   const dt = Number(arg('dt', '0.5'));
   const events = arg('events') === 'true';
+  const startOffsetMin = arg('start-offset-min') !== undefined ? Number(arg('start-offset-min')) : undefined;
   const workers = Math.max(1, Math.min(Number(arg('workers', String(availableParallelism()))), 16));
   const commit = (() => { try { return execSync('git rev-parse --short HEAD', { cwd: root }).toString().trim(); } catch { return 'inconnu'; } })();
   const dirty = (() => { try { return execSync('git status --porcelain -- src', { cwd: root }).toString().trim().length > 0; } catch { return false; } })();
@@ -49,7 +50,7 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
 
   const jobs: RunOpts[] = [];
-  for (const p of profiles) for (const seed of seeds) jobs.push({ profile: p, seed, hours, dt, events });
+  for (const p of profiles) for (const seed of seeds) jobs.push({ profile: p, seed, hours, dt, events, startOffsetMin });
   const t0 = Date.now();
   const results: RunResult[] = [];
   let next = 0, done = 0;
@@ -76,7 +77,7 @@ async function main() {
     for (let i = 0; i < Math.min(workers, jobs.length); i++) spawn();
   });
   results.sort((a, b) => a.profile.localeCompare(b.profile) || a.seed - b.seed);
-  const meta = { id, commit, srcDirty: dirty, date: new Date().toISOString(), profiles, seeds: arg('seeds', '1-20'), hours, dt, events, runs: results.length, wallMs: Date.now() - t0, command: 'npm run sim -- ' + process.argv.slice(2).join(' ') };
+  const meta = { id, commit, srcDirty: dirty, date: new Date().toISOString(), profiles, seeds: arg('seeds', '1-20'), hours, dt, events, startOffsetMin: startOffsetMin ?? (events ? 50 : 0), runs: results.length, wallMs: Date.now() - t0, command: 'npm run sim -- ' + process.argv.slice(2).join(' ') };
   writeFileSync(join(outDir, 'runs.jsonl'), results.map((r) => JSON.stringify(r)).join('\n') + '\n');
   const summary = summarize(results);
   writeFileSync(join(outDir, 'summary.json'), JSON.stringify({ meta, summary }, null, 1));

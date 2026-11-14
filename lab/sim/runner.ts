@@ -1,6 +1,6 @@
 // Exécute une partie complète avec un profil et collecte les indicateurs (voir lab/metrics/KPIS.md).
 import { ACTS, RES, RES_INFO } from '../../src/engine/data';
-import { newRuntime, setActivity, simulateOffline, startLife, tick } from '../../src/engine/game';
+import { newRuntime, offlineCapSec, setActivity, startLife, tick } from '../../src/engine/game';
 import { ecoHealth } from '../../src/engine/ecosystem';
 import { Rng } from '../../src/engine/rng';
 import { newGame, type GameState } from '../../src/engine/state';
@@ -14,8 +14,11 @@ export interface RunOpts {
   dt?: number;
   /** événements mondiaux actifs (horloge UTC réelle simulée) */
   events?: boolean;
-  /** début de la partie (ms UTC) ; défaut : lundi 16/11/2026 0 h UTC */
+  /** début de la partie (ms UTC) ; défaut : lundi 16/11/2026 0 h UTC + startOffsetMin */
   start?: number;
+  /** décalage du départ en minutes. Défaut : 50 avec événements (hors de la fenêtre 0 h–0 h 45, sinon l'objectif
+   *  du premier événement est calculé sur un Runtime neuf et tombe au plancher — QA-03/PBA-03), 0 sans. */
+  startOffsetMin?: number;
 }
 
 export interface RunResult {
@@ -71,7 +74,7 @@ export function runGame(o: RunOpts): RunResult {
   if (!prof) throw new Error(`Profil inconnu : ${o.profile} (dispo : ${Object.keys(PROFILES).join(', ')})`);
   const dt = o.dt ?? 0.5;
   const events = o.events ?? false;
-  const start = o.start ?? Date.UTC(2026, 10, 16);
+  const start = (o.start ?? Date.UTC(2026, 10, 16)) + (o.startOffsetMin ?? (events ? 50 : 0)) * 60_000;
   const s = newGame(start, o.seed);
   const rt = newRuntime();
   rt.online = events;
@@ -88,15 +91,47 @@ export function runGame(o: RunOpts): RunResult {
   let lastHourV = 0;
   let sessionEnd = prof.sessions ? prof.sessions[0] * 60 : Infinity;
 
+  let lastMin = 0, lastHour = 0;
+  /** Comptabilité d'un pas (en ligne ou hors ligne). */
+  const account = (step: number) => {
+    const g = RES.reduce((a, r) => a + rt.tickGross[r] * RES_INFO[r].value, 0);
+    allV += g; echoV += rt.echoRate * step;
+    const hh = ecoHealth(s.eco); hSum += hh * step; hN += step; hMin = Math.min(hMin, hh);
+    const m = Math.floor(c.t / 60);
+    if (m !== lastMin) { lastMin = m; checkAnomalies(s, anomalies, c.t); }
+    hourMark();
+  };
+  /** Points de contrôle horaires (aussi pendant les absences). */
+  const hourMark = () => {
+    while (Math.floor(c.t / 3600 + 1e-9) > lastHour) {
+      lastHour++;
+      const v = totalValue(s);
+      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600 });
+      lastHourV = v;
+    }
+  };
   while (c.t < total) {
-    // Session terminée : départ hors ligne
+    // Session terminée : départ hors ligne. Réplique exacte de simulateOffline (game.ts) — mêmes appels
+    // tick(s, rt, 1, …), même plafond, même seuil de 30 s — mais pas à pas, pour mesurer la part des Échos,
+    // l'Harmonie et les points horaires pendant l'absence (DATA-03, DATA-09).
     if (c.t >= sessionEnd && prof.sessions) {
       const off = Math.min(prof.sessions[1] * 3600, total - c.t);
-      const v0 = totalValue(s);
-      simulateOffline(s, rt, off, c.now + off * 1000);
-      allV += totalValue(s) - v0; // hors ligne : la part Échos n'est pas mesurable finement
-      c.t += off; c.now += off * 1000;
-      rt.online = events;
+      const sec = Math.min(off, offlineCapSec(s));
+      const t0 = c.t;
+      if (sec >= 30) {
+        rt.online = false;
+        const startMs = c.now + (off - sec) * 1000;
+        c.t = t0 + (off - sec);
+        const steps = Math.floor(sec);
+        for (let i = 0; i < steps; i++) {
+          tick(s, rt, 1, startMs + i * 1000);
+          c.t += 1;
+          account(1);
+        }
+        rt.online = events;
+      }
+      c.t = t0 + off; c.now += off * 1000;
+      hourMark();
       sessionEnd = c.t + prof.sessions[0] * 60;
       nextDecide = nextBuy = c.t;
       if (s.succession) succAt = c.t;
@@ -112,9 +147,7 @@ export function runGame(o: RunOpts): RunResult {
     c.now += dt * 1000;
     tick(s, rt, dt, c.now);
     c.t += dt;
-    const g = RES.reduce((a, r) => a + rt.tickGross[r] * RES_INFO[r].value, 0);
-    allV += g; echoV += rt.echoRate * dt;
-    const hh = ecoHealth(s.eco); hSum += hh; hN++; hMin = Math.min(hMin, hh);
+    account(dt);
     if (s.succession) {
       if (succAt < 0) succAt = c.t + prof.successionDelay;
       if (c.t >= succAt) { prof.succession(s, c); succAt = -1; if (s.hero.vocation) vocMax = Math.max(vocMax, s.hero.vocation.tier); }
@@ -123,12 +156,7 @@ export function runGame(o: RunOpts): RunResult {
     if (!hadSpouse && s.hero.spouse) married++;
     for (const a of s.unlocked) if (unlockAt[a] === undefined) unlockAt[a] = c.t;
     for (const k in s.upgrades) if (upgradeAt[k] === undefined) upgradeAt[k] = c.t;
-    if (Math.floor(c.t / 60) !== Math.floor((c.t - dt) / 60)) checkAnomalies(s, anomalies, c.t);
-    if (Math.floor(c.t / 3600) !== Math.floor((c.t - dt) / 3600)) {
-      const v = totalValue(s);
-      hourly.push({ h: Math.round(c.t / 3600), log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600 });
-      lastHourV = v;
-    }
+    hourMark();
   }
   checkAnomalies(s, anomalies, c.t);
 

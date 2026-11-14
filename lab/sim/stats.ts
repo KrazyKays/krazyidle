@@ -21,7 +21,14 @@ export function scalars(r: RunResult): Record<string, number> {
     epithetsFound: r.epithetsFound, eclatsEnd: r.eclatsEnd, eventsDone: r.eventsDone, married: r.married, vocationTierMax: r.vocationTierMax,
     anomalies: r.anomalies.length,
   };
-  for (const [a, t] of Object.entries(r.unlockAt)) if (t >= 0 || a === 'commercer' || a === 'etudier' || a === 'mediter') o[`unlock.${a}`] = t;
+  // « jamais » (-1) n'entre pas dans la moyenne du délai : il est compté à part dans never.* (DATA-02).
+  for (const [a, t] of Object.entries(r.unlockAt)) {
+    if (a === 'cultiver' || a === 'chasser') continue;
+    o[`never.${a}`] = t < 0 ? 1 : 0;
+    o[`unlock.${a}`] = t < 0 ? NaN : t;
+  }
+  for (const u of ['alliances', 'chroniques']) { const t = r.upgradeAt[u]; o[`never.${u}`] = t === undefined ? 1 : 0; o[`upgradeAt.${u}`] = t ?? NaN; }
+  o.lives = r.lives; o.epithetLives = r.epithetLives;
   for (const [a, x] of Object.entries(r.heroActShare)) o[`heroAct.${a}`] = x;
   for (const [a, x] of Object.entries(r.echoActShare)) o[`echoAct.${a}`] = x;
   for (const [b, x] of Object.entries(r.buildings)) o[`bld.${b}`] = x;
@@ -41,7 +48,8 @@ export function summarize(results: RunResult[]): Summary {
     const rows = rs.map(scalars);
     for (const row of rows) for (const k in row) keys.add(k);
     out[p] = {};
-    for (const k of [...keys].sort()) out[p][k] = dist(rows.map((row) => row[k] ?? 0));
+    // NaN = valeur absente (ex. jamais débloqué) : exclue de la distribution, n la reflète.
+    for (const k of [...keys].sort()) out[p][k] = dist(rows.map((row) => (k in row ? row[k] : NaN)));
   }
   return out;
 }
@@ -49,11 +57,11 @@ export function summarize(results: RunResult[]): Summary {
 const f = (x: number) => (!Number.isFinite(x) ? '—' : Math.abs(x) >= 1000 ? x.toFixed(0) : Math.abs(x) >= 10 ? x.toFixed(1) : x.toFixed(3));
 
 export function summaryMarkdown(meta: any, s: Summary): string {
-  const lines = [`# Campagne ${meta.id}`, '', `- Commit : \`${meta.commit}\`${meta.srcDirty ? ' (**src/ modifié**)' : ''}`, `- Commande : \`${meta.command}\``, `- ${meta.runs} parties · ${meta.hours} h · dt ${meta.dt} s · événements ${meta.events ? 'oui' : 'non'} · ${(meta.wallMs / 1000).toFixed(1)} s`, '', '> Résultats **[SIMULÉS]** : profils automatiques, pas de vrais joueurs.', ''];
-  const main = ['gen', 'legacyTotal', 'log10Value', 'echoShare', 'harmonyAvg', 'harmonyMin', 'traitCombos60', 'epithetsFound', 'eventsDone', 'unlock.commercer', 'unlock.etudier', 'unlock.mediter', 'anomalies'];
+  const lines = [`# Campagne ${meta.id}`, '', `- Commit : \`${meta.commit}\`${meta.srcDirty ? ' (**src/ modifié**)' : ''}`, `- Commande : \`${meta.command}\``, `- ${meta.runs} parties · ${meta.hours} h · dt ${meta.dt} s · événements ${meta.events ? 'oui' : 'non'} · ${(meta.wallMs / 1000).toFixed(1)} s`, '', '> Résultats **[SIMULÉS]** : profils automatiques, pas de vrais joueurs. `never.*` = part des parties sans déblocage ; `unlock.*` / `upgradeAt.*` ne portent que sur les parties qui débloquent (n). Décision avant/après : `npm run sim:guard` (pas `sim:compare`).', ''];
+  const main = ['gen', 'legacyTotal', 'log10Value', 'echoShare', 'harmonyAvg', 'traitCombos60', 'epithetsFound', 'eventsDone', 'unlock.commercer', 'unlock.etudier', 'never.etudier', 'unlock.mediter', 'never.mediter', 'upgradeAt.alliances', 'never.alliances', 'upgradeAt.chroniques', 'never.chroniques', 'anomalies'];
   for (const [p, d] of Object.entries(s)) {
-    lines.push(`## ${p}`, '', '| Indicateur | moy. | é.-t. | p10 | p50 | p90 | min | max |', '|---|---|---|---|---|---|---|---|');
-    for (const k of main) if (d[k]) { const x = d[k]; lines.push(`| ${k} | ${f(x.mean)} | ${f(x.sd)} | ${f(x.p10)} | ${f(x.p50)} | ${f(x.p90)} | ${f(x.min)} | ${f(x.max)} |`); }
+    lines.push(`## ${p}`, '', '| Indicateur | n | moy. | é.-t. | p10 | p50 | p90 | min | max |', '|---|---|---|---|---|---|---|---|---|');
+    for (const k of main) if (d[k]) { const x = d[k]; lines.push(`| ${k} | ${x.n} | ${f(x.mean)} | ${f(x.sd)} | ${f(x.p10)} | ${f(x.p50)} | ${f(x.p90)} | ${f(x.min)} | ${f(x.max)} |`); }
     const acts = Object.keys(d).filter((k) => k.startsWith('heroAct.')).map((k) => `${k.slice(8)} ${(d[k].mean * 100).toFixed(0)} %`).join(' · ');
     lines.push('', `Temps héros : ${acts}`, '');
   }

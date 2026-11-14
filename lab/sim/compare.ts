@@ -9,6 +9,14 @@ const all = process.argv.includes('--all');
 if (!a || !b) { console.error('usage : compare <reference.json> <candidat.json>'); process.exit(1); }
 const base = JSON.parse(readFileSync(a, 'utf8'));
 const cand = JSON.parse(readFileSync(b, 'utf8'));
+// Comparabilité (DATA-04) : mêmes conditions, sinon refus (code 2).
+for (const k of ['hours', 'dt', 'events', 'startOffsetMin']) {
+  if ((base.meta[k] ?? null) !== (cand.meta[k] ?? null) && !(k === 'startOffsetMin' && !base.meta.events && !cand.meta.events)) {
+    console.error(`Campagnes incomparables : ${k} ${base.meta[k]} ≠ ${cand.meta[k]}`);
+    process.exit(2);
+  }
+}
+console.log('⚠️  Affichage descriptif seulement (aucun test de significativité). Pour décider d\'un retour arrière : npm run sim:guard -- <id-réf> <id-cand>\n');
 const rows = compare(base.summary, cand.summary);
 console.log(`Référence ${base.meta.id} (${base.meta.commit}) → candidat ${cand.meta.id} (${cand.meta.commit})\n`);
 console.log('| profil | indicateur | réf. | cand. | Δ % | d |\n|---|---|---|---|---|---|');
