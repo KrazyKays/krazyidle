@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, GENOME_BUDGET, HOUSE_NAMES, acc, genomeWeight, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
@@ -359,7 +359,6 @@ export class App {
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
         this.traitChips(hero.traits, false, hero, current ? heroWear(s, hero) : null),
-        current ? h('div', { class: 'muted small', title: `Poids génétique des dons (Commun et Rare 1, Épique 2, Légendaire 3, Mythique 4) : ${GENOME_BUDGET} au plus chez les héritiers.` }, `🧬 Génome ${genomeWeight(hero.traits)} / ${GENOME_BUDGET}`) : null,
         spouseLine(hero, hero.spouse, true)));
   }
 
@@ -828,9 +827,7 @@ export class App {
             return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, h('span', { class: 'muted small' }, ` — ${t.desc}`),
               w >= 2 ? h('span', { class: 'wear', title: `Don transmis depuis ${w} générations : il passera à ses enfants avec une chance ×${wearMult(w).toFixed(2).replace('.', ',')}. Une alliance apporte du sang neuf.` }, ` 🩸 ${w} gén.`) : null);
           })),
-          h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`),
-          h('div', { class: 'muted small', title: `Chaque héritier porte des dons d'un poids génétique de ${GENOME_BUDGET} au plus : Commun et Rare 1, Épique 2, Légendaire 3, Mythique 4. Les traits négatifs et les Bénédictions ne comptent pas.` },
-            `🧬 Génome ${genomeWeight(hero.traits.filter((t) => !s.blessings.includes(t)))} / ${GENOME_BUDGET}`));
+          h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`));
       }));
       const echoList = h('div', { class: 'echo-pick' }, all.map((e) => {
         const on = sel.has(e.id);
