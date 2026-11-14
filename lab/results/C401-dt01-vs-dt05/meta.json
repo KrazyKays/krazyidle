@@ -1,0 +1,19 @@
+{
+ "id": "C401-dt01-vs-dt05",
+ "commit": "6f47e27",
+ "srcDirty": false,
+ "date": "2026-11-14T15:30:08.939Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "mono-chasser",
+  "mono-cultiver"
+ ],
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "runs": 160,
+ "wallMs": 82218,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,mono-chasser,mono-cultiver --seeds=1-40 --hours=6 --dt=0.1 --workers=2 --id=C401-dt01-vs-dt05"
+}

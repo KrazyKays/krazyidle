@@ -1,0 +1,24 @@
+{
+ "id": "C402-horizon-12h",
+ "commit": "6f47e27",
+ "srcDirty": false,
+ "date": "2026-11-14T15:32:33.176Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-50",
+ "hours": 12,
+ "dt": 0.5,
+ "events": false,
+ "runs": 450,
+ "wallMs": 143923,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-50 --hours=12 --workers=2 --id=C402-horizon-12h"
+}
