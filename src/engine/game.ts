@@ -3,11 +3,13 @@ import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   VOCATION_MAX, bMult, legacyCost, type ActId, type ResId,
 } from './data';
-import { ecoRegen, ecoStep, harmonyMult } from './ecosystem';
+import { addCadets, inbreedingRisk } from './alliances';
+import { ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
+import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
 import { Rng } from './rng';
 import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
-import { newLife, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
+import { newLife, newLifeStats, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
 
 export interface Runtime {
   event: EventWindow | null;
@@ -47,7 +49,26 @@ export function echoPowerMult(s: GameState, rt: Runtime): number {
 }
 
 export function echoPower(s: GameState, rt: Runtime, e: Echo): number {
-  return echoPowerMult(s, rt) * Math.max(0.2, 1 + e.strength);
+  return echoPowerMult(s, rt) * Math.max(0.2, 1 + e.strength) * (1 + (EPITHET[e.epithet ?? '']?.mods.pow ?? 0));
+}
+
+/** Bonus de surnom d'un Écho pour une activité. */
+export function echoActMult(e: Echo, a: ActId): number {
+  return 1 + (EPITHET[e.epithet ?? '']?.mods.act?.[a] ?? 0);
+}
+
+/** Pression d'un Écho sur le Domaine, modulée par son surnom. */
+export function echoEcoStrength(e: Echo): number {
+  return ECHO_ECO_STRENGTH * Math.max(0.2, 1 + (EPITHET[e.epithet ?? '']?.mods.eco ?? 0));
+}
+
+export function chroniclesUnlocked(s: GameState): boolean {
+  return up(s, 'chroniques') > 0;
+}
+
+/** Statistiques de la vie en cours (créées au besoin pour les anciennes sauvegardes). */
+export function lifeStats(life: LifeState) {
+  return (life.st ??= newLifeStats());
 }
 
 export function xpMult(s: GameState, rt: Runtime): number {
@@ -134,6 +155,7 @@ export function startLife(s: GameState) {
 export function setActivity(s: GameState, a: ActId | null) {
   if (!s.life) return;
   if (a && !s.unlocked.includes(a)) return;
+  if (a && s.life.lastAct && a !== s.life.lastAct && s.life.t > 0) lifeStats(s.life).sw++;
   s.life.act = a;
   if (a) s.life.lastAct = a;
 }
@@ -167,6 +189,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   for (const e of s.echoes) {
     if (!e.acts.length) continue;
     const p = echoPower(s, rt, e);
+    const ecoS = echoEcoStrength(e);
     let left = dt;
     while (left > 1e-9) {
       const idx = Math.min(e.acts.length - 1, Math.floor(e.pos));
@@ -174,7 +197,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
       const a = e.acts[idx];
       if (a >= 0) {
         const g0 = sumValue(rt.tickGross);
-        runActivity(ctx, ACTS[a], e.pow[idx] * p, ECHO_ECO_STRENGTH, step, false);
+        runActivity(ctx, ACTS[a], e.pow[idx] * p * echoActMult(e, ACTS[a]), ecoS, step, false);
         echoGross += sumValue(rt.tickGross) - g0;
       }
       e.pos += step;
@@ -189,6 +212,10 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   // Vie : le temps du héros ne s'écoule que pendant une activité
   if (s.life && s.life.act && !rt.pauseLife) {
     lifeTick(ctx, s.life, s.hero, xpMult(s, rt), dt);
+    const st = lifeStats(s.life), hh = ecoHealth(s.eco);
+    st.hs += hh * dt;
+    st.hn += dt;
+    st.hm = Math.min(st.hm, hh);
     if (s.life.t >= s.life.dur - 1e-9) endLife(s, now);
   }
 
@@ -246,6 +273,7 @@ function checkEventTiers(s: GameState, rt: Runtime, w: EventWindow) {
     rt.notices.push({ kind: 'event', text: `${EVENT_DEF[w.def.id].icon} Palier ${TIER_NAMES[ep.tier]} atteint ! +${EVENT_REWARDS[ep.tier]} ✦` });
     ep.tier++;
     if (ep.tier === 3) s.stats.eventsDone++;
+    if (s.life) lifeStats(s.life).ev = Math.max(lifeStats(s.life).ev, ep.tier);
   }
 }
 
@@ -315,22 +343,54 @@ export function endLife(s: GameState, now: number) {
   }
   const legacyGain = legacyFor(life.value);
   const m = sumMods(hero.traits);
+  const ep = chroniclesUnlocked(s) ? pickEpithet(lifeFacts(s, life, voc)) : null;
   const echo: Echo = {
     id: s.nextId++, heroId: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
+    epithet: ep?.id,
   };
   const ancestor: Ancestor = {
     id: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
-    value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now,
+    value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now, epithet: ep?.id,
+    spouse: hero.spouse ? { name: hero.spouse.name, sex: hero.spouse.sex, epithet: hero.spouse.epithet, house: hero.spouse.house, origin: hero.spouse.origin } : undefined,
   };
+  let epInfo: Succession['epithet'];
+  if (ep) {
+    const isNew = !s.epithets[ep.id];
+    const eclats = isNew ? EPITHET_ECLATS[ep.rarity] : 0;
+    s.epithets[ep.id] = (s.epithets[ep.id] ?? 0) + 1;
+    s.eclats += eclats;
+    epInfo = { id: ep.id, isNew, eclats };
+  }
   // Vocation non entretenue : elle se transmet affaiblie d'un rang.
   const decayed = hero.vocation && hero.vocation.tier > 1 ? { act: hero.vocation.act, tier: hero.vocation.tier - 1 } : null;
   const heroForHeirs: Hero = { ...hero, vocation: voc ?? decayed };
   const rng = new Rng(s.seed);
   const heirs = genHeirs(s, heroForHeirs, rng);
   s.seed = rng.s;
-  s.succession = { heirs, newEcho: echo, legacyGain, vocationEarned: voc, ancestor };
+  s.succession = { heirs, newEcho: echo, legacyGain, vocationEarned: voc, ancestor, epithet: epInfo };
   s.life = null;
+}
+
+/** Ce que les Chroniques retiennent d'une vie qui s'achève. */
+export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): LifeFacts {
+  const hero = s.hero;
+  const st = lifeStats(life);
+  const share = zeroActs();
+  let used = 0;
+  for (const a of ACTS) {
+    share[a] = life.dur > 0 ? life.timeIn[a] / life.dur : 0;
+    if (share[a] >= 0.1) used++;
+  }
+  const parent = s.ancestors[s.ancestors.length - 1];
+  return {
+    share, used, switches: st.sw,
+    harmonyAvg: st.hn > 0 ? st.hs / st.hn : ecoHealth(s.eco), harmonyMin: st.hn > 0 ? st.hm : ecoHealth(s.eco),
+    value: life.value, parentValue: parent?.value ?? 0, bestBefore: s.stats.bestLife, gen: hero.gen,
+    traits: hero.traits, negTraits: hero.traits.filter((t) => TRAIT[t]?.neg).length,
+    vocTier: voc?.tier ?? 0, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
+    eventTier: st.ev, builds: st.bd, game: s.eco.G, predators: s.eco.P,
+  };
 }
 
 export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
@@ -338,6 +398,8 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
   const n = Math.min(6, 3 + up(s, 'sang') + pm.heirs);
   const inherit = 0.5 + 0.08 * up(s, 'transmission') + pm.inherit;
   const luck = up(s, 'etoile');
+  const spouse = parent.spouse;
+  const inbred = inbreedingRisk(s, spouse);
   const out: Hero[] = [];
   const used = new Set<string>();
   for (let i = 0; i < n; i++) {
@@ -347,6 +409,20 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
       if (!def) continue;
       const p = def.neg ? 0.3 : Math.min(0.95, inherit);
       if (rng.chance(p)) traits.push(t);
+    }
+    // Le conjoint transmet aussi ses traits, un peu moins souvent (jamais ceux du Bazar).
+    if (spouse) {
+      for (const t of spouse.traits) {
+        const def = TRAIT[t];
+        if (!def || def.shop || traits.includes(t)) continue;
+        const p = (def.neg ? 0.3 : Math.min(0.95, inherit)) * 0.8;
+        if (rng.chance(p)) traits.push(t);
+      }
+      // Consanguinité : trop d'unions avec la même maison fragilisent le sang.
+      if (inbred > 0 && rng.chance(inbred)) {
+        const pool = TRAITS.filter((t) => t.neg && t.rarity <= 1 && !traits.includes(t.id));
+        if (pool.length) traits.push(rng.pick(pool).id);
+      }
     }
     const muts = (rng.chance(0.85) ? 1 : 0) + (rng.chance(0.25 + 0.04 * luck) ? 1 : 0);
     for (let k = 0; k < muts; k++) {
@@ -361,7 +437,14 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     traits.sort((a, b) => score(b) - score(a));
     while (traits.length > 4 + s.blessings.length) traits.pop();
     let vocation: Vocation | null = null;
-    if (parent.vocation && rng.chance(Math.min(0.95, 0.6 + 0.08 * up(s, 'transmission')))) vocation = { ...parent.vocation };
+    const vocP = Math.min(0.95, 0.6 + 0.08 * up(s, 'transmission'));
+    if (parent.vocation && rng.chance(vocP)) {
+      vocation = { ...parent.vocation };
+      // Union de métier : deux parents du même métier le transmettent parfois d'un rang plus haut.
+      if (spouse?.vocation?.act === vocation.act && rng.chance(0.35)) vocation.tier = Math.min(VOCATION_MAX, vocation.tier + 1);
+    } else if (!parent.vocation && spouse?.vocation && rng.chance(0.4)) {
+      vocation = { act: spouse.vocation.act, tier: Math.max(1, spouse.vocation.tier - 1) };
+    }
     let name = rng.pick(FIRST_NAMES);
     for (let k = 0; k < 5 && used.has(name); k++) name = rng.pick(FIRST_NAMES);
     used.add(name);
@@ -390,7 +473,9 @@ export function confirmSuccession(s: GameState, heirIdx: number, keepEchoIds: nu
   if (s.ancestors.length > 300) s.ancestors.shift();
   s.stats.lives++;
   s.stats.bestLife = Math.max(s.stats.bestLife, sc.ancestor.value);
-  s.hero = sc.heirs[Math.max(0, Math.min(sc.heirs.length - 1, heirIdx))];
+  const idx = Math.max(0, Math.min(sc.heirs.length - 1, heirIdx));
+  s.hero = sc.heirs[idx];
+  addCadets(s, sc.heirs.filter((_, i) => i !== idx));
   s.blessings = [];
   s.succession = null;
   startLife(s);
@@ -419,6 +504,7 @@ export function buyBuilding(s: GameState, id: string): boolean {
   if (!canAfford(s, cost)) return false;
   for (const r in cost) s.res[r as ResId] -= cost[r as ResId]!;
   s.buildings[id] = lvl + 1;
+  if (s.life) lifeStats(s.life).bd++;
   if (id === 'clepsydre' && s.life) s.life.dur += 4;
   return true;
 }

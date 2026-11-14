@@ -185,6 +185,8 @@ export const LEGACY: LegacyDef[] = [
   { id: 'sang', name: 'Sang fécond', icon: '👪', desc: '+1 enfant proposé', base: 9, growth: 2.8, max: 3 },
   { id: 'etoile', name: 'Bonne étoile', icon: '🍀', desc: 'Mutations plus rares et positives', base: 8, growth: 2.1, max: 5 },
   { id: 'patience', name: 'Patience', icon: '🌙', desc: 'Temps hors-ligne max +2 h', base: 5, growth: 1.8, max: 9 },
+  { id: 'alliances', name: 'Alliances', icon: '💍', desc: 'Débloque les mariages avec les maisons du comté et les lignées d\'autres joueurs', base: 90, growth: 1, max: 1 },
+  { id: 'chroniques', name: 'Chroniques', icon: '📜', desc: 'Débloque les Surnoms : chaque vie marquante entre dans la légende et renforce son Écho', base: 160, growth: 1, max: 1 },
 ];
 export const LEGACY_DEF: Record<string, LegacyDef> = Object.fromEntries(LEGACY.map((l) => [l.id, l]));
 export const legacyCost = (d: LegacyDef, lvl: number) => Math.ceil(d.base * Math.pow(d.growth, lvl));

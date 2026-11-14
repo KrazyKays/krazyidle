@@ -6,8 +6,9 @@ import {
 import { newGame, type GameState } from '../src/engine/state';
 import { sumMods } from '../src/engine/sim';
 
-export function runBot(hours: number, seed = 42, log = false) {
+export function runBot(hours: number, seed = 42, log = false, setup?: (s: GameState) => void) {
   const s: GameState = newGame(0, seed);
+  setup?.(s);
   const rt = newRuntime();
   rt.online = false; // pas d'événements pour la mesure de base
   startLife(s);

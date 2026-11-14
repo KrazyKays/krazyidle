@@ -13,6 +13,8 @@ Tu fondes une lignée. Chaque héros ne vit que quelques dizaines de secondes, p
 - 🌳 **Écosystème vivant** : Flore, Gibier et Prédateurs (Lotka-Volterra). L'équilibre rapporte plus que la surexploitation.
 - 🌠 **Événements mondiaux** toutes les 4 h, identiques pour tous les joueurs, avec export vers l'agenda.
 - 🎲 **Destin du jour** : la même vie pour tout le monde et un score partageable **vérifiable par replay**.
+- 📜 **Chroniques** (fin de partie) : les vies marquantes reçoivent un surnom (34 à découvrir) qui renforce leur Écho.
+- 💍 **Alliances** : mariages avec les maisons du comté ou avec la lignée d'un ami, par simple code, sans serveur.
 - 👑 Arbre de Lignée (prestige), 7 bâtiments, Bazar céleste.
 - 📱 PWA installable, jouable hors ligne, progression pendant l'absence, sauvegarde exportable.
 

@@ -40,7 +40,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - Les traits sont de rareté Commun, Rare, Épique, Légendaire ou Mythique, et certains sont négatifs.
 - Chaque héritier hérite de chaque trait parental avec 50 % de chance (améliorable), d'une ou deux mutations, et éventuellement de la vocation.
 - On choisit parmi 3 héritiers (jusqu'à 6 avec les améliorations).
-- L'**Héritage ⚜️**, gagné à chaque mort, se dépense dans un arbre permanent de 9 améliorations.
+- L'**Héritage ⚜️**, gagné à chaque mort, se dépense dans un arbre permanent de 11 améliorations (dont Alliances et Chroniques).
 
 ### 2.4 Le Domaine (écosystème)
 - Trois populations, Flore, Gibier et Prédateurs, suivent un modèle de **Lotka-Volterra amorti**.
@@ -57,15 +57,32 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - **Destin du jour** : une vie de 90 s **identique pour tous** (héros, traits, modificateurs et écosystème générés à partir de la date). Le score correspond à la valeur finale des ressources. Le partage se fait par un code qui encode les actions : le jeu **rejoue** la partie pour vérifier le score, ce qui rend la triche impossible sans serveur.
 - **Bazar céleste** : les Éclats ✦ achètent des Bénédictions (traits garantis pour le prochain héritier), le bonus Temps suspendu (+30 s), un nouveau blason ou une **partition d'écu** (parti, coupé, tranché, chevronné, écartelé : 3 ✦ chacune, puis libre de changer).
 
+### 2.6 Les Chroniques (surnoms, fin de partie)
+- Débloquées par l'amélioration d'Héritage **Chroniques** (160 ⚜️), pour ne pas surcharger le début de partie.
+- À sa mort, une vie marquante reçoit **un surnom** selon sa façon de vivre : « le Laboureur », « la Juste », « le Dévastateur », « la Matriarche », « le Maudit glorieux »… 34 surnoms en 4 raretés (Commun, Rare, Épique, Légendaire). Si plusieurs conviennent, le plus rare l'emporte.
+- Le surnom suit l'Écho pour toujours et **amplifie ce qu'il fait** : « le Laboureur » cultive mieux, « la Juste » pèse moins sur le Domaine, « le Dévastateur » produit plus mais l'abîme davantage. Les surnoms ironiques (« le Fainéant », « l'Inconstant ») n'ont aucun effet : pure saveur.
+- Les conditions restent cachées. Le **Codex** de l'onglet Lignée montre une énigme pour chaque surnom non découvert. Une première découverte rapporte 1 à 5 Éclats ✦ selon la rareté.
+- Équilibrage : un record ne compte que s'il écrase l'ancien (×1,5, ×2 pour le légendaire), « le Juste » exige de vivre de la terre (Cultiver + Chasser ≥ 50 %), et la longévité se mesure par rapport à une vie normale. Sur 3 h de bot, environ la moitié des vies reçoivent un surnom.
+
+### 2.7 Les Alliances (mariages, lien social)
+- Débloquées par l'amélioration d'Héritage **Alliances** (90 ⚜️).
+- **Une union par vie**, sans contrainte de genre, payée par une dot en Or (2 % de l'Or produit depuis le début, 50 au minimum, moitié prix entre joueurs). Les enfants héritent des traits **des deux parents** (ceux du conjoint un peu moins souvent, jamais ceux du Bazar). Deux parents du même métier transmettent parfois la vocation d'un rang plus haut.
+- **Maisons du comté** : chaque semaine (lundi 0 h UTC), trois maisons PNJ, **les mêmes pour tous les joueurs**, proposent un prétendant porteur de leur « don de la semaine ». Ça marche aussi pour qui joue seul.
+- **Entre joueurs** : les enfants non choisis à la succession deviennent des **cadets** (8 au plus). On en offre un par un **code** (ou un lien `…#mariage=CODE`) qu'un ami colle dans son jeu pour l'unir à son héros. Après l'union, le jeu propose d'envoyer un cadet en retour : l'alliance est alors **scellée** des deux côtés. Aucun serveur.
+- Sans serveur, un code peut être fabriqué : on borne donc ce qu'il apporte (ni traits du Bazar, un seul trait légendaire, quatre traits au plus, vocation au plus deux rangs au-dessus de celle du héros). Un code ne peut être accepté qu'une fois par lignée, et jamais par sa propre maison.
+- **Consanguinité** : chaque union de plus avec la même maison ajoute 15 % de risque de mutation négative chez les enfants (60 % au plus).
+- Les blasons des maisons alliées sont rassemblés dans la **Galerie des alliances**. La généalogie garde trace des unions, et un héros uni à la lignée d'un autre joueur peut devenir « le Bien-Aimé ».
+
 ## 3. Feuille de route
 
 | Version | Contenu |
 |---|---|
 | **0.1 (sortie)** | Tout ce qui précède. PWA, sauvegarde export/import, hors ligne jusqu'à 6 h (+2 h par niveau de Patience). |
-| 0.2 | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
+| **0.2 (sortie)** | Chroniques (34 surnoms, Codex) et Alliances (maisons du comté, mariages entre joueurs par code, galerie). |
+| 0.2.x | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
 | 0.3 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
 | 0.4 | Classement en ligne optionnel (backend léger) qui réutilise les codes vérifiables du Destin du jour. |
-| 1.0 | Mariages entre lignées (croisement génétique choisi), nouveaux biomes du Domaine, notifications push. |
+| 1.0 | Nouveaux biomes du Domaine, notifications push. |
 
 ## 4. Architecture technique
 
@@ -75,6 +92,8 @@ src/engine/   moteur pur, déterministe, testable sans DOM
   sim.ts        noyau partagé (activité, vie, traits)
   game.ts       partie principale : tick, Échos, succession, achats, hors-ligne
   ecosystem.ts  Lotka-Volterra amorti + Harmonie
+  epithets.ts   surnoms des Chroniques (règles, effets, Codex)
+  alliances.ts  maisons du comté, mariages, codes d'alliance
   events.ts     calendrier déterministe + export .ics
   daily.ts      Destin du jour : setup, replay, codes vérifiables
   save.ts       sauvegarde locale versionnée, export/import

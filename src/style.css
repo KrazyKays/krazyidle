@@ -447,3 +447,27 @@ p { margin: 6px 0; }
 .pause-banner { margin-bottom: 8px; color: var(--gold); }
 .btn-resume { animation: glow 2s ease-in-out infinite; }
 .life-pill { --c: var(--gold); }
+
+/* --- Surnoms et Alliances --------------------------------------------------- */
+.strong { font-weight: 700; }
+.italic { font-style: italic; }
+.crest-xs { width: 18px; height: 21px; }
+.crest-md { width: 38px; height: 44px; }
+.badge-epithet { --c: var(--gold); border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); font-family: var(--title); font-weight: 700; }
+.spouse-line { display: flex; align-items: center; gap: 6px; margin-top: 6px; color: var(--muted); }
+.spouse-line.small { margin-top: 4px; }
+.sub-t { margin: 10px 2px 4px; }
+.house-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; }
+.suitor { display: flex; flex-direction: column; gap: 6px; }
+.suitor-head { display: flex; align-items: center; gap: 10px; }
+.suitor-name { font-family: var(--title); font-weight: 700; font-size: 1.02rem; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.gallery-item { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; padding: 10px 6px; border-radius: 12px; background: rgba(0, 0, 0, 0.22); border: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.gallery-item.sealed { border-color: var(--gold2); box-shadow: 0 0 14px rgba(242, 196, 90, 0.15); }
+.codex { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
+.codex-item { --c: #b0bec5; display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.22); border-left: 3px solid var(--c); }
+.codex-item.locked { opacity: 0.7; border-left-style: dashed; }
+.codex-i { font-size: 22px; width: 30px; text-align: center; flex: none; }
+.epithet-reveal { --c: var(--gold); text-align: center; border-color: var(--c); box-shadow: 0 0 22px color-mix(in srgb, var(--c) 25%, transparent); }
+.epithet-reveal h3 { font-family: var(--title); color: var(--c); margin-top: 4px; }
+@media (min-width: 700px) { .codex { grid-template-columns: 1fr 1fr; } }

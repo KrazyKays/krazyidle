@@ -77,6 +77,8 @@ if (isNew) {
     state.flags.started = true;
     startLife(state);
     save();
+    // Arrivé par un lien de mariage : on garde la demande sous les yeux après la fondation.
+    app.handleDeepLink();
   });
 } else {
   state.stats.sessions = (state.stats.sessions ?? 0) + 1;
@@ -84,7 +86,9 @@ if (isNew) {
   // La pause ne survit pas à la fermeture : au lancement, la vie repart toujours.
   resumeLife(state);
   catchUp();
+  app.handleDeepLink();
 }
+window.addEventListener('hashchange', () => { if (state.flags.started) app.handleDeepLink(); });
 
 let last = performance.now();
 let acc = 0;

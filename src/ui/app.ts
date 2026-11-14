@@ -7,7 +7,7 @@ import { ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameVigor, harmonyMult, trophy
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
-  VOCATION_SHARE, confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
+  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -16,6 +16,9 @@ import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
+import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, fullName } from '../engine/epithets';
+import { alliancesUnlocked, weekIndex } from '../engine/alliances';
+import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 
 type Tab = 'vie' | 'echos' | 'domaine' | 'lignee' | 'destin';
 /** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
@@ -168,7 +171,7 @@ export class App {
     }
     // Succession non bloquante : on prévient, le joueur s'en occupe quand il veut.
     const pending = !!this.s.succession;
-    if (pending && !this.hadSuccession) toast(`🕯️ ${this.s.succession!.ancestor.name} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
+    if (pending && !this.hadSuccession) toast(`🕯️ ${fullName(this.s.succession!.ancestor)} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
     this.hadSuccession = pending;
     if (now - this.lastHist > 2000) {
       this.lastHist = now;
@@ -270,7 +273,7 @@ export class App {
   // Panneau Vie
   sigLifeNow() {
     const s = this.s;
-    return [!!s.life, isPaused(s), s.hero.id, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length, this.installOffer(), s.ancestors.length > 0].join('|');
+    return [!!s.life, isPaused(s), s.hero.id, s.hero.spouse?.name, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length, this.installOffer(), s.ancestors.length > 0].join('|');
   }
 
   hint(): { id: string; text: string } | null {
@@ -355,7 +358,8 @@ export class App {
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
-        this.traitChips(hero.traits, false, hero)));
+        this.traitChips(hero.traits, false, hero),
+        spouseLine(hero, hero.spouse, true)));
   }
 
   /** Pastilles de traits, accordées au personnage qui les porte (sans personnage : les deux formes). */
@@ -505,7 +509,8 @@ export class App {
       case 'vie':
       case 'echos': return 'E' + s.echoes.map((e) => e.id + (e.pinned ? 'p' : '')).join() + '|' + echoSlots(s);
       case 'domaine': return 'D' + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
-      case 'lignee': return 'L' + JSON.stringify(s.upgrades) + s.ancestors.length + this.lineageSig();
+      case 'lignee': return 'L' + JSON.stringify(s.upgrades) + s.ancestors.length + this.lineageSig() + '|' + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life
+        + '|' + s.cadets.length + JSON.stringify(s.alliances) + Object.keys(s.epithets).length + '|' + weekIndex(Date.now());
       case 'destin': {
         const ev = this.rt.event;
         return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(s.daily[utcDateStr(Date.now())] ?? null) + s.blessings.join() + s.partitions.join() + this.lineageSig() + Math.floor(Date.now() / 60000);
@@ -552,7 +557,7 @@ export class App {
   echoCard(e: Echo, b: Binder, refresh: () => void) {
     const s = this.s;
     const head = h('div', { class: 'act-head' },
-      h('span', { class: 'echo-name' }, `${e.name} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
+      h('span', { class: 'echo-name' }, `${fullName(e)} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
       b.text(h('span', { class: 'loops' }), () => `↻ ${e.loops}`));
     const timeline = h('div', { class: 'timeline', style: { background: stripGradient(e.acts, e.acts.length) } });
     const ph = h('div', { class: 'playhead' });
@@ -565,7 +570,7 @@ export class App {
     const voc = e.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[e.vocation.act].color } }, `${ACT[e.vocation.act].icon} ${vocationName(e.vocation, e, roman)}`) : null;
     return h('div', { class: `card echo-card ${e.pinned ? 'pinned' : ''}` },
       head,
-      h('div', { class: 'row-wrap' }, voc, this.traitChips(e.traits, true, e)),
+      h('div', { class: 'row-wrap' }, voc, epithetBadge(e.epithet, e), this.traitChips(e.traits, true, e)),
       timeline,
       h('div', { class: 'row-between small' },
         doing,
@@ -666,6 +671,8 @@ export class App {
       ? h('button', { class: 'btn btn-sm btn-ghost tree-more', onclick: () => this.openGenealogy() }, `📜 Voir toute la généalogie (${anc.length} ancêtres)`)
       : null;
     return h('div', null, head, h('h3', { class: 'section-t' }, 'Arbre de Lignée'), ups,
+      alliancesSection(this),
+      codexSection(this),
       h('h3', { class: 'section-t' }, 'Généalogie'),
       anc.length ? h('div', null, tree, more) : h('p', { class: 'card muted' }, 'Les ancêtres apparaîtront ici.'));
   }
@@ -682,10 +689,12 @@ export class App {
     return h('div', { class: 'tree' }, anc.map((a) => h('div', { class: 'tree-node' },
       h('div', { class: 'tree-gen' }, roman(a.gen)),
       h('div', { class: 'tree-body' },
-        h('div', { class: 'row-between' }, h('strong', null, a.name), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
+        h('div', { class: 'row-between' }, h('strong', null, fullName(a)), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
         h('div', { class: 'row-wrap small' },
           a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${vocationName(a.vocation, a, roman)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
-          this.traitChips(a.traits, true, a))))));
+          epithetBadge(a.epithet, a),
+          this.traitChips(a.traits, true, a)),
+        spouseLine(a, a.spouse, true)))));
   }
 
   // --- Destin (événements, défi du jour, bazar) -----------------------------
@@ -800,7 +809,7 @@ export class App {
           if (on) sel.delete(e.id); else if (sel.size < slots) sel.add(e.id); else { toast(`Seulement ${slots} emplacements : libère d'abord un autre Écho.`, 'bad'); return; }
           render();
         } },
-          h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${e.name}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
+          h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
           h('div', { class: 'timeline sm', style: { background: stripGradient(e.acts, e.acts.length) } }),
           h('div', { class: 'muted small' }, `Gén. ${e.gen} · ${fmt(e.value)} pts${e.pinned ? ' · 📌' : ''}`));
       }));
@@ -821,6 +830,7 @@ export class App {
           h('div', { class: 'big-i' }, '🕯️'),
           h('h2', null, `${a.name} rejoint les ancêtres`),
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
+        this.epithetReveal(),
         h('div', { class: 'stats' },
           stat('Héritage gagné', `+${sc.legacyGain} ⚜️`),
           stat('Vocation', sc.vocationEarned ? `${ACT[sc.vocationEarned.act].icon} ${vocationName(sc.vocationEarned, a, roman)}` : 'Aucune'),
@@ -829,11 +839,37 @@ export class App {
         over ? h('p', { class: 'muted small' }, 'Tu as plus d\'Échos que d\'emplacements : choisis ceux qui continueront de boucler.') : null,
         echoList,
         h('h3', { class: 'section-t' }, 'Choisis qui portera le nom'),
+        a.spouse ? h('p', { class: 'muted small' }, `Enfants de ${a.name} et de ${fullName(a.spouse)} (Maison ${a.spouse.house.name}) : ils héritent des dons de leurs deux parents.`) : null,
         heirs,
+        alliancesUnlocked(s) && sc.heirs.length > 1 ? h('p', { class: 'muted small' }, '💌 Les enfants que tu ne choisis pas deviennent des cadets : tu pourras les marier à d\'autres maisons (Lignée → Alliances).') : null,
         h('div', { class: 'row-end sticky-bottom' }, ok)].filter((x): x is HTMLElement => !!x));
     };
     render();
     this.successionModal = modal(content, { wide: true, onClose: () => { this.successionModal = null; } });
+  }
+
+  /** Surnom que la Chronique vient d'attribuer au défunt (succession). */
+  epithetReveal(): HTMLElement | null {
+    const sc = this.s.succession;
+    const info = sc?.epithet;
+    if (!sc) return null;
+    const a = sc.ancestor;
+    if (!info) {
+      return chroniclesUnlocked(this.s) ? h('p', { class: 'muted small center' }, '📜 Une vie sans éclat : les Chroniques ne lui donnent pas de surnom.') : null;
+    }
+    const e = EPITHET[info.id];
+    return h('div', { class: 'card epithet-reveal', style: { '--c': EPITHET_RARITY[e.rarity].color } },
+      h('div', { class: 'label' }, info.isNew ? `✨ Nouveau surnom découvert · ${EPITHET_RARITY[e.rarity].name} · +${info.eclats} ✦` : `📜 Les Chroniques retiennent · ${EPITHET_RARITY[e.rarity].name}`),
+      h('h3', null, `${e.icon} ${a.name} ${epithetLabel(e.id, a)}`),
+      h('p', { class: 'muted small' }, epithetEffect(e, (x) => ACT[x].name)));
+  }
+
+  /** Lien partagé « …#mariage=CODE » : ouvre la demande en mariage. */
+  handleDeepLink() {
+    const m = location.hash.match(/^#mariage=(.+)$/);
+    if (!m) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    openAcceptProposal(this, decodeURIComponent(m[1]));
   }
 
   showOffline(r: OfflineReport) {
