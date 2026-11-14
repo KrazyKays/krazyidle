@@ -115,7 +115,7 @@ async function blessingDuringSuccession(browser) {
 
 /**
  * QA-02 en vrai : une sauvegarde au héros incomplet dans localStorage (ce qu'écrirait l'import, accepté par
- * deserialize, une fois QA-01-import corrigé). Aujourd'hui l'import via l'UI est écrasé par `pagehide`
+ * deserialize, une fois QA-10 corrigé). Aujourd'hui l'import via l'UI est écrasé par `pagehide`
  * (voir import-reset.cjs) : on place donc la sauvegarde avant le chargement.
  */
 async function malformedSave(browser) {

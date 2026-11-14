@@ -1,0 +1,157 @@
+[
+  {
+    "k": "mobile : cérémonie d'ouverture",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : la première vie s'écoule",
+    "ok": true,
+    "info": "t=4.30 s après 3 s"
+  },
+  {
+    "k": "mobile : une entrée par seconde",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : pas de défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : mort → succession en attente",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : modale de succession sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : génération II, un Écho",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : onglet « ⏳ Vie » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : onglet « 🌀 Échos » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : onglet « 🌳 Domaine » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : onglet « 👑 Lignée » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : onglet « 🌠 Destin » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "mobile : export de sauvegarde lisible",
+    "ok": true,
+    "info": "2952 caractères"
+  },
+  {
+    "k": "mobile : aucune erreur console",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : cérémonie d'ouverture",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : la première vie s'écoule",
+    "ok": true,
+    "info": "t=3.70 s après 3 s"
+  },
+  {
+    "k": "desktop : une entrée par seconde",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : pas de défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : mort → succession en attente",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : modale de succession sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : génération II, un Écho",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : onglet « 🌳 Domaine » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : onglet « 👑 Lignée » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : onglet « 🌠 Destin » sans défilement horizontal",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "desktop : export de sauvegarde lisible",
+    "ok": true,
+    "info": "2960 caractères"
+  },
+  {
+    "k": "desktop : aucune erreur console",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "QA-01 navigateur : achat accepté pendant la succession",
+    "ok": true,
+    "info": "{\"e\":0,\"b\":[\"elu\"],\"succ\":true}"
+  },
+  {
+    "k": "QA-01 navigateur : Bénédiction perdue après validation (bug reproduit si OK)",
+    "ok": true,
+    "info": "{\"traits\":[\"main_verte\"],\"b\":[],\"e\":0}"
+  },
+  {
+    "k": "QA-02 navigateur : sauvegarde acceptée puis plantage au lancement (bug reproduit si OK)",
+    "ok": true,
+    "info": "{\"hasKrazy\":false,\"tabs\":3,\"text\":\"🌳\\nDomaine\\n👑\\nLignée\\n🌠\\nDestin\"} · pageerror: e is not iterable"
+  },
+  {
+    "k": "QA-02 navigateur : le plantage persiste au rechargement",
+    "ok": true,
+    "info": ""
+  },
+  {
+    "k": "QA-06 navigateur : après 20 s de gel visible, temps de jeu rattrapé (bug reproduit si FAIL)",
+    "ok": false,
+    "info": "jeu +7.1 s pour 22.0 s réelles"
+  }
+]
