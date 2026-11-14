@@ -229,5 +229,9 @@ export function codexSection(app: App): HTMLElement | null {
     h('h3', { class: 'section-t' }, `📜 Codex des surnoms (${found}/${EPITHETS.length})`),
     h('div', { class: 'card' },
       h('p', { class: 'muted small' }, 'À sa mort, une vie marquante reçoit un surnom : il suit son Écho pour toujours et le renforce. Le plus rare l\'emporte. Chaque première découverte offre des Éclats ✦.'),
-      list));
+      list,
+      // Allusion au budget génétique, dont le chiffre n'est affiché nulle part.
+      h('div', { class: 'codex-item codex-lore', style: { '--c': '#ab47bc' } }, h('span', { class: 'codex-i' }, '🧬'),
+        h('div', null, h('div', { class: 'strong' }, 'Dicton des anciens'),
+          h('div', { class: 'muted small italic' }, '« Un sang ne porte qu\'un fardeau de dons : deux couronnes y tiennent, jamais trois, et les plus humbles s\'y glissent toujours. »')))));
 }
