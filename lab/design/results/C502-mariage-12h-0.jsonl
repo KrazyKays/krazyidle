@@ -6,3 +6,15 @@
 {"p":"m-sans","seed":11,"hours":12,"log10":9.042052113670826,"legacy":4979,"gen":327,"unions":0}
 {"p":"m-sans","seed":13,"hours":12,"log10":9.11867495788952,"legacy":5017,"gen":331,"unions":0}
 {"p":"m-sans","seed":15,"hours":12,"log10":9.035910601963396,"legacy":4793,"gen":331,"unions":0}
+{"p":"m-sans","seed":17,"hours":12,"log10":9.108738322461962,"legacy":5013,"gen":336,"unions":0}
+{"p":"m-sans","seed":19,"hours":12,"log10":9.030379759616613,"legacy":4854,"gen":329,"unions":0}
+{"p":"m-marie","seed":1,"hours":12,"log10":8.82374562157599,"legacy":4662,"gen":326,"unions":240}
+{"p":"m-marie","seed":3,"hours":12,"log10":8.843715908575987,"legacy":4585,"gen":330,"unions":225}
+{"p":"m-marie","seed":5,"hours":12,"log10":8.766984408227147,"legacy":4630,"gen":331,"unions":210}
+{"p":"m-marie","seed":7,"hours":12,"log10":8.770360163868869,"legacy":4604,"gen":327,"unions":242}
+{"p":"m-marie","seed":9,"hours":12,"log10":8.850926160217755,"legacy":4680,"gen":327,"unions":212}
+{"p":"m-marie","seed":11,"hours":12,"log10":8.765935004772297,"legacy":4565,"gen":326,"unions":227}
+{"p":"m-marie","seed":13,"hours":12,"log10":8.781489848750864,"legacy":4644,"gen":327,"unions":235}
+{"p":"m-marie","seed":15,"hours":12,"log10":8.770741696478293,"legacy":4591,"gen":332,"unions":224}
+{"p":"m-marie","seed":17,"hours":12,"log10":8.778891384846975,"legacy":4559,"gen":331,"unions":230}
+{"p":"m-marie","seed":19,"hours":12,"log10":8.802385798070777,"legacy":4563,"gen":332,"unions":243}

@@ -16,7 +16,7 @@ mkdirSync(dir, { recursive: true });
 
 if (arg('merge')) {
   const { summarize, summaryMarkdown } = await import('../sim/stats');
-  const parts = readdirSync(dir).filter((f) => f.startsWith('part-'));
+  const parts = readdirSync(dir).filter((f) => /^part-\d+\.jsonl$/.test(f));
   const runs = parts.flatMap((f) => readFileSync(join(dir, f), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)));
   runs.sort((a, b) => a.profile.localeCompare(b.profile) || a.seed - b.seed);
   const m0 = JSON.parse(readFileSync(join(dir, 'part-meta.json'), 'utf8'));

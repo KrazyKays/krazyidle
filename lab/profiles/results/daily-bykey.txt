@@ -1,0 +1,3 @@
+touche gagnante par date : {"chasser":5,"cultiver":14,"mediter":11}
+meilleure touche : min 288 p50 356 max 823 (×2.9 entre dates)
+avance de la meilleure touche sur la 2e : p50 ×1.27 min ×1.00 max ×2.57

@@ -25,19 +25,33 @@ const snap = (page) => page.evaluate(() => ({ play: window.krazy.state.stats.pla
 (async () => {
   const browser = await chromium.launch();
   try {
-    // Cas 1 : onglet masqué (un autre onglet passe au premier plan), > 30 s.
+    // Cas 1 : onglet masqué, > 30 s. Chromium sans écran garde la page « visible » même derrière un
+    // autre onglet (vérifié : bringToFront ne change pas visibilityState) ; on émule donc ce que fait
+    // un navigateur de bureau : document.hidden = true, événement visibilitychange, requestAnimationFrame
+    // suspendu ; les minuteries (setInterval de sauvegarde) continuent de tourner.
     {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const page = await founded(ctx);
       const a = await snap(page);
-      const other = await ctx.newPage();
-      await other.goto('about:blank');
-      await other.bringToFront();
+      await page.evaluate(() => {
+        const w = window;
+        w.__qaHidden = true; w.__qaRaf = w.requestAnimationFrame.bind(w); w.__qaQueue = [];
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => w.__qaHidden });
+        Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (w.__qaHidden ? 'hidden' : 'visible') });
+        w.requestAnimationFrame = (cb) => { if (w.__qaHidden) { w.__qaQueue.push(cb); return 0; } return w.__qaRaf(cb); };
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
       await sleep(500);
       const hidden = await snap(page);
       await sleep(SEC * 1000);
       const during = await snap(page);
-      await page.bringToFront();
+      await page.evaluate(() => {
+        const w = window;
+        w.__qaHidden = false;
+        document.dispatchEvent(new Event('visibilitychange'));
+        const q = w.__qaQueue; w.__qaQueue = [];
+        for (const cb of q) w.__qaRaf(cb);
+      });
       await sleep(1500);
       const b = await snap(page);
       const wall = (b.now - a.now) / 1000;
