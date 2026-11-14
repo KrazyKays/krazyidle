@@ -258,6 +258,9 @@ p { margin: 6px 0; }
 .heir-traits { display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .heir-trait { --c: #b0bec5; font-size: 0.85rem; border-left: 3px solid var(--c); padding-left: 8px; }
 .heir-trait.neg { color: var(--bad); }
+.wear { color: var(--muted); font-size: 0.72rem; margin-left: 2px; }
+.act-affut { font-size: 0.75rem; color: var(--gold); min-height: 0; }
+.act-affut:empty { display: none; }
 .echo-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
 .echo-chip { text-align: left; padding: 8px 10px; border-radius: 12px; background: var(--card); border: 2px solid var(--line); opacity: 0.55; transition: opacity 0.2s, border-color 0.2s; }
 .echo-chip.on { opacity: 1; border-color: var(--violet); }

@@ -28,6 +28,7 @@ function migrate(d: any): GameState {
   s.settings = { ...base.settings, ...d.settings };
   s.stats = { ...base.stats, ...d.stats };
   s.lineage = { ...base.lineage, ...d.lineage };
+  s.hunt = { ...base.hunt, ...d.hunt };
   // Genre des personnages : absent des sauvegardes d'avant, déduit du prénom.
   const sexed = (p: { name: string; sex?: 'f' | 'm' } | null | undefined) => { if (p && !p.sex) p.sex = sexOf(p); };
   sexed(s.hero);

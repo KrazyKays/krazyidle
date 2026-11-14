@@ -1,13 +1,13 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
-  legacyCost, xpToNext, type ActId, type ResId,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, GENOME_BUDGET, HOUSE_NAMES, acc, genomeWeight, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
-import { ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
+import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
-  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoPower, echoPowerMult, echoSlots, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
+  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoPower, echoPowerMult, echoSlots, echoValueRate, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -358,20 +358,23 @@ export class App {
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
-        this.traitChips(hero.traits, false, hero),
+        this.traitChips(hero.traits, false, hero, current ? heroWear(s, hero) : null),
+        current ? h('div', { class: 'muted small', title: `Poids génétique des dons (Commun et Rare 1, Épique 2, Légendaire 3, Mythique 4) : ${GENOME_BUDGET} au plus chez les héritiers.` }, `🧬 Génome ${genomeWeight(hero.traits)} / ${GENOME_BUDGET}`) : null,
         spouseLine(hero, hero.spouse, true)));
   }
 
   /** Pastilles de traits, accordées au personnage qui les porte (sans personnage : les deux formes). */
-  traitChips(ids: string[], small = false, who: Named | null = null) {
+  traitChips(ids: string[], small = false, who: Named | null = null, wear: Record<string, number> | null = null) {
     return h('div', { class: `traits ${small ? 'traits-sm' : ''}` }, ids.map((id) => {
       const t = TRAIT[id];
       if (!t) return null;
       const name = traitName(t, who);
+      const w = wear?.[id] ?? 0;
+      const wearTxt = w >= 1 ? ` Transmis depuis ${w} génération${w > 1 ? 's' : ''} : chance de passer aux enfants ×${wearMult(w).toFixed(2).replace('.', ',')}.` : '';
       return h('button', {
-        class: `trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color }, title: `${name} — ${t.desc}`,
-        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${name} (${RARITY[t.rarity].name}) : ${t.desc}`, t.neg ? 'bad' : 'info'); },
-      }, t.icon, small ? null : h('span', null, name));
+        class: `trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color }, title: `${name} — ${t.desc}${wearTxt}`,
+        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${name} (${RARITY[t.rarity].name}) : ${t.desc}${wearTxt}`, t.neg ? 'bad' : 'info'); },
+      }, t.icon, small ? null : h('span', null, name), w >= 2 ? h('span', { class: 'wear' }, `🩸${w}`) : null);
     }));
   }
 
@@ -482,9 +485,22 @@ export class App {
         h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl),
         h('div', { class: 'bar bar-thin' }, xp),
         rate,
+        a === 'chasser' ? b.text(h('div', { class: 'act-affut' }), () => this.affutLine()) : null,
         h('div', { class: 'act-desc' }, def.desc)));
     b.cls(btn, 'active', () => s.life?.act === a);
     return btn;
+  }
+
+  /** État de l'Affût, sous la Chasse. */
+  affutLine(): string {
+    const s = this.s, hu = s.hunt;
+    const stock = hu.affut * TROPHY_OR;
+    if (hu.on) {
+      const p = s.life ? lifePower(s.life, s.hero, 'chasser') : 0;
+      const gain = AFFUT_GAIN * gameScarcity(s.eco) * prodMult(s, this.rt, 'chasser') * p * TROPHY_OR;
+      return `🎯 À l'affût : le Gibier se refait${gain > 0.005 ? ` · +${fmt(gain)} 🪙/s en réserve` : ''}${stock >= 1 ? ` (${fmt(stock)} 🪙)` : ''}`;
+    }
+    return stock >= 1 ? `🏆 Chasse ouverte : ${fmt(stock)} 🪙 de trophées à rapporter` : '';
   }
 
   actPreview(a: ActId): string {
@@ -495,7 +511,12 @@ export class App {
     const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
-    const tro = a === 'chasser' ? TROPHY_OR * trophyFactor(s.eco) * prodMult(s, this.rt, a) * p : 0;
+    let tro = 0;
+    if (a === 'chasser') {
+      const base = prodMult(s, this.rt, a) * p;
+      tro = TROPHY_OR * trophyFactor(s.eco) * base;
+      if (!s.hunt.on && s.hunt.affut > 0) tro += TROPHY_OR * Math.min(s.hunt.affut, AFFUT_DRAW * base);
+    }
     if (tro > 0.005) out.push(`+${fmt(tro)} ${RES_INFO.or.icon}/s`);
     for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
     return out.join('  ');
@@ -574,7 +595,7 @@ export class App {
       timeline,
       h('div', { class: 'row-between small' },
         doing,
-        h('span', { class: 'muted' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s`),
+        h('span', { class: 'muted', title: 'Production moyenne par seconde de boucle, hors bonus : une vie courte ne rapporte pas plus parce qu\'elle boucle plus vite.' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s · ${fmt(echoValueRate(e))} pts/s`),
         h('span', { class: 'row' },
           h('button', { class: 'icon-btn sm', title: e.pinned ? 'Désépingler' : 'Épingler (protégé lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '📌' : '📍'),
           h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
@@ -622,8 +643,10 @@ export class App {
       h('div', { class: 'stats' },
         stat('Vigueur du Gibier', vigor),
         stat('Trophées', trophy),
+        stat('Affût', b.text(h('span'), () => s.hunt.on ? `🎯 en cours · ${fmt(s.hunt.affut * TROPHY_OR)} 🪙` : s.hunt.affut * TROPHY_OR >= 1 ? `🏆 ${fmt(s.hunt.affut * TROPHY_OR)} 🪙 à rapporter` : 'chasse ouverte')),
         regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
       h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
+      h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`),
       canvas);
     const builds = h('div', { class: 'grid-cards' }, BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((d) => {
       const lvl = s.buildings[d.id] ?? 0;
@@ -784,7 +807,7 @@ export class App {
     const all = [...s.echoes, sc.newEcho];
     const slots = echoSlots(s);
     if (!this.echoSel) {
-      const ranked = [...all].sort((a, b) => (b.pinned ? 1e18 : 0) + b.value - ((a.pinned ? 1e18 : 0) + a.value));
+      const ranked = [...all].sort((a, b) => (b.pinned ? 1e18 : 0) + echoValueRate(b) - ((a.pinned ? 1e18 : 0) + echoValueRate(a)));
       // le nouvel Écho est gardé par défaut s'il n'est pas le pire
       this.echoSel = new Set(ranked.slice(0, slots).map((e) => e.id));
     }
@@ -800,8 +823,14 @@ export class App {
         return h('button', { class: `heir ${i === chosen ? 'chosen' : ''}`, onclick: () => { chosen = i; render(); } },
           h('div', { class: 'heir-name' }, hero.name),
           hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
-          h('div', { class: 'heir-traits' }, hero.traits.map((id) => { const t = TRAIT[id]; return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, h('span', { class: 'muted small' }, ` — ${t.desc}`)); })),
-          h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`));
+          h('div', { class: 'heir-traits' }, hero.traits.map((id) => {
+            const t = TRAIT[id], w = hero.wear?.[id] ?? 0;
+            return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, h('span', { class: 'muted small' }, ` — ${t.desc}`),
+              w >= 2 ? h('span', { class: 'wear', title: `Don transmis depuis ${w} générations : il passera à ses enfants avec une chance ×${wearMult(w).toFixed(2).replace('.', ',')}. Une alliance apporte du sang neuf.` }, ` 🩸 ${w} gén.`) : null);
+          })),
+          h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`),
+          h('div', { class: 'muted small', title: `Chaque héritier porte des dons d'un poids génétique de ${GENOME_BUDGET} au plus : Commun et Rare 1, Épique 2, Légendaire 3, Mythique 4. Les traits négatifs et les Bénédictions ne comptent pas.` },
+            `🧬 Génome ${genomeWeight(hero.traits.filter((t) => !s.blessings.includes(t)))} / ${GENOME_BUDGET}`));
       }));
       const echoList = h('div', { class: 'echo-pick' }, all.map((e) => {
         const on = sel.has(e.id);
@@ -811,7 +840,7 @@ export class App {
         } },
           h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
           h('div', { class: 'timeline sm', style: { background: stripGradient(e.acts, e.acts.length) } }),
-          h('div', { class: 'muted small' }, `Gén. ${e.gen} · ${fmt(e.value)} pts${e.pinned ? ' · 📌' : ''}`));
+          h('div', { class: 'muted small', title: 'Production moyenne par seconde de boucle, hors bonus d\'événement' }, `Gén. ${e.gen} · ${fmt(echoValueRate(e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 📌' : ''}`));
       }));
       const ok = h('button', { class: 'btn btn-primary btn-lg', onclick: () => {
         if (sel.size > slots) return;

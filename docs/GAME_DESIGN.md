@@ -35,10 +35,13 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - À la mort, la vie devient un **Écho** qui la rejoue **en boucle et pour toujours**, avec une puissance de base de 40 %. Les bonus d'événement ne sont pas enregistrés : l'Écho n'en profite que lorsqu'il rejoue pendant un événement, et sa valeur (qui guide le choix des Échos à garder) est calculée hors bonus.
 - Les Échos profitent des bonus *actuels* (bâtiments, Harmonie, événements) et agissent aussi sur l'écosystème.
 - Emplacements limités : 2 au départ, +1 par niveau de Crypte ancestrale. On choisit à chaque succession quels Échos garder ; un Écho épinglé est prioritaire.
+- **Un Écho se mesure en pts/s** (valeur de sa vie ÷ sa durée), pas en valeur totale. C'est ce qu'affichent sa carte et le choix des Échos, et c'est l'ordre de la présélection. Un Écho court n'est pas meilleur parce qu'il boucle plus vite : il produit la moyenne des puissances de sa vie. Or les niveaux montent pendant la vie, donc une vie longue a en général une meilleure moyenne (≈ +50 % entre 60 s et 180 s sans niveau de départ).
 
 ### 2.3 La Lignée (génétique)
 - Les traits sont de rareté Commun, Rare, Épique, Légendaire ou Mythique, et certains sont négatifs.
 - Chaque héritier hérite de chaque trait parental avec 50 % de chance (améliorable), d'une ou deux mutations, et éventuellement de la vocation.
+- **Budget génétique** : les traits positifs d'un héritier pèsent 6 au plus (Commun et Rare 1, Épique 2, Légendaire 3, Mythique 4), avec 4 traits au maximum. Les traits négatifs ne pèsent rien. Les Bénédictions s'ajoutent hors budget pour l'héritier qui les reçoit, puis comptent normalement. Quand l'enfant hérite de plus que son budget, les dons qui s'expriment sont choisis par rareté avec une part de hasard : chaque enfant est une combinaison différente. Élu, Éternel, Sang doré et Centenaire (poids 10) ne tiennent plus ensemble : il faut choisir entre deux légendaires ou un légendaire, un épique et un commun.
+- **Usure du sang** : un don transmis de parent à enfant pendant *n* générations passe avec une chance ×(1 − 0,06·n), ×0,3 au plus bas. Une mutation ou un don du conjoint est du sang neuf (usure 0), et une union divise par deux l'usure des dons du parent. La fiche du héros et des héritiers indique l'usure (🩸) et le poids du génome (🧬). Les sauvegardes antérieures déduisent l'usure de la généalogie. Mesure au bot (60 dernières générations sur 8 h) : 27 à 30 combinaisons de traits différentes, contre 2 à 5 auparavant.
 - On choisit parmi 3 héritiers (jusqu'à 6 avec les améliorations).
 - L'**Héritage ⚜️**, gagné à chaque mort, se dépense dans un arbre permanent de 11 améliorations (dont Alliances et Chroniques).
 
@@ -49,6 +52,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - **Les Prédateurs sont utiles** : ils gardent les hardes saines. Le rendement de la chasse est multiplié par la *vigueur du Gibier* (×0.55 sans prédateurs, ×1 à l'équilibre, ×1.13 au plus). S'ils pullulent, chasser rapporte aussi des **trophées en Or**.
 - Leur population suit la capacité d'accueil offerte par le Gibier : un prélèvement les fait décliner progressivement, sans effondrement brutal. C'est donc le Gibier lui-même qui s'épuise : un héros qui chasse seul le fait passer d'environ 29 à 20.
 - **La pression grandit avec la puissance** : l'impact d'un héros ou d'un Écho est multiplié par 1 + ½·ln(puissance). Les Échos de fin de partie pèsent donc vraiment sur le Domaine.
+- **Affût** : quand le Gibier tombe sous 60 % de l'équilibre, les chasseurs (héros et Échos) se mettent à l'affût. Ils ne prélèvent plus que 3 % du Gibier habituel, qui se refait, et 80 % du butin manqué (selon la disette) est mis en réserve. Quand le Gibier retrouve 95 % de l'équilibre, la chasse rouvre et la réserve se change en trophées d'Or (1,5 Or par unité, jusqu'à 3 unités par unité de production) : plus le chasseur est puissant, plus la vague est rapide. La réserve s'évente de 0,5 %/s. Le cycle disette → affût → battue se fait seul, ce qui rend la vocation de Chasseur et les Échos chasseurs viables. Le joueur actif garde un avantage : chasser lui-même à la réouverture. Mesure (3 h, une seule activité après 30 min) : une lignée de chasseurs produit en moyenne ~70 % d'une lignée de paysans (33 à 118 % selon la graine), contre 2 à 6 % auparavant. Le Destin du jour n'a pas d'Affût, pour que les anciens codes restent vérifiables.
 - Le **Garde forestier** ne réduit plus l'impact : il régénère le Domaine vers l'équilibre (+0,4 %/s par niveau). Il amortit la pression sans la neutraliser.
 - Exemple : un héros et deux Échos chasseurs puissants épuisent le Gibier (moins de 5) et font tomber l'Harmonie à ×0.7.
 
@@ -79,6 +83,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 |---|---|
 | **0.1 (sortie)** | Tout ce qui précède. PWA, sauvegarde export/import, hors ligne jusqu'à 6 h (+2 h par niveau de Patience). |
 | **0.2 (sortie)** | Chroniques (34 surnoms, Codex) et Alliances (maisons du comté, mariages entre joueurs par code, galerie). |
+| **0.2.1 (sortie)** | Échos mesurés en pts/s, budget génétique et usure du sang, Affût de chasse. |
 | 0.2.x | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
 | 0.3 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
 | 0.4 | Classement en ligne optionnel (backend léger) qui réutilise les codes vérifiables du Destin du jour. |

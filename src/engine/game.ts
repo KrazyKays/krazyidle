@@ -1,10 +1,10 @@
 // Logique de la partie principale : vie, Échos, Domaine, succession, événements.
 import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
-  VOCATION_MAX, bMult, legacyCost, type ActId, type ResId,
+  GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
 } from './data';
 import { addCadets, inbreedingRisk } from './alliances';
-import { ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
+import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
 import { Rng } from './rng';
@@ -123,6 +123,7 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
     eco: s.eco,
     prodMult: (a) => prodMult(s, rt, a),
     ecoImpactMult: ecoImpactMult(s),
+    hunt: s.hunt,
     onProduce: (r, amt, fromLife, act) => {
       s.totalEver[r] += amt;
       rt.tickGross[r] += amt;
@@ -182,6 +183,8 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   // Écosystème
   ecoStep(s.eco, dt);
   ecoRegen(s.eco, ecoRegenRate(s), dt);
+  updateHunt(s.hunt, s.eco);
+  s.hunt.affut *= Math.exp(-AFFUT_DECAY * dt);
   if (rt.online && rt.event?.def.id === 'migration') s.eco.G = Math.min(140, s.eco.G + 0.25 * dt);
 
   // Échos
@@ -402,26 +405,31 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
   const inbred = inbreedingRisk(s, spouse);
   const out: Hero[] = [];
   const used = new Set<string>();
+  const pw = heroWear(s, parent);
+  // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux.
+  const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + 1;
   for (let i = 0; i < n; i++) {
-    const traits: string[] = [];
+    const wear: Record<string, number> = {};
+    const cand: string[] = [];
+    const add = (t: string, w: number) => { if (!cand.includes(t)) cand.push(t); wear[t] = Math.min(wear[t] ?? w, w); };
     for (const t of parent.traits) {
       const def = TRAIT[t];
       if (!def) continue;
-      const p = def.neg ? 0.3 : Math.min(0.95, inherit);
-      if (rng.chance(p)) traits.push(t);
+      const p = def.neg ? 0.3 : Math.min(0.95, inherit) * wearMult(pw[t] ?? 0);
+      if (rng.chance(p)) add(t, def.neg ? 0 : carry(t));
     }
-    // Le conjoint transmet aussi ses traits, un peu moins souvent (jamais ceux du Bazar).
+    // Le conjoint transmet aussi ses traits, un peu moins souvent (jamais ceux du Bazar) : sang neuf, sans usure.
     if (spouse) {
       for (const t of spouse.traits) {
         const def = TRAIT[t];
-        if (!def || def.shop || traits.includes(t)) continue;
+        if (!def || def.shop) continue;
         const p = (def.neg ? 0.3 : Math.min(0.95, inherit)) * 0.8;
-        if (rng.chance(p)) traits.push(t);
+        if (rng.chance(p)) add(t, 0);
       }
       // Consanguinité : trop d'unions avec la même maison fragilisent le sang.
       if (inbred > 0 && rng.chance(inbred)) {
-        const pool = TRAITS.filter((t) => t.neg && t.rarity <= 1 && !traits.includes(t.id));
-        if (pool.length) traits.push(rng.pick(pool).id);
+        const pool = TRAITS.filter((t) => t.neg && t.rarity <= 1 && !cand.includes(t.id));
+        if (pool.length) add(rng.pick(pool).id, 0);
       }
     }
     const muts = (rng.chance(0.85) ? 1 : 0) + (rng.chance(0.25 + 0.04 * luck) ? 1 : 0);
@@ -429,13 +437,13 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
       const rar = rng.weighted([60 - 6 * luck, 28 + 2 * luck, 10 + 3 * luck, 2 + 1 * luck]);
       const negChance = rar === 0 ? Math.max(0.05, 0.3 - 0.05 * luck) : rar === 1 ? 0.12 : 0;
       const wantNeg = rng.chance(negChance);
-      const pool = TRAITS.filter((t) => !t.shop && t.rarity === rar && !!t.neg === wantNeg && !traits.includes(t.id));
-      if (pool.length) traits.push(rng.pick(pool).id);
+      const pool = TRAITS.filter((t) => !t.shop && t.rarity === rar && !!t.neg === wantNeg && !cand.includes(t.id));
+      if (pool.length) add(rng.pick(pool).id, 0);
     }
-    for (const b of s.blessings) if (!traits.includes(b)) traits.push(b);
-    // max 4 traits : on garde les meilleurs (positifs d'abord)
-    traits.sort((a, b) => score(b) - score(a));
-    while (traits.length > 4 + s.blessings.length) traits.pop();
+    const traits = expressGenome(cand, rng);
+    for (const b of s.blessings) if (!traits.includes(b)) { traits.push(b); wear[b] = 0; }
+    const kept: Record<string, number> = {};
+    for (const t of traits) if (!TRAIT[t]?.neg && wear[t]) kept[t] = wear[t];
     let vocation: Vocation | null = null;
     const vocP = Math.min(0.95, 0.6 + 0.08 * up(s, 'transmission'));
     if (parent.vocation && rng.chance(vocP)) {
@@ -448,15 +456,45 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     let name = rng.pick(FIRST_NAMES);
     for (let k = 0; k < 5 && used.has(name); k++) name = rng.pick(FIRST_NAMES);
     used.add(name);
-    out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id });
+    out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id, wear: kept });
   }
   return out;
 }
 
-function score(id: string) {
-  const t = TRAIT[id];
-  if (!t) return -99;
-  return t.neg ? -1 - t.rarity : 1 + t.rarity;
+/**
+ * Les dons qui s'expriment chez l'enfant : les positifs tiennent dans le budget génétique
+ * (choisis par rareté, avec une part de hasard : chaque enfant est une combinaison différente),
+ * les négatifs complètent jusqu'à 4 traits.
+ */
+export function expressGenome(cand: string[], rng: Rng): string[] {
+  const pos = cand.filter((t) => TRAIT[t] && !TRAIT[t].neg);
+  const neg = cand.filter((t) => TRAIT[t]?.neg);
+  const prio = new Map(pos.map((t) => [t, traitWeight(t) + rng.next() * 2.5]));
+  pos.sort((a, b) => prio.get(b)! - prio.get(a)!);
+  const out: string[] = [];
+  let used = 0;
+  for (const t of pos) {
+    const w = traitWeight(t);
+    if (out.length < 4 && used + w <= GENOME_BUDGET) { out.push(t); used += w; }
+  }
+  for (const t of neg) if (out.length < 4) out.push(t);
+  return out;
+}
+
+/**
+ * Usure du sang d'un héros : depuis combien de générations chaque don se transmet.
+ * Les héros d'avant cette règle la déduisent de la généalogie.
+ */
+export function heroWear(s: GameState, hero: Hero): Record<string, number> {
+  if (hero.wear) return hero.wear;
+  const w: Record<string, number> = {};
+  for (const t of hero.traits) {
+    if (TRAIT[t]?.neg) continue;
+    let n = 0;
+    for (let i = s.ancestors.length - 1; i >= 0 && s.ancestors[i].traits.includes(t); i--) n++;
+    if (n) w[t] = n;
+  }
+  return w;
 }
 
 /** Valide la succession : héritier choisi + Échos conservés. */
@@ -581,3 +619,8 @@ export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, n
 }
 
 export { harmonyMult };
+
+/** Production moyenne d'un Écho par seconde de boucle (valeur de sa vie / durée) : la vraie mesure de sa force. */
+export function echoValueRate(e: Pick<Echo, 'value' | 'acts'>): number {
+  return e.acts.length ? e.value / e.acts.length : 0;
+}

@@ -34,7 +34,7 @@ export const ACT: Record<ActId, ActDef> = {
   },
   chasser: {
     id: 'chasser', name: 'Chasser', icon: '🏹', color: '#d84315',
-    desc: 'Rendement selon le Gibier et sa vigueur : les Prédateurs gardent les hardes saines. Trophées d\'Or s\'ils pullulent.',
+    desc: 'Rendement selon le Gibier et sa vigueur. Trophées d\'Or si les Prédateurs pullulent. En disette, se met à l\'affût : épargne le Gibier et met le butin en réserve.',
     vocation: 'Chasseur', vocationF: 'Chasseresse', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
   },
   commercer: {
@@ -127,6 +127,25 @@ export const TRAITS: TraitDef[] = [
   { id: 'astres', name: 'Béni des astres', nameF: 'Bénie des astres', icon: '🌠', rarity: 4, shop: true, desc: 'Production +50%, Écho +50%, transmission +20%', mods: { all: 0.5, echo: 0.5, inherit: 0.2 } },
 ];
 export const TRAIT: Record<string, TraitDef> = Object.fromEntries(TRAITS.map((t) => [t.id, t]));
+
+// --- Génome : budget et usure du sang ---------------------------------------
+/** Poids génétique total des traits positifs qu'un héritier peut porter (hors Bénédictions). */
+export const GENOME_BUDGET = 6;
+/** Poids par rareté : Commun, Rare, Épique, Légendaire, Mythique. Les traits négatifs ne pèsent rien. */
+export const TRAIT_WEIGHT = [1, 1, 2, 3, 4];
+export function traitWeight(id: string): number {
+  const t = TRAIT[id];
+  return !t || t.neg ? 0 : TRAIT_WEIGHT[t.rarity];
+}
+export function genomeWeight(ids: string[]): number {
+  return ids.reduce((a, id) => a + traitWeight(id), 0);
+}
+/** Chaque génération de transmission d'un même don réduit sa chance de passer de 6 % (×0,3 au plus bas). */
+export const WEAR_STEP = 0.06;
+export const WEAR_FLOOR = 0.3;
+export function wearMult(w: number): number {
+  return Math.max(WEAR_FLOOR, 1 - WEAR_STEP * Math.max(0, w));
+}
 
 export const VOCATION_BONUS = 0.2; // par rang
 export const VOCATION_MAX = 10;

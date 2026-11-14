@@ -51,6 +51,41 @@ export function trophyFactor(e: Eco): number {
   return clamp(e.P / ECO_EQ.P - 1, 0, 1.5);
 }
 
+// --- Affût : la chasse en période de disette --------------------------------
+// Quand le Gibier s'effondre, les chasseurs (héros et Échos) se mettent à l'affût : ils pistent
+// et tirent à peine, le Gibier se refait. Le butin manqué est mis en réserve, puis libéré en
+// trophées d'Or dès que la chasse reprend sur un Gibier revenu à l'équilibre.
+export interface Hunt {
+  /** réserve d'Affût, en unités de production de chasse */
+  affut: number;
+  /** à l'affût (disette) ou en chasse ouverte */
+  on: boolean;
+}
+/** On se met à l'affût quand le Gibier tombe sous 60 % de l'équilibre… */
+export const AFFUT_ENTER = 0.6;
+/** … et on rouvre la chasse quand il en retrouve 95 %. */
+export const AFFUT_EXIT = 0.95;
+/** Part du butin manqué mise en réserve pendant l'affût. */
+export const AFFUT_GAIN = 0.8;
+/** À l'affût, on ne prélève plus que 3 % du Gibier habituel. */
+export const AFFUT_STEALTH = 0.97;
+/** Réserve libérée par unité de production une fois la chasse rouverte. */
+export const AFFUT_DRAW = 3;
+/** Les pistes refroidissent : la réserve s'évente de 0,5 %/s. */
+export const AFFUT_DECAY = 0.005;
+
+/** 0..1 : disette de Gibier sous l'équilibre (0 = abondance, 1 = plus rien). */
+export function gameScarcity(e: Eco): number {
+  return clamp(1 - e.G / ECO_EQ.G, 0, 1);
+}
+
+/** Bascule entre affût et chasse ouverte (avec hystérésis, pour que le cycle se fasse). */
+export function updateHunt(h: Hunt, e: Eco) {
+  const g = e.G / ECO_EQ.G;
+  if (!h.on && g < AFFUT_ENTER) h.on = true;
+  else if (h.on && g >= AFFUT_EXIT) h.on = false;
+}
+
 /** Régénération apportée par le Garde forestier (rappel vers l'équilibre, par seconde). */
 export function ecoRegen(e: Eco, rate: number, dt: number) {
   if (rate <= 0) return;
