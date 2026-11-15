@@ -199,3 +199,26 @@ Chaque ligne correspond à **une modification logique, un commit**, avec tests d
 ## 9. Correction après les références v2 (2026-11-15)
 
 **P5 est requalifié.** Avec le nouveau profil `evenementiel` (R0c), qui pratique l'activité dopée pendant la fenêtre, le palier Or est atteint dans **94 %** des parties (C012), contre 0 % pour `experimente`, qui l'ignore. Les événements ne sont donc pas « inatteignables » : ils sont **en tout ou rien selon l'activité jouée** (GD-05), et l'Or devient presque garanti dès qu'on joue l'activité. R9 vise donc à rendre les paliers progressifs (Bronze accessible sans changer d'activité, Or exigeant), et non à les faciliter. La conclusion de C002 (« 0 palier ») ne valait que pour un joueur qui ne s'occupe pas de l'événement.
+
+## 10. Bilan de la phase 4 (2026-11-15)
+
+Toutes les lignes de la feuille de route (§ 6) sont traitées. Le détail de chaque modification (avant, après, campagne, garde-fous, décision) est dans `lab/CHANGELOG-EQUILIBRAGE.md` ; les campagnes dans `lab/campaigns/CAMPAIGNS.md`. Régression finale : `npm test` 167 réussis + 2 échecs attendus (QA-07 et un cas documenté), typecheck et build OK, parcours Playwright 31/31, `import-reset.cjs` et `onglet-masque.cjs` verts.
+
+| Constat | Statut |
+|---|---|
+| P1 temps perdu, P2 import/réinitialisation, P3 Bénédiction, P4 objectif plancher, P20 sauvegarde injouable | Corrigés (R1–R5, R3) |
+| P5 événements tout ou rien | Corrigé (R9) — requalifié en § 9 |
+| P6 « le Vénérable » | Corrigé (R8) ; dominant ≈ 50 % sur les lignées mono-activité (cible 40 %) |
+| P7 stratégie unique, P8 piège de vocation | Corrigés (R10) ; Étudier reste la vocation la plus faible (~20 % d'une lignée de paysans) |
+| P9 Alliances perdantes | Corrigé (R11) ; une lignée sans Or ne peut pas payer la dot minimale |
+| P13 accès tardif aux Alliances et aux Chroniques | Amélioré (R12) ; critère « 90 min » non atteint (162 min) |
+| P14 Destin du jour | Corrigé (R14) |
+| P15 présélection des Échos, P21 pts/s | Corrigés (R15) |
+| P16 vie longue | Corrigé (R13) ; garde-fou rouge accepté (optimiseur +15,5 % d'Héritage), à confirmer |
+| P17 codes d'alliance | QA-04/PBA-09 corrigés (R6) ; QA-07 non corrigé (risque accepté, D3) |
+| P22 textes et mobile | Corrigés (R16) |
+| P24 GDD | Mis à jour (R7) |
+| P10 horloge, P11 lignée hors ligne, P12/P23 Domaine | Non traités par arbitrage (D1–D3) |
+| P18 milieu de partie creux, P19 budget génétique invisible, P25 Destin multi-navigateurs | Ouverts (chantiers de contenu ou d'outillage) |
+
+**Points ouverts pour une prochaine campagne d'audit** : la part de vies surnommées reste ≈ 80 % (GDD : ~50 %) ; Étudier est la vocation la plus faible ; le profil événementiel gagne +80 % de valeur grâce à l'Éclipse (Méditer ×3) depuis R10 ; le Bazar reçoit désormais des Éclats (R9) et son équilibre n'a pas été remesuré ; les profils simulés ne sont pas de vrais joueurs.
