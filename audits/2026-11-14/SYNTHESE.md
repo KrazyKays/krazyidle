@@ -187,3 +187,11 @@ Chaque ligne correspond à **une modification logique, un commit**, avec tests d
 3. Pour tout changement de jeu : campagne sur les mêmes graines que la référence, `npm run sim:guard -- <réf> <cand>`. Code 1 (garde-fou rouge) : retour arrière (`git revert`) ou correction suivante explicitement motivée.
 4. Revalidation à `--dt=0.1` pour tout ce qui touche Chasse, Affût, Harmonie, vocations ou l'équilibre entre activités.
 5. Ligne ajoutée dans `lab/campaigns/CAMPAIGNS.md` et entrée dans `lab/CHANGELOG-EQUILIBRAGE.md` (avant, après, décision).
+
+## 8. Arbitrages du propriétaire (2026-11-15)
+
+1. **Feuille de route validée** ; le verrou d'audit est levé pour la phase 4, dans l'ordre du § 6.
+2. **R4** : une Bénédiction achetée pendant une succession en attente **s'applique aux héritiers déjà tirés**.
+3. **D1** : la lignée **reste arrêtée** hors ligne à la première mort, sans message particulier. P11 est classé « comportement voulu ».
+4. **D2** : **aucune modification du Domaine** pour l'instant ; une refonte globale de l'écosystème et de son équilibrage pourra être envisagée plus tard. P12 et P23 sont gelés.
+5. **D3** : la triche par l'horloge système est **acceptée** (jeu solo). P10 est classé « non corrigé, risque accepté ».

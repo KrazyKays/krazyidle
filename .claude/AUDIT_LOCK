@@ -1,3 +1,0 @@
-Phase d'audit ouverte le 2026-11-14 par le Technical Lead.
-Tant que ce fichier existe, le hook .claude/hooks/audit-lock.mjs bloque toute modification du jeu.
-Il ne sera supprimé qu'après validation explicite de la feuille de route par le propriétaire du projet.
