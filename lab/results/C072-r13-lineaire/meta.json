@@ -1,0 +1,22 @@
+{
+ "id": "C072-r13-lineaire",
+ "commit": "0f08b13",
+ "srcDirty": false,
+ "date": "2026-11-15T17:46:21.872Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-mediter"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 600,
+ "wallMs": 52459,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver,mono-commercer,mono-mediter --seeds=1-100 --hours=6 --id=C072-r13-lineaire"
+}

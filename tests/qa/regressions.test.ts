@@ -114,3 +114,37 @@ describe('R11 — dot calculée sur l\'Or en stock', () => {
     expect(dowry(s, 'joueur')).toBe(250);
   });
 });
+
+describe('R13 — Héritage selon la durée de vie', () => {
+  test('√(durée / durée normale) : neutre pour une vie normale, ×√1,5 pour une vie 1,5 fois plus longue', async () => {
+    const { legacyFor } = await import('../../src/engine/game');
+    expect(legacyFor(20 * 1000)).toBe(10);
+    expect(legacyFor(20 * 1000, 1)).toBe(10);
+    expect(legacyFor(20 * 1000, 1.5)).toBe(Math.floor(10 * Math.sqrt(1.5)));
+  });
+  test('les bonus communs de durée (Sève éternelle, Clepsydre) ne gonflent pas l\'Héritage', async () => {
+    const { endLife, lifeDuration, startLife: start } = await import('../../src/engine/game');
+    const s = newGame(0, 6);
+    s.upgrades.longevite = 5; s.buildings.clepsydre = 5;
+    s.hero.traits = [];
+    start(s);
+    s.life!.value = 20 * 1000;
+    expect(s.life!.dur).toBe(lifeDuration(s, s.hero));
+    endLife(s, 0);
+    expect(s.succession!.legacyGain).toBe(10);
+  });
+});
+
+describe('R13 — Temps suspendu n\'entre pas dans la durée relative', () => {
+  test('acheter Temps suspendu ne change pas le facteur de durée de l\'Héritage', async () => {
+    const { endLife, buyTemps, startLife: start } = await import('../../src/engine/game');
+    const s = newGame(0, 6);
+    s.hero.traits = [];
+    start(s);
+    s.eclats = 5;
+    expect(buyTemps(s)).toBe(true);
+    s.life!.value = 20 * 1000;
+    endLife(s, 0);
+    expect(s.succession!.legacyGain).toBe(10);
+  });
+});

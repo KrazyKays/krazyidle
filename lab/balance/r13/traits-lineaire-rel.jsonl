@@ -1,0 +1,15 @@
+# Valeur d'un trait porté en permanence — 4 h, dt 0,5, sans événements, graines appariées
+
+## mono-commercer (n = 30)
+
+| trait | effet | Δ log10 valeur nette (moy ± é.-t.) | ratio de valeur | Δ Héritage % | Δ générations % |
+|---|---|---|---|---|---|
+| eternel | Vie +45 s, Écho +50% | +0.334 ± 0.082 | ×2.16 | 21.1 | -26.9 |
+| centenaire | Durée de vie +30 s | +0.099 ± 0.096 | ×1.26 | 10.9 | -19.2 |
+| longevite | Durée de vie +15 s | +0.058 ± 0.090 | ×1.14 | 6.6 | -10.5 |
+| robuste | Durée de vie +8 s | +0.010 ± 0.081 | ×1.02 | 2.1 | -5.1 |
+
+## mono-cultiver (n = 0)
+
+| trait | effet | Δ log10 valeur nette (moy ± é.-t.) | ratio de valeur | Δ Héritage % | Δ générations % |
+|---|---|---|---|---|---|

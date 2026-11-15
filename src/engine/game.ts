@@ -118,8 +118,14 @@ export function offlineCapSec(s: GameState): number {
   return (6 + 2 * up(s, 'patience')) * 3600;
 }
 
-export function legacyFor(value: number): number {
-  return Math.floor(Math.cbrt(value / 20));
+/**
+ * Héritage d'une vie : racine cubique de sa valeur, multipliée par √(durée / durée normale de la lignée).
+ * Une vie allongée par ses traits donnait un meilleur Écho mais moins d'Héritage et de générations
+ * (Centenaire ×0,84) ; la durée normale exclut les bonus communs (Sève éternelle, Clepsydre), pour ne
+ * pas gonfler l'Héritage de toutes les vies, ni Temps suspendu (R13). durRatio vaut 1 par défaut.
+ */
+export function legacyFor(value: number, durRatio = 1): number {
+  return Math.floor(Math.cbrt(value / 20) * Math.sqrt(Math.max(0, durRatio)));
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +378,10 @@ export function endLife(s: GameState, now: number) {
     const prev = hero.vocation && hero.vocation.act === dom.act ? hero.vocation.tier : 0;
     voc = { act: dom.act, tier: Math.min(VOCATION_MAX, prev + 1) };
   }
-  const legacyGain = legacyFor(life.value);
+  // Seuls les traits allongent la « durée relative » : ni les bonus communs, ni Temps suspendu (Bazar),
+  // qui faisait gonfler l'Héritage de qui l'achète à chaque vie (+15,9 %, garde-fou rouge en C075).
+  const normalDur = lifeDuration(s, { ...hero, traits: [] }) + (life.extended ? 30 : 0);
+  const legacyGain = legacyFor(life.value, life.dur / normalDur);
   const m = sumMods(hero.traits);
   const ep = chroniclesUnlocked(s) ? pickEpithet(lifeFacts(s, life, voc)) : null;
   const echo: Echo = {
