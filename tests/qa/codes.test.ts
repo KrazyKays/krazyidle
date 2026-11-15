@@ -124,12 +124,9 @@ describe('codes d\'alliance', () => {
     expect(acceptProposal(a, code).ok).toBe(false);
   });
 
-  // BUG QA-04 : codeKey (src/engine/alliances.ts:404) ne normalise que le début du texte collé
-  // (`^.*?(AL1-)` ne traverse pas les retours à la ligne et ne retire rien après le contrôle),
-  // alors que decodeProposal (alliances.ts:357) trouve le code n'importe où. Le message de partage
-  // (src/ui/legends.ts:146, deux lignes) et le lien `#mariage=CODE` donnent donc deux empreintes
-  // différentes : le même cadet est accepté deux fois. GDD 2.7 : « Un code ne peut être accepté qu'une fois par lignée ».
-  test.fails('BUG QA-04 : le message de partage puis le lien du même code → refusé la 2ᵉ fois', () => {
+  // QA-04 (corrigé en R6) : l'empreinte portait sur le texte collé ; le message de partage et le lien du même
+  // code donnaient deux empreintes, et le même cadet était accepté deux fois. Elle porte désormais sur le contenu.
+  test('QA-04 : le message de partage puis le lien du même code → refusé la 2ᵉ fois', () => {
     const a = house(1, 'Corbin'), b = house(2, 'Dorval');
     const code = encodeProposal(b, { ...b.hero, id: 77 });
     const message = `💍 La Maison Dorval offre la main de Yvain (génération II) !\nAccepte-la dans Échos de Lignée : https://exemple.test/#mariage=${code}`;
@@ -138,7 +135,7 @@ describe('codes d\'alliance', () => {
     expect(acceptProposal(a, code).ok).toBe(false);
   });
 
-  test.fails('BUG QA-04 : un caractère ajouté après le code suffit à le réutiliser', () => {
+  test('QA-04 : un caractère ajouté après le code ne suffit plus à le réutiliser', () => {
     const a = house(1, 'Corbin'), b = house(2, 'Dorval');
     const code = encodeProposal(b, { ...b.hero, id: 77 });
     expect(acceptProposal(a, code).ok).toBe(true);
@@ -146,18 +143,33 @@ describe('codes d\'alliance', () => {
     expect(acceptProposal(a, code + ' !').ok).toBe(false);
   });
 
-  test('reproduction QA-04 : empreintes différentes pour le même code', () => {
+  test('QA-04 : même empreinte pour le même code, quel que soit le texte autour', () => {
     const b = house(2, 'Dorval');
     const code = encodeProposal(b, { ...b.hero, id: 77 });
-    expect(decodeProposal(code + ' !')).toEqual(decodeProposal(code));
-    expect(codeKey(code + ' !')).not.toBe(codeKey(code));
-    expect(codeKey(`texte\n${code}`)).not.toBe(codeKey(code));
+    expect(codeKey(code + ' !')).toBe(codeKey(code));
+    expect(codeKey(`texte\n${code}`)).toBe(codeKey(code));
   });
 
-  // BUG QA-07 : « jamais par sa propre maison » ne repose que sur l'identifiant de maison écrit dans le code
-  // (alliances.ts:412), que l'on peut changer en recalculant le contrôle (sel public, alliances.ts:317).
-  // On peut alors épouser son propre cadet : ses dons reviennent comme « sang neuf » (usure 0).
-  test.fails('BUG QA-07 : un cadet de sa propre maison, code ré-signé sous un autre id, est refusé', () => {
+  test('PBA-09 : le même cadet ré-émis avec un autre nonce est refusé la 2ᵉ fois', () => {
+    const a = house(1, 'Corbin'), b = house(2, 'Dorval');
+    const cadet = { ...b.hero, id: 77 };
+    expect(acceptProposal(a, encodeProposal(b, cadet, undefined, 1)).ok).toBe(true);
+    nextGen(a);
+    expect(acceptProposal(a, encodeProposal(b, cadet, undefined, 2)).ok).toBe(false);
+  });
+
+  test('deux cadets différents de la même maison restent acceptables', () => {
+    const a = house(1, 'Corbin'), b = house(2, 'Dorval');
+    expect(acceptProposal(a, encodeProposal(b, { ...b.hero, id: 77, name: 'Yvain' })).ok).toBe(true);
+    nextGen(a);
+    expect(acceptProposal(a, encodeProposal(b, { ...b.hero, id: 78, name: 'Iseult', sex: 'f' })).ok).toBe(true);
+  });
+
+  // QA-07 (non corrigé, risque accepté — arbitrage D3) : sans serveur, l'identifiant de maison d'un code peut
+  // être changé (sel public) pour épouser son propre cadet. Une détection par le contenu (prénom, génération,
+  // dons) a été essayée en R6 puis écartée : elle refusait des mariages légitimes entre deux maisons dont les
+  // cadets se ressemblent (tests/legends.test.ts). Ce test documente le comportement.
+  test.fails('QA-07 (risque accepté) : un cadet de sa propre maison, code ré-signé sous un autre id, est refusé', () => {
     const c = house(3, 'Corbin');
     const cadet = { ...c.hero, id: 77, traits: ['elu', 'centenaire'] };
     const forged = encodeProposal({ ...c, houseId: 'autre' }, cadet);

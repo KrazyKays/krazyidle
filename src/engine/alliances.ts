@@ -221,7 +221,19 @@ export function suitorFromCode(s: GameState, p: Payload): Spouse {
   return { name: p.name, sex: p.sex, gen: p.gen, traits, vocation, epithet: p.epithet, house: p.house, origin: 'joueur' };
 }
 
-export const codeKey = (code: string) => hashStr(code.trim().replace(/^.*?(AL1-)/, '$1')).toString(36);
+/** Ancienne empreinte (texte collé tel quel) : conservée pour reconnaître les codes acceptés avant la 0.2.2. */
+export const legacyCodeKey = (code: string) => hashStr(code.trim().replace(/^.*?(AL1-)/, '$1')).toString(36);
+
+/**
+ * Empreinte d'une demande : elle porte sur le cadet et sa maison, pas sur le texte collé ni sur le nonce.
+ * Le même cadet est ainsi reconnu qu'il vienne du message de partage, du lien ou d'un code ré-émis (QA-04, PBA-09).
+ */
+export function codeKey(code: string): string {
+  const p = decodeProposal(code);
+  if (!p) return legacyCodeKey(code);
+  const v = p.vocation ? `${p.vocation.act}${p.vocation.tier}` : '-';
+  return 'c' + hashStr(['k2', p.house.id, p.name, p.sex, p.gen, [...p.traits].sort().join(','), v].join('|')).toString(36);
+}
 
 export type ReadResult = { ok: true; suitor: Spouse; payload: Payload } | { ok: false; reason: string };
 
@@ -230,7 +242,7 @@ export function readProposal(s: GameState, code: string): ReadResult {
   const p = decodeProposal(code);
   if (!p) return { ok: false, reason: 'Ce code est illisible ou a été altéré.' };
   if (p.house.id === s.houseId) return { ok: false, reason: 'Ce cadet vient de ta propre maison !' };
-  if (s.usedCodes.includes(codeKey(code))) return { ok: false, reason: 'Tu as déjà accepté cette demande.' };
+  if (s.usedCodes.includes(codeKey(code)) || s.usedCodes.includes(legacyCodeKey(code))) return { ok: false, reason: 'Tu as déjà accepté cette demande.' };
   return { ok: true, suitor: suitorFromCode(s, p), payload: p };
 }
 
