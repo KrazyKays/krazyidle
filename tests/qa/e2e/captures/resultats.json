@@ -62,7 +62,7 @@
   {
     "k": "mobile : export de sauvegarde lisible",
     "ok": true,
-    "info": "3108 caractères"
+    "info": "2944 caractères"
   },
   {
     "k": "mobile : aucune erreur console",
@@ -122,7 +122,7 @@
   {
     "k": "desktop : export de sauvegarde lisible",
     "ok": true,
-    "info": "2868 caractères"
+    "info": "2920 caractères"
   },
   {
     "k": "desktop : aucune erreur console",
@@ -137,7 +137,7 @@
   {
     "k": "QA-01 navigateur : Bénédiction perdue après validation (bug reproduit si OK)",
     "ok": true,
-    "info": "{\"traits\":[\"maudit\"],\"b\":[],\"e\":0}"
+    "info": "{\"traits\":[],\"b\":[],\"e\":0}"
   },
   {
     "k": "QA-02 navigateur : sauvegarde acceptée puis plantage au lancement (bug reproduit si OK)",
@@ -152,6 +152,6 @@
   {
     "k": "QA-06 navigateur : après 20 s de gel visible, temps de jeu rattrapé (bug reproduit si FAIL)",
     "ok": true,
-    "info": "jeu +22.0 s pour 22.0 s réelles"
+    "info": "jeu +21.9 s pour 22.0 s réelles"
   }
 ]

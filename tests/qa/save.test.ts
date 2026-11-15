@@ -108,18 +108,14 @@ describe('migration d\'anciennes sauvegardes', () => {
 });
 
 describe('entrées malformées', () => {
-  // BUG QA-02 : deserialize n'exige que `v` (nombre) et `hero` (objet). Une sauvegarde dont le héros
-  // n'a pas de `traits` est acceptée par l'import (src/engine/save.ts:399), écrite dans localStorage
-  // (src/main.ts:37-39), puis fait planter le lancement (startLife → sumMods(undefined), src/engine/sim.ts:66).
-  // Attendu : l'import refuse (null) une sauvegarde qui ne peut pas être jouée.
-  test.fails('BUG QA-02 : une sauvegarde au héros incomplet est refusée à l\'import', () => {
+  // QA-02 (corrigé en R3) : une sauvegarde dont le héros n'a pas de `traits` était acceptée par l'import,
+  // écrite dans localStorage, puis faisait planter chaque lancement (startLife → sumMods(undefined)).
+  test('QA-02 : une sauvegarde au héros incomplet est refusée à l\'import', () => {
     const bad = btoa(JSON.stringify({ v: 2, hero: { name: 'X' }, flags: { started: true } }));
     expect(importSave(bad)).toBeNull();
   });
 
-  test('reproduction QA-02 : la sauvegarde acceptée fait planter startLife', () => {
-    const st = importSave(btoa(JSON.stringify({ v: 2, hero: { name: 'X' }, flags: { started: true } })));
-    expect(st).not.toBeNull();
-    expect(() => startLife(st!)).toThrow(/not iterable/);
+  test('QA-02 : la sauvegarde locale incomplète reste lisible (jamais écartée sans contrôle à l\'import)', () => {
+    expect(deserialize(JSON.stringify({ v: 2, hero: { name: 'X' }, flags: { started: true } }))).not.toBeNull();
   });
 });

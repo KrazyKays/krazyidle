@@ -43,9 +43,32 @@ export function exportSave(s: GameState): string {
   return btoa(unescape(encodeURIComponent(serialize(s))));
 }
 
+/**
+ * Une sauvegarde importée doit pouvoir être jouée : sinon elle serait écrite puis ferait planter chaque
+ * lancement (QA-02). On ne vérifie que ce que le moteur lit sans garde ; la sauvegarde locale n'est pas
+ * soumise à ce contrôle, pour ne jamais écarter la partie d'un joueur.
+ */
+export function isPlayable(s: GameState): boolean {
+  const num = (x: unknown) => typeof x === 'number' && Number.isFinite(x);
+  const strs = (x: unknown) => Array.isArray(x) && x.every((t) => typeof t === 'string');
+  const nums = (x: unknown) => Array.isArray(x) && x.every((t) => typeof t === 'number');
+  const obj = (x: unknown) => !!x && typeof x === 'object' && !Array.isArray(x);
+  const hero = (h: any) => obj(h) && typeof h.name === 'string' && num(h.gen) && strs(h.traits);
+  const acts = (r: any) => obj(r) && Object.values(r).every(num);
+  if (!hero(s.hero) || !obj(s.res) || !Object.values(s.res).every(num)) return false;
+  if (!strs(s.unlocked) || !obj(s.buildings) || !obj(s.upgrades) || !Array.isArray(s.ancestors)) return false;
+  if (!Array.isArray(s.echoes) || !s.echoes.every((e: any) => obj(e) && nums(e.acts) && nums(e.pow) && num(e.pos))) return false;
+  const l: any = s.life;
+  if (l && !(obj(l) && num(l.t) && num(l.dur) && acts(l.lvl) && acts(l.xp) && acts(l.timeIn) && nums(l.rec) && nums(l.pow))) return false;
+  const sc: any = s.succession;
+  if (sc && !(obj(sc) && Array.isArray(sc.heirs) && sc.heirs.length > 0 && sc.heirs.every(hero) && obj(sc.newEcho))) return false;
+  return true;
+}
+
 export function importSave(code: string): GameState | null {
   try {
-    return deserialize(decodeURIComponent(escape(atob(code.trim()))));
+    const s = deserialize(decodeURIComponent(escape(atob(code.trim()))));
+    return s && isPlayable(s) ? s : null;
   } catch {
     return null;
   }

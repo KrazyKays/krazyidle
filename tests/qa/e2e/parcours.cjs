@@ -114,9 +114,10 @@ async function blessingDuringSuccession(browser) {
 }
 
 /**
- * QA-02 en vrai : une sauvegarde au héros incomplet dans localStorage (ce qu'écrirait l'import, accepté par
- * deserialize, une fois QA-10 corrigé). Aujourd'hui l'import via l'UI est écrasé par `pagehide`
- * (voir import-reset.cjs) : on place donc la sauvegarde avant le chargement.
+ * QA-02 : depuis R3, l'import refuse une sauvegarde au héros incomplet (tests/qa/save.test.ts). Ce parcours
+ * écrit une sauvegarde corrompue directement dans localStorage, ce qu'aucun chemin du jeu ne fait plus :
+ * il documente le risque résiduel (sauvegarde locale corrompue par un tiers → plantage au lancement),
+ * volontairement non traité pour ne jamais écarter la partie d'un joueur.
  */
 async function malformedSave(browser) {
   const { ctx, page, errors } = await newPage(browser, 'qa02', { viewport: { width: 1440, height: 900 } });
@@ -125,10 +126,10 @@ async function malformedSave(browser) {
   await page.goto(URL);
   await sleep(1500);
   const boot = await page.evaluate(() => ({ hasKrazy: !!window.krazy, tabs: document.querySelectorAll('nav.tabbar .tab').length, text: document.body.innerText.slice(0, 80) }));
-  log('QA-02 navigateur : sauvegarde acceptée puis plantage au lancement (bug reproduit si OK)', errors.some((e) => /not iterable/.test(e)), `${JSON.stringify(boot)} · ${errors.slice(0, 1).join(' | ')}`);
+  log('QA-02 résiduel : sauvegarde locale corrompue (hors import) → plantage au lancement (comportement documenté si OK)', errors.some((e) => /not iterable/.test(e)), `${JSON.stringify(boot)} · ${errors.slice(0, 1).join(' | ')}`);
   await page.reload();
   await sleep(1000);
-  log('QA-02 navigateur : le plantage persiste au rechargement', errors.filter((e) => /not iterable/.test(e)).length >= 2);
+  log('QA-02 résiduel : le plantage persiste au rechargement (documenté)', errors.filter((e) => /not iterable/.test(e)).length >= 2);
   await page.screenshot({ path: path.join(OUT, 'qa02-lancement.png') });
   await ctx.close();
 }

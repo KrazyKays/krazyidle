@@ -18,3 +18,20 @@ describe('R1 — temps de jeu rattrapé (PBA-01, QA-06)', () => {
     expect(OFFLINE_MIN_SEC).toBe(30);
   });
 });
+
+describe('R3 — import de sauvegarde validé (QA-02)', () => {
+  test('les vraies sauvegardes restent importables à toutes les étapes d\'une partie', async () => {
+    const { runBot } = await import('../bot');
+    const { exportSave, importSave } = await import('../../src/engine/save');
+    const { endLife } = await import('../../src/engine/game');
+    for (const seed of [1, 2, 3]) {
+      const { s } = runBot(1, seed);
+      expect(importSave(exportSave(s))).not.toBeNull(); // en pleine vie, avec Échos et ancêtres
+      endLife(s, 0);
+      expect(s.succession).not.toBeNull();
+      expect(importSave(exportSave(s))).not.toBeNull(); // succession en attente
+    }
+    const fresh = newGame(0, 9);
+    expect(importSave(exportSave(fresh))).not.toBeNull(); // partie neuve, avant la cérémonie
+  });
+});
