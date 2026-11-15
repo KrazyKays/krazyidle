@@ -582,6 +582,11 @@ export function buyBlessing(s: GameState, traitId: string): boolean {
   if (!c || s.eclats < c) return false;
   s.eclats -= c;
   s.blessings.push(traitId);
+  // Succession en attente : les héritiers sont déjà tirés. La Bénédiction s'applique à eux tous,
+  // hors budget et sans usure, comme si elle avait été achetée avant la mort (QA-01).
+  if (s.succession) {
+    for (const h of s.succession.heirs) if (!h.traits.includes(traitId)) h.traits.push(traitId);
+  }
   return true;
 }
 

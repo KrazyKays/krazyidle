@@ -151,28 +151,27 @@ describe('succession jamais validée, pause prolongée', () => {
     expect(s.hero.id).toBe(heirs[heirs.length - 1].id);
   });
 
-  // BUG QA-01 : le Bazar reste ouvert pendant la succession en attente (src/ui/app.ts:771-780, aucune
-  // condition), buyBlessing l'accepte (src/engine/game.ts:578), mais les héritiers sont déjà tirés
-  // (endLife → genHeirs, game.ts:372) et confirmSuccession vide les Bénédictions (game.ts:517).
-  // Les Éclats sont dépensés pour rien : ni l'héritier choisi ni ses enfants ne reçoivent le trait.
-  test.fails('BUG QA-01 : une Bénédiction achetée pendant la succession n\'est pas perdue', () => {
+  // QA-01 (corrigé en R4) : une Bénédiction achetée pendant la succession en attente était perdue (héritiers
+  // déjà tirés, Bénédictions vidées par confirmSuccession). Arbitrage du propriétaire : elle s'applique
+  // aux héritiers déjà tirés.
+  test('QA-01 : une Bénédiction achetée pendant la succession s\'applique aux héritiers déjà tirés', () => {
     const s = fresh(7);
     endLife(s, 0);
     s.eclats = 12;
     expect(buyBlessing(s, 'elu')).toBe(true);
-    confirmSuccession(s, 0, []);
-    // Soit l'héritier la reçoit, soit elle reste réservée pour la génération suivante.
-    expect(s.hero.traits.includes('elu') || s.blessings.includes('elu')).toBe(true);
+    expect(s.eclats).toBe(0);
+    for (const h of s.succession!.heirs) expect(h.traits).toContain('elu');
+    confirmSuccession(s, 1, []);
+    expect(s.hero.traits).toContain('elu');
+    expect(s.blessings).toEqual([]); // consommée par cette succession, pas reportée
   });
 
-  test('reproduction QA-01 : Éclats débités, Bénédiction effacée, trait absent', () => {
+  test('QA-01 : la Bénédiction n\'est pas dupliquée chez un héritier qui porte déjà le trait', () => {
     const s = fresh(7);
     endLife(s, 0);
+    s.succession!.heirs[0].traits.push('elu');
     s.eclats = 12;
     buyBlessing(s, 'elu');
-    expect(s.eclats).toBe(0);
-    confirmSuccession(s, 0, []);
-    expect(s.blessings).toEqual([]);
-    expect(s.hero.traits).not.toContain('elu');
+    expect(s.succession!.heirs[0].traits.filter((t) => t === 'elu')).toHaveLength(1);
   });
 });

@@ -108,7 +108,7 @@ async function blessingDuringSuccession(browser) {
   await page.click('text=Perpétuer la lignée');
   await sleep(300);
   const end = await st(page, '({ traits: s.hero.traits, b: s.blessings, e: s.eclats })');
-  log('QA-01 navigateur : Bénédiction perdue après validation (bug reproduit si OK)', !end.traits.includes('elu') && end.b.length === 0 && end.e === 0, JSON.stringify(end));
+  log('QA-01 navigateur : la Bénédiction achetée pendant la succession est portée par l\'héritier (R4)', end.traits.includes('elu') && end.b.length === 0 && end.e === 0, JSON.stringify(end));
   await ctx.close();
   return errors;
 }
