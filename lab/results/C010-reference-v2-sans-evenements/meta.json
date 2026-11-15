@@ -1,0 +1,25 @@
+{
+ "id": "C010-reference-v2-sans-evenements",
+ "commit": "2780ceb",
+ "srcDirty": false,
+ "date": "2026-11-15T09:56:34.228Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1800,
+ "wallMs": 118683,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=C010-reference-v2-sans-evenements"
+}

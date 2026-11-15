@@ -195,3 +195,7 @@ Chaque ligne correspond à **une modification logique, un commit**, avec tests d
 3. **D1** : la lignée **reste arrêtée** hors ligne à la première mort, sans message particulier. P11 est classé « comportement voulu ».
 4. **D2** : **aucune modification du Domaine** pour l'instant ; une refonte globale de l'écosystème et de son équilibrage pourra être envisagée plus tard. P12 et P23 sont gelés.
 5. **D3** : la triche par l'horloge système est **acceptée** (jeu solo). P10 est classé « non corrigé, risque accepté ».
+
+## 9. Correction après les références v2 (2026-11-15)
+
+**P5 est requalifié.** Avec le nouveau profil `evenementiel` (R0c), qui pratique l'activité dopée pendant la fenêtre, le palier Or est atteint dans **94 %** des parties (C012), contre 0 % pour `experimente`, qui l'ignore. Les événements ne sont donc pas « inatteignables » : ils sont **en tout ou rien selon l'activité jouée** (GD-05), et l'Or devient presque garanti dès qu'on joue l'activité. R9 vise donc à rendre les paliers progressifs (Bronze accessible sans changer d'activité, Or exigeant), et non à les faciliter. La conclusion de C002 (« 0 palier ») ne valait que pour un joueur qui ne s'occupe pas de l'événement.
