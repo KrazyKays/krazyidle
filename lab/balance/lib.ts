@@ -15,7 +15,7 @@ import { PROFILES, type Ctx, type Profile } from '../sim/profiles';
 export { PROFILES };
 
 const roots: Record<string, any> = {
-  ACT: data.ACT, BUILDING: data.BUILDING, LEGACY: data.LEGACY_DEF, TRAIT: data.TRAIT, RES_INFO: data.RES_INFO, EVENT: data.EVENT_DEF,
+  ACT: data.ACT, ACT_UNLOCK: data.ACT_UNLOCK, BUILDING: data.BUILDING, LEGACY: data.LEGACY_DEF, TRAIT: data.TRAIT, RES_INFO: data.RES_INFO, EVENT: data.EVENT_DEF,
 };
 
 /** « ACT.mediter.produce.essence*=1.5;BUILDING.champs.growth=2 » → modifie les objets en mémoire. */
