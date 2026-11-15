@@ -683,8 +683,13 @@ export class App {
       const c = legacyCost(d, lvl);
       const btn = h('button', { class: 'btn btn-primary btn-sm', disabled: maxed || undefined, onclick: () => { if (buyLegacy(s, d.id)) { this.sigTab = ''; toast(`${d.icon} ${d.name} niv. ${lvl + 1}`, 'good'); } } }, maxed ? 'Max' : `${fmt(c, 0)} ⚜️`);
       if (!maxed) b.add(() => { (btn as HTMLButtonElement).disabled = s.legacy < c; });
+      // Déblocage d'une mécanique (Alliances, Chroniques) : il faut épargner, ce que rien ne disait (GD-01, R12).
+      const unlock = d.max === 1 && lvl === 0;
+      const save = unlock
+        ? b.text(h('p', { class: 'muted small' }), () => s.legacy >= c ? '✨ Tu peux le débloquer.' : `💡 Nouvelle mécanique : épargne ton Héritage (${fmt(s.legacy, 0)} / ${fmt(c, 0)} ⚜️).`)
+        : null;
       return h('div', { class: 'card build' },
-        h('div', { class: 'build-head' }, h('span', { class: 'build-i' }, d.icon), h('div', null, h('div', { class: 'build-n' }, d.name, ' ', h('span', { class: 'lvl' }, `niv. ${lvl}${d.max ? '/' + d.max : ''}`)), h('div', { class: 'muted small' }, d.desc))),
+        h('div', { class: 'build-head' }, h('span', { class: 'build-i' }, d.icon), h('div', null, h('div', { class: 'build-n' }, d.name, ' ', h('span', { class: 'lvl' }, `niv. ${lvl}${d.max ? '/' + d.max : ''}`)), h('div', { class: 'muted small' }, d.desc), save)),
         h('div', { class: 'row-end' }, btn));
     }));
     const anc = [...s.ancestors].reverse();

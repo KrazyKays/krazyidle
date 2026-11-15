@@ -1,0 +1,22 @@
+{
+ "id": "C062-r12-a45-c90",
+ "commit": "e0365a7",
+ "srcDirty": false,
+ "date": "2026-11-15T17:36:29.046Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "occasionnel",
+  "mono-cultiver",
+  "mono-commercer"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 600,
+ "wallMs": 43176,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,occasionnel,mono-cultiver,mono-commercer --seeds=1-100 --hours=6 --id=C062-r12-a45-c90"
+}

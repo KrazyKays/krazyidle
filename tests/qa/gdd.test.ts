@@ -134,13 +134,13 @@ describe('GDD 2.5 — le monde partagé', () => {
 });
 
 describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
-  test('34 surnoms en 4 raretés, 1 à 5 ✦ ; Chroniques 160 ⚜️, Alliances 90 ⚜️', () => {
+  test('34 surnoms en 4 raretés, 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
     expect(EPITHETS).toHaveLength(34);
     expect(new Set(EPITHETS.map((e) => e.rarity)).size).toBe(4);
     expect(Math.min(...EPITHET_ECLATS)).toBe(1);
     expect(Math.max(...EPITHET_ECLATS)).toBe(5);
-    expect(LEGACY_DEF.chroniques.base).toBe(160);
-    expect(LEGACY_DEF.alliances.base).toBe(90);
+    expect(LEGACY_DEF.chroniques.base).toBe(90);
+    expect(LEGACY_DEF.alliances.base).toBe(45);
   });
   test('dot : 5 % de l\'Or en stock (R11), 50 au minimum, moitié prix entre joueurs ; 8 cadets', () => {
     const s = newGame(0, 1);
