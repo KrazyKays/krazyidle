@@ -1,0 +1,18 @@
+{
+ "id": "C041-R9-sans-evenements",
+ "commit": "0c1c7b4",
+ "srcDirty": false,
+ "date": "2026-11-15T17:12:03.570Z",
+ "profiles": [
+  "experimente",
+  "optimiseur"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 34765,
+ "command": "npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 --id=C041-R9-sans-evenements"
+}
