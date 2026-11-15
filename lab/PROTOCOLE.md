@@ -29,12 +29,13 @@ Document commun aux cinq agents (`.claude/agents/`) et au Technical Lead. Chaque
 
 | Commande | Usage |
 |---|---|
-| `npm test` | Suite Vitest existante (61 tests). Doit rester verte. |
+| `npm test` | Suite Vitest complète (tests unitaires, `tests/qa`, régressions). Doit rester verte. |
 | `npx vitest run tests/qa` | Tests ajoutés par la QA. |
 | `npm run typecheck` | Vérification TypeScript. |
 | `npm run sim -- --list` | Liste des profils de joueurs. |
 | `npm run sim -- --profiles=a,b --seeds=1-200 --hours=6 [--dt=0.1] [--events] --id=<nom>` | Campagne parallèle → `lab/results/<id>/` (`runs.jsonl`, `summary.json`, `summary.md`). |
-| `npm run sim:compare -- <ref.json> <cand.json>` | Compare deux campagnes (Δ % et taille d'effet d). |
+| `npm run sim:guard -- <id-réf> <id-cand>` | **Décision avant/après** (`lab/metrics/guardrails.ts`) : refuse les campagnes incomparables (code 2), ROUGE = écart au-delà du seuil **et** \|z\| ≥ 3 (code 1). |
+| `npm run sim:compare -- <ref.json> <cand.json>` | Affichage descriptif des écarts (aucun test de significativité) : ne pas l'utiliser pour décider. |
 | `node --import ./lab/sim/register.mjs <script.ts>` | Exécuter un script TypeScript qui importe le moteur (`src/engine`) directement. |
 | Playwright (`require('playwright')`, Chromium préinstallé) | Parcours navigateur sur `npm run dev` ou `npm run build && npm run preview`. |
 
@@ -89,5 +90,5 @@ Grille de priorité :
 
 - Une seule modification logique par commit, sur sa propre branche de travail.
 - `npm test` + `npx vitest run tests/qa` + campagne de référence relancée sur les mêmes graines.
-- `npm run sim:compare` contre `lab/baselines/` ; résultat consigné dans `lab/campaigns/CAMPAIGNS.md` et `lab/CHANGELOG-EQUILIBRAGE.md`.
+- `npm run sim:guard` contre la référence en vigueur (voir `CLAUDE.md`) ; résultat consigné dans `lab/campaigns/CAMPAIGNS.md` et `lab/CHANGELOG-EQUILIBRAGE.md`.
 - Retour arrière (`git revert`) si un indicateur de garde-fou sort de sa plage (voir `lab/metrics/KPIS.md`).

@@ -25,9 +25,13 @@ Node.js 24 ou plus récent.
 ```bash
 npm install
 npm run dev      # serveur de développement
-npm test         # tests unitaires + bot d'équilibrage
+npm test         # tests unitaires, tests QA et de régression, bot d'équilibrage
 npm run build    # build de production dans dist/
+npm run sim -- --list                      # simulation : profils de joueurs disponibles
+npm run sim:guard -- <réf> <candidat>      # garde-fous d'équilibrage entre deux campagnes
 ```
+
+Parcours navigateur (Playwright) : `tests/qa/e2e/`. Outillage d'analyse et d'équilibrage : `lab/` (protocole dans `lab/PROTOCOLE.md`, historique dans `lab/CHANGELOG-EQUILIBRAGE.md`). Audits : `audits/`. Guide pour les sessions Claude et règles de travail : [`CLAUDE.md`](CLAUDE.md).
 
 Chaque push sur `main` déclenche `.github/workflows/deploy.yml` (tests, build, déploiement sur GitHub Pages).
 

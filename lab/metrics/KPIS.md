@@ -1,5 +1,7 @@
 # Référentiel des indicateurs d'équilibrage (v1, Game Data Analyst, 2026-11-14)
 
+> **Note (2026-11-15)** : les valeurs « C000 » ci-dessous décrivent la version 0.2.1. Les références de la 0.2.2 sont C090 (sans événements) et C091 (avec événements) ; les écarts dus aux corrections R1–R16 sont détaillés dans `lab/CHANGELOG-EQUILIBRAGE.md`.
+
 v0 posée par le Technical Lead ; v1 complétée pendant l'audit (phase 1). Toutes les valeurs sont **[SIMULÉES]** (profils automatiques de `lab/sim/profiles.ts`, pas de vrais joueurs).
 
 - **Sources** : champs de `RunResult` (`lab/sim/runner.ts`), agrégés par `lab/sim/stats.ts` ; KPI dérivés dans `lab/metrics/guardrails.ts` (`kpis()`) ; KPI non collectés par le runner dans `lab/metrics/collect-extra.ts` (sortie `extra.jsonl`).

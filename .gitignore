@@ -3,5 +3,8 @@ dist
 *.log
 .DS_Store
 
-# Résultats bruts de simulation (régénérables) : seuls les résumés sont versionnés
-lab/results/**/runs.jsonl
+# Données brutes de simulation (régénérables avec les commandes de lab/campaigns/CAMPAIGNS.md) :
+# seuls les résumés (.md, .json, .txt) sont versionnés.
+lab/**/*.jsonl
+# Captures du parcours e2e, réécrites à chaque lancement de tests/qa/e2e/*.cjs
+tests/qa/e2e/captures/

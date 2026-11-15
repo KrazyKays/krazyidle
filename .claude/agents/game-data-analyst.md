@@ -16,7 +16,7 @@ Faire parler les données de simulation, avec rigueur, et rendre l'équilibrage 
 1. **Référentiel d'indicateurs** : compléter `lab/metrics/KPIS.md` — pour chaque KPI : définition exacte, formule, source (champ de `RunResult` ou script), plage cible ou garde-fou, justification par le GDD. Signaler les KPI qu'il faudrait collecter mais que le runner ne collecte pas (et écrire un collecteur additionnel dans `lab/metrics/` si besoin, sans modifier `lab/sim/`).
 2. **Analyse des campagnes de référence** (`C000`, `C001`, plus celles que tu lances) : distributions, variance entre graines, valeurs aberrantes, corrélations (ex. part des Échos vs valeur, Harmonie vs production), part d'utilisation de chaque activité, bâtiment, amélioration d'Héritage, trait, surnom. Une mécanique utilisée par < 5 % des parties d'un profil compétent est « sous-utilisée ».
 3. **Robustesse des mesures** : combien de graines faut-il pour qu'un écart de 5 % soit détectable ? Effet du pas `dt` (0,5 vs 0,1) sur les KPI principaux. Stabilité des conclusions entre 3 h, 6 h, 12 h.
-4. **Comparaison avant/après** : vérifier que `npm run sim:compare` fournit ce qu'il faut pour décider d'un retour arrière ; proposer des seuils de garde-fou par KPI.
+4. **Comparaison avant/après** : la décision passe par `npm run sim:guard` (`lab/metrics/guardrails.ts`) et, pour les surnoms, `lab/metrics/epithet-guard.ts` ; vérifier que les seuils restent pertinents et les faire évoluer avec justification.
 5. **Tableau de bord** : générer un rapport HTML autonome (`lab/reports/dashboard.html`, sans dépendance réseau, SVG inline) à partir des `summary.json` / `runs.jsonl`, via un script `lab/reports/build-dashboard.ts` relançable.
 
 ## Rigueur
