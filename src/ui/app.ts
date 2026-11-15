@@ -282,7 +282,7 @@ export class App {
     const last = s.ancestors[s.ancestors.length - 1];
     const list: [string, boolean, string][] = [
       ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} cultive déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
-      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, mais tes Échos continuent de produire et le Domaine se repose. Prends le temps de bâtir !`],
+      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire et le Domaine se repose. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !` : ''],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent la vie en cours ET les Échos.'],
@@ -308,14 +308,19 @@ export class App {
       notice = this.installCard();
     }
     // Sur téléphone l'astuce passe en tête ; sur ordinateur elle ne repousse pas le héros et va en bas de colonne.
-    if (notice && !this.desktop) parts.push(notice);
+    // L'astuce d'accueil (« Change d'activité… ») va sous les activités : en tête, elle les repoussait hors
+    // de l'écran au premier lancement sur téléphone (GD-11).
+    const noticeBelow = !this.desktop && hint?.id === 'start';
+    if (notice && !this.desktop && !noticeBelow) parts.push(notice);
     parts.push(this.heroCard(s.hero, true));
 
     if (!s.life) {
       parts.push(h('div', { class: 'card death-card' },
         h('div', { class: 'big-i' }, '🕯️'),
         h('h3', null, `La vie de ${s.hero.name} s'achève.`),
-        h('p', { class: 'muted' }, 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu le souhaites.'),
+        h('p', { class: 'muted' }, s.echoes.length
+          ? 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu le souhaites.'
+          : 'Sa vie deviendra ton premier Écho et rejouera ses choix pour toujours. Rien ne presse : choisis qui reprendra le flambeau quand tu le souhaites.'),
         h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir la relève')));
       if (notice && this.desktop) parts.push(notice);
       this.elLife.replaceChildren(...parts);
@@ -346,7 +351,7 @@ export class App {
     const grid = h('div', { class: 'acts' });
     ACTS.forEach((a, i) => grid.appendChild(this.actCard(a, i, b)));
     parts.push(h('h3', { class: 'section-t' }, 'Activités', h('span', { class: 'muted small' }, this.desktop ? ' — touches 1 à 5' : '')), grid);
-    if (notice && this.desktop) parts.push(notice);
+    if (notice && (this.desktop || noticeBelow)) parts.push(notice);
     this.elLife.replaceChildren(...parts);
   }
 
@@ -822,8 +827,10 @@ export class App {
       const a = sc.ancestor;
       const over = all.length > slots;
       const heirs = h('div', { class: 'heirs' }, sc.heirs.map((hero, i) => {
-        const m = ACTS.map((x) => heroActMult(hero, x));
-        const best = ACTS[m.indexOf(Math.max(...m))];
+        // Meilleure aptitude parmi les activités débloquées (GD-11 : « 📖 ×1,40 » pointait Étudier, encore verrouillé).
+        const open = ACTS.filter((x) => s.unlocked.includes(x));
+        const m = open.map((x) => heroActMult(hero, x));
+        const best = open[m.indexOf(Math.max(...m))];
         return h('button', { class: `heir ${i === chosen ? 'chosen' : ''}`, onclick: () => { chosen = i; render(); } },
           h('div', { class: 'heir-name' }, hero.name),
           hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
