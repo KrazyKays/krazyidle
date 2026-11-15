@@ -1,6 +1,6 @@
 // Profils de joueurs simulés. Chaque profil décide : activité, succession, achats, sessions.
 // Ils n'utilisent QUE l'API publique du moteur (aucune modification du jeu).
-import { ACTS, BUILDINGS, LEGACY, RES_INFO, TRAIT, legacyCost, type ActId } from '../../src/engine/data';
+import { ACT, ACTS, BUILDINGS, LEGACY, RES_INFO, TRAIT, legacyCost, type ActId, type ResId } from '../../src/engine/data';
 import {
   buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford, confirmSuccession, echoSlots, echoValueRate, prodMult,
   type Runtime,
@@ -90,14 +90,19 @@ function buyAllGreedy(s: GameState) {
   }
 }
 
-/** Valeur nette instantanée (pts/s) d'une activité pour le héros vivant. */
+/**
+ * Valeur nette instantanée (pts/s) d'une activité pour le héros vivant. Lit les rendements dans ACT
+ * (et non des constantes), pour suivre les surcharges de paramètres des expériences d'équilibrage.
+ */
 export function actNetValue(s: GameState, rt: Runtime, a: ActId): number {
   if (!s.life || !has(s, a)) return -Infinity;
   const p = lifePower(s.life, s.hero, a);
   const base = prodMult(s, rt, a) * p * ecoFactor(a, s.eco);
-  const prod = { cultiver: 1.2 * RES_INFO.vivres.value, chasser: 2 * RES_INFO.vivres.value, commercer: 1.5 * RES_INFO.or.value, etudier: 0.6 * RES_INFO.savoir.value, mediter: 0.06 * RES_INFO.essence.value }[a];
-  const cons = { cultiver: 0, chasser: 0, commercer: 3 * RES_INFO.vivres.value, etudier: 2 * RES_INFO.or.value, mediter: 0 }[a] * Math.sqrt(Math.max(p, 0.01));
-  return base * prod - cons;
+  const def = ACT[a];
+  let prod = 0, cons = 0;
+  for (const r in def.produce) prod += def.produce[r as ResId]! * RES_INFO[r as ResId].value;
+  for (const r in def.consume) cons += def.consume[r as ResId]! * RES_INFO[r as ResId].value;
+  return base * prod - cons * Math.sqrt(Math.max(p, 0.01));
 }
 
 // ---------------------------------------------------------------------------
@@ -183,6 +188,19 @@ export const PROFILES: Record<string, Profile> = {
         marry(s, suitorFor(s, ch, c.now));
       }
     },
+  },
+};
+
+// Joueur qui vise les événements : décisions du joueur expérimenté, mais pendant une fenêtre il pratique
+// l'activité dopée par l'événement (s'il l'a débloquée et peut l'alimenter).
+PROFILES.evenementiel = {
+  ...PROFILES.experimente,
+  id: 'evenementiel',
+  desc: 'Joueur expérimenté qui, pendant un événement, pratique l\'activité qu\'il dope (sinon comme experimente).',
+  activity: (s, c) => {
+    const ev = c.rt.event?.def;
+    const boosted = ev?.act ? (Object.keys(ev.act) as ActId[]).find((a) => has(s, a)) : undefined;
+    return boosted ? feasible(s, boosted) : legacyBotActivity(s);
   },
 };
 
