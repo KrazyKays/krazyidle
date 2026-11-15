@@ -35,3 +35,28 @@ describe('R3 — import de sauvegarde validé (QA-02)', () => {
     expect(importSave(exportSave(fresh))).not.toBeNull(); // partie neuve, avant la cérémonie
   });
 });
+
+describe('R8 — « le Vénérable » et surnoms répétés (DATA-01, GD-04, PBA-07)', () => {
+  const base = async () => {
+    const { ACTS } = await import('../../src/engine/data');
+    const share = Object.fromEntries(ACTS.map((a) => [a, 0])) as any;
+    share.etudier = 0.6; share.commercer = 0.4;
+    return {
+      share, used: 2, switches: 5, harmonyAvg: 0.9, harmonyMin: 0.8, value: 100, parentValue: 100, bestBefore: 1000, gen: 30,
+      traits: [], negTraits: 0, vocTier: 10, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29, predators: 11,
+    };
+  };
+  test('donné au passage au rang X, plus à chaque vie au rang X', async () => {
+    const { pickEpithet } = await import('../../src/engine/epithets');
+    const f = await base();
+    expect(pickEpithet({ ...f, prevVocTier: 9 })?.id).toBe('venerable');
+    expect(pickEpithet({ ...f, prevVocTier: 10 })?.id).not.toBe('venerable');
+  });
+  test('le surnom du parent n\'est pas redonné ; un autre surnom applicable est choisi', async () => {
+    const { pickEpithet } = await import('../../src/engine/epithets');
+    const f = await base();
+    const share = { ...f.share, etudier: 0, commercer: 1 };
+    expect(pickEpithet({ ...f, share, prevVocTier: 10 })?.id).toBe('negociant');
+    expect(pickEpithet({ ...f, share, prevVocTier: 10, parentEpithet: 'negociant' })?.id).not.toBe('negociant');
+  });
+});

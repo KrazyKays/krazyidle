@@ -22,6 +22,10 @@ export interface LifeFacts {
   negTraits: number;
   /** rang de vocation transmis (0 = aucun) */
   vocTier: number;
+  /** rang de vocation hérité à la naissance (0 = aucun) : « le Vénérable » salue le passage au rang X */
+  prevVocTier?: number;
+  /** surnom du parent : il n'est pas redonné à l'enfant, pour que la lignée écrive une histoire variée */
+  parentEpithet?: string;
   /** durée de la vie rapportée à une vie sans traits ni Temps suspendu (1 = normale) */
   durRatio: number;
   extended: boolean;
@@ -67,7 +71,7 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'phenix', name: 'le Phénix', nameF: 'la Phénix', icon: '🪶', rarity: 3, hint: 'Renaître des cendres d\'un parent qui n\'a rien laissé.', test: (f) => f.parentValue > 0 && f.value >= 5 * f.parentValue && f.gen >= 10, mods: { pow: 0.35 } },
   // --- Épiques
   { id: 'grand', name: 'le Grand', nameF: 'la Grande', icon: '👑', rarity: 2, hint: 'Faire bien mieux que tous ceux qui sont venus avant.', test: (f) => isRecord(f) && f.gen >= 5, mods: { pow: 0.15 } },
-  { id: 'venerable', name: 'le Vénérable', nameF: 'la Vénérable', icon: '🎖️', rarity: 2, hint: 'Porter un métier jusqu\'à son plus haut rang.', test: (f) => f.vocTier >= 10, mods: { pow: 0.15 } },
+  { id: 'venerable', name: 'le Vénérable', nameF: 'la Vénérable', icon: '🎖️', rarity: 2, hint: 'Élever un métier jusqu\'à son plus haut rang.', test: (f) => f.vocTier >= 10 && (f.prevVocTier ?? 0) < 10, mods: { pow: 0.15 } },
   { id: 'patriarche', name: 'le Patriarche', nameF: 'la Matriarche', icon: '🏰', rarity: 2, hint: 'Naître à un âge rond de la lignée : un quart de siècle, puis encore.', test: (f) => f.gen % 25 === 0, mods: { pow: 0.15 } },
   { id: 'ermite', name: 'l\'Ermite', icon: '🌲', rarity: 2, hint: 'Fuir les marchés et prier au fond des bois, en paix avec eux.', test: (f) => f.share.mediter >= 0.6 && f.share.commercer === 0 && f.harmonyAvg >= 0.8, mods: { act: { mediter: 0.25 }, eco: -0.3 } },
   { id: 'sage', name: 'le Sage', nameF: 'la Sage', icon: '🦉', rarity: 2, hint: 'Étudier toute sa vie, et en avoir fait un métier reconnu.', test: (f) => f.share.etudier >= 0.5 && f.vocTier >= 5, mods: { act: { etudier: 0.25 } } },
@@ -115,7 +119,7 @@ export const EPITHET_RARITY = [
 /** Le surnom le plus rare que la vie remplit (à rareté égale, le premier de la liste), ou null. */
 export function pickEpithet(f: LifeFacts): EpithetDef | null {
   let best: EpithetDef | null = null;
-  for (const e of EPITHETS) if ((!best || e.rarity > best.rarity) && e.test(f)) best = e;
+  for (const e of EPITHETS) if (e.id !== f.parentEpithet && (!best || e.rarity > best.rarity) && e.test(f)) best = e;
   return best;
 }
 

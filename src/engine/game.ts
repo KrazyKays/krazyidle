@@ -405,7 +405,7 @@ export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): 
     harmonyAvg: st.hn > 0 ? st.hs / st.hn : ecoHealth(s.eco), harmonyMin: st.hn > 0 ? st.hm : ecoHealth(s.eco),
     value: life.value, parentValue: parent?.value ?? 0, bestBefore: s.stats.bestLife, gen: hero.gen,
     traits: hero.traits, negTraits: hero.traits.filter((t) => TRAIT[t]?.neg).length,
-    vocTier: voc?.tier ?? 0, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
+    vocTier: voc?.tier ?? 0, prevVocTier: hero.vocation?.tier ?? 0, parentEpithet: parent?.epithet, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
     eventTier: st.ev, builds: st.bd, game: s.eco.G, predators: s.eco.P,
   };
 }
