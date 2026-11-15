@@ -189,4 +189,32 @@ export function verifyCode(code: string): { ok: boolean; date: string; claimed: 
   return { ok: actual === d.score, date: d.date, claimed: d.score, actual };
 }
 
-export const DAILY_TIERS = [250, 500, 800];
+/** Anciens paliers fixes (avant R14), conservés pour référence. */
+export const DAILY_TIERS_FIXED = [250, 500, 800];
+
+/**
+ * Paliers relatifs au jour (R14) : le meilleur score possible variait de ×2,9 selon la date face à des
+ * paliers fixes. Référence = meilleure activité tenue toute la vie, calculée en rejouant les cinq parties
+ * constantes (déterministe, identique pour tous). Bronze 70 %, Argent 100 % (trouver la bonne activité),
+ * Or 110 % (faire mieux qu'une seule activité). Le score n'est pas touché : les codes restent vérifiables.
+ */
+export const DAILY_TIER_SHARES = [0.7, 1, 1.1];
+const refCache = new Map<string, number>();
+export function dailyReference(date: string): number {
+  const hit = refCache.get(date);
+  if (hit !== undefined) return hit;
+  const setup = dailySetup(date);
+  let best = 0;
+  for (const a of ACTS) {
+    const run = new DailyRun(setup);
+    run.setAct(a);
+    while (!run.done) run.step();
+    best = Math.max(best, run.score());
+  }
+  refCache.set(date, best);
+  return best;
+}
+export function dailyTiers(date: string): number[] {
+  const r = dailyReference(date);
+  return DAILY_TIER_SHARES.map((x) => Math.max(1, Math.round(r * x)));
+}

@@ -62,7 +62,7 @@
   {
     "k": "mobile : export de sauvegarde lisible",
     "ok": true,
-    "info": "2972 caractères"
+    "info": "3136 caractères"
   },
   {
     "k": "mobile : aucune erreur console",
@@ -122,7 +122,7 @@
   {
     "k": "desktop : export de sauvegarde lisible",
     "ok": true,
-    "info": "2956 caractères"
+    "info": "2940 caractères"
   },
   {
     "k": "desktop : aucune erreur console",
@@ -137,7 +137,7 @@
   {
     "k": "QA-01 navigateur : la Bénédiction achetée pendant la succession est portée par l'héritier (R4)",
     "ok": true,
-    "info": "{\"traits\":[\"centenaire\",\"robuste\",\"main_verte\",\"elu\"],\"b\":[],\"e\":0}"
+    "info": "{\"traits\":[\"langue_argent\",\"maladroit\",\"elu\"],\"b\":[],\"e\":0}"
   },
   {
     "k": "QA-02 résiduel : sauvegarde locale corrompue (hors import) → plantage au lancement (comportement documenté si OK)",

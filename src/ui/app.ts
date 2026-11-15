@@ -2,7 +2,7 @@ import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
-import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } from '../engine/daily';
+import { DAILY_DUR, DailyRun, dailySetup, dailyTiers, encodeRun, verifyCode } from '../engine/daily';
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
@@ -765,7 +765,7 @@ export class App {
       h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
       h('div', { class: 'stats' },
         stat('Meilleur score', rec ? fmtInt(rec.best) : '—'),
-        stat('Paliers', `🥉 ${DAILY_TIERS[0]} · 🥈 ${DAILY_TIERS[1]} · 🥇 ${DAILY_TIERS[2]}`),
+        stat('Paliers du jour', (() => { const t = dailyTiers(date); return `🥉 ${t[0]} · 🥈 ${t[1]} · 🥇 ${t[2]}`; })()),
         stat('Nouveau destin', b.text(h('span'), () => fmtDur((nextDay - Date.now()) / 1000)))),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-primary', onclick: () => this.openDaily() }, rec ? '🔁 Rejouer' : '▶️ Jouer'),
@@ -1180,6 +1180,7 @@ export class App {
       this.rt.pauseLife = true;
       const run = this.daily;
       const best = this.s.daily[date]?.best ?? 0;
+      const DAILY_TIERS = dailyTiers(date);
       b.reset();
 
       // Score et paliers de médaille
@@ -1284,6 +1285,7 @@ export class App {
       const code = encodeRun(date, run.actions, score);
       const s = this.s;
       const rec = s.daily[date] ?? { best: 0, code: '', rewarded: 0 };
+      const DAILY_TIERS = dailyTiers(date);
       const isBest = score > rec.best;
       if (isBest) { rec.best = score; rec.code = code; }
       const levels = 1 + DAILY_TIERS.filter((t) => rec.best >= t).length;
@@ -1353,6 +1355,7 @@ export class App {
 
   async shareDaily(date: string, score: number, code: string) {
     const d = new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR');
+    const DAILY_TIERS = dailyTiers(date);
     const medal = score >= DAILY_TIERS[2] ? '🥇' : score >= DAILY_TIERS[1] ? '🥈' : score >= DAILY_TIERS[0] ? '🥉' : '🎗️';
     const text = `⏳ Échos de Lignée — Destin du ${d}\n${medal} ${fmtInt(score)} points\nVérifie mon score : ${code}\n${GAME_URL}`;
     try {

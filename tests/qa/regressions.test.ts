@@ -148,3 +148,21 @@ describe('R13 — Temps suspendu n\'entre pas dans la durée relative', () => {
     expect(s.succession!.legacyGain).toBe(10);
   });
 });
+
+describe('R14 — paliers du Destin du jour relatifs au jour', () => {
+  test('référence = meilleure activité tenue toute la vie ; paliers 70 / 100 / 110 %, identiques à chaque appel', async () => {
+    const { ACTS } = await import('../../src/engine/data');
+    const { DailyRun, dailySetup, dailyReference, dailyTiers } = await import('../../src/engine/daily');
+    const date = '2026-11-14';
+    let best = 0;
+    for (const a of ACTS) { const r = new DailyRun(dailySetup(date)); r.setAct(a); while (!r.done) r.step(); best = Math.max(best, r.score()); }
+    expect(dailyReference(date)).toBe(best);
+    expect(dailyTiers(date)).toEqual([Math.round(best * 0.7), best, Math.round(best * 1.1)]);
+    expect(dailyTiers(date)).toEqual(dailyTiers(date));
+  });
+  test('le score et la vérification des codes ne changent pas', async () => {
+    const { verifyCode } = await import('../../src/engine/daily');
+    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
+    for (const f of fx) expect(verifyCode(f.code)!.actual).toBe(f.score);
+  });
+});
