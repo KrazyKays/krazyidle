@@ -186,7 +186,7 @@ export interface GameState {
   cadets: Hero[];
   /** empreintes des codes d'alliance déjà acceptés */
   usedCodes: string[];
-  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; sessions?: number; installAskAt?: number };
+  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 
 export const SAVE_VERSION = 2;

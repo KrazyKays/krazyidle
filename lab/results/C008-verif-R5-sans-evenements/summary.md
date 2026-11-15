@@ -1,0 +1,57 @@
+# Campagne C008-verif-R5-sans-evenements
+
+- Commit : `c4717e2` (**src/ modifié**)
+- Commande : `npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 --id=C008-verif-R5-sans-evenements`
+- 400 parties · 6 h · dt 0.5 s · événements non · 32.2 s
+
+> Résultats **[SIMULÉS]** : profils automatiques, pas de vrais joueurs. `never.*` = part des parties sans déblocage ; `unlock.*` / `upgradeAt.*` ne portent que sur les parties qui débloquent (n). Décision avant/après : `npm run sim:guard` (pas `sim:compare`).
+
+## experimente
+
+| Indicateur | n | moy. | é.-t. | p10 | p50 | p90 | min | max |
+|---|---|---|---|---|---|---|---|---|
+| gen | 200 | 168.8 | 2.508 | 166.0 | 169.0 | 172.0 | 162.0 | 175.0 |
+| legacyTotal | 200 | 2197 | 50.3 | 2137 | 2198 | 2260 | 2047 | 2336 |
+| log10Value | 200 | 8.259 | 0.034 | 8.223 | 8.253 | 8.304 | 8.169 | 8.418 |
+| echoShare | 200 | 0.929 | 0.003 | 0.924 | 0.928 | 0.933 | 0.920 | 0.943 |
+| harmonyAvg | 200 | 0.981 | 0.002 | 0.978 | 0.981 | 0.983 | 0.972 | 0.985 |
+| traitCombos60 | 200 | 33.8 | 4.457 | 28.0 | 34.0 | 39.0 | 22.0 | 49.0 |
+| epithetsFound | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| eventsDone | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| unlock.commercer | 200 | 16.7 | 1.697 | 12.5 | 17.5 | 17.5 | 12.5 | 17.5 |
+| unlock.etudier | 200 | 63.4 | 10.1 | 53.5 | 60.5 | 78.0 | 53.5 | 78.0 |
+| never.etudier | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| unlock.mediter | 200 | 111.1 | 34.3 | 86.0 | 93.0 | 154.0 | 79.0 | 277.5 |
+| never.mediter | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| upgradeAt.alliances | 200 | 16179 | 710.1 | 15361 | 16131 | 17036 | 14781 | 19381 |
+| never.alliances | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| upgradeAt.chroniques | 0 | — | — | — | — | — | — | — |
+| never.chroniques | 200 | 1.000 | 0.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| anomalies | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+
+Temps héros : chasser 14 % · commercer 42 % · cultiver 16 % · etudier 14 % · mediter 14 %
+
+## optimiseur
+
+| Indicateur | n | moy. | é.-t. | p10 | p50 | p90 | min | max |
+|---|---|---|---|---|---|---|---|---|
+| gen | 200 | 155.2 | 3.649 | 151.0 | 155.0 | 160.0 | 145.0 | 165.0 |
+| legacyTotal | 200 | 3521 | 194.2 | 3362 | 3550 | 3680 | 2825 | 4047 |
+| log10Value | 200 | 8.589 | 0.106 | 8.542 | 8.611 | 8.648 | 8.239 | 8.861 |
+| echoShare | 200 | 0.859 | 0.010 | 0.847 | 0.860 | 0.870 | 0.832 | 0.890 |
+| harmonyAvg | 200 | 0.840 | 0.054 | 0.811 | 0.818 | 0.971 | 0.804 | 0.987 |
+| traitCombos60 | 200 | 16.4 | 4.525 | 11.0 | 17.0 | 22.0 | 5.000 | 28.0 |
+| epithetsFound | 200 | 0.990 | 0.100 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| eventsDone | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| unlock.commercer | 200 | 16.5 | 1.710 | 12.5 | 17.5 | 17.5 | 12.5 | 17.5 |
+| unlock.etudier | 54 | 146.3 | 68.8 | 89.5 | 116.5 | 235.5 | 88.5 | 354.5 |
+| never.etudier | 200 | 0.730 | 0.445 | 0.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| unlock.mediter | 5 | 3845 | 1427 | 2170 | 3582 | 5687 | 2170 | 5687 |
+| never.mediter | 200 | 0.975 | 0.157 | 1.000 | 1.000 | 1.000 | 0.000 | 1.000 |
+| upgradeAt.alliances | 200 | 11467 | 850.5 | 10401 | 11426 | 12531 | 9796 | 13721 |
+| never.alliances | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+| upgradeAt.chroniques | 198 | 17106 | 1219 | 15686 | 16946 | 18596 | 13976 | 21356 |
+| never.chroniques | 200 | 0.010 | 0.100 | 0.000 | 0.000 | 0.000 | 0.000 | 1.000 |
+| anomalies | 200 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 |
+
+Temps héros : chasser 10 % · commercer 3 % · cultiver 86 % · etudier 2 % · mediter 0 %

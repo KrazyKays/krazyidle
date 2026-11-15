@@ -55,34 +55,33 @@ describe('objectif adaptatif', () => {
     expect(s.events[w.key].target).toBeGreaterThan(1000);
   });
 
-  // BUG QA-03 : ensureEventProgress (src/engine/game.ts:256-262) fixe l'objectif une fois pour toutes
-  // à partir de rt.rate, la moyenne glissante de production. Si le premier tick de l'événement se fait
-  // avec un Runtime neuf (jeu relancé moins de 30 s après la dernière sauvegarde : pas de rattrapage,
-  // src/main.ts:65), rt.rate vaut 0 et l'objectif tombe au minimum (60 Vivres), quelle que soit l'économie.
-  // Les trois paliers (6 ✦) tombent alors en quelques secondes.
-  test.fails('BUG QA-03 : un Runtime neuf au début de l\'événement ne ramène pas l\'objectif au minimum', () => {
+  // QA-03 (corrigé en R5) : l'objectif était fixé sur rt.rate, qui repart de 0 avec un Runtime neuf
+  // (jeu relancé pendant la fenêtre) : il tombait au plancher (60) et les 3 paliers en quelques secondes.
+  // Le débit est désormais mémorisé dans la sauvegarde (stats.valueRate).
+  test('QA-03 : à historique identique, une relance pendant la fenêtre donne le même objectif qu\'une session continue', () => {
     const w = moisson();
     const s = lateGame();
-    const warm = clone(s);
-    const rtW = newRuntime();
-    play(warm, rtW, w.start - 60_000, 60.1);
-    const rtC = newRuntime(); // relance du jeu
-    play(s, rtC, w.start, 0.1);
-    expect(s.events[w.key].target).toBeGreaterThan(warm.events[w.key].target * 0.5);
+    const rt = newRuntime();
+    play(s, rt, w.start - 120_000, 119.9); // deux minutes de culture juste avant la fenêtre
+    const relaunched = clone(s);
+    play(s, rt, w.start, 0.1); // session continue
+    play(relaunched, newRuntime(), w.start, 0.1); // jeu relancé au début de la fenêtre
+    const cont = s.events[w.key].target, cold = relaunched.events[w.key].target;
+    // L'objectif en session continue repose sur une moyenne de ~3 s, bruitée ; la relance sur ~60 s.
+    // On exige le même ordre de grandeur (le bug le divisait par ~5 000).
+    expect(cold).toBeGreaterThan(cont * 0.5);
+    expect(cold).toBeLessThan(cont * 2);
   });
 
-  test('reproduction QA-03 : objectif minimal et palier Or en moins d\'une minute', () => {
+  test('QA-03 : relancé pendant la fenêtre, le palier Or n\'est plus atteint en moins d\'une minute', () => {
     const w = moisson();
     const s = lateGame();
-    const e0 = s.eclats;
     const rtC = newRuntime();
     play(s, rtC, w.start, 0.1);
-    expect(s.events[w.key].target).toBe(60);
+    expect(s.events[w.key].target).toBeGreaterThan(60);
     let t = 0;
-    while (s.events[w.key].tier < 3 && t < 600) { play(s, rtC, w.start + 100 + t * 1000, 1); t++; }
-    expect(s.events[w.key].tier).toBe(3);
-    expect(t).toBeLessThan(60);
-    expect(s.eclats - e0).toBeGreaterThanOrEqual(6);
+    while (s.events[w.key].tier < 3 && t < 60) { play(s, rtC, w.start + 100 + t * 1000, 1); t++; }
+    expect(s.events[w.key].tier).toBeLessThan(3);
   });
 
   test('l\'objectif n\'est fixé qu\'une fois par fenêtre : quitter et revenir ne le réinitialise pas', () => {

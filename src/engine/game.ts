@@ -21,11 +21,17 @@ export interface Runtime {
   tickGross: Record<ResId, number>;
   notices: { kind: string; text: string }[];
   pauseLife: boolean;
+  /** secondes simulées depuis la création (un Runtime neuf n'a pas encore de moyenne de production) */
+  age: number;
 }
 
 export function newRuntime(): Runtime {
-  return { event: null, online: true, rate: zeroRes(), net: zeroRes(), echoRate: 0, tickGross: zeroRes(), notices: [], pauseLife: false };
+  return { event: null, online: true, rate: zeroRes(), net: zeroRes(), echoRate: 0, tickGross: zeroRes(), notices: [], pauseLife: false, age: 0 };
 }
+
+/** Horizon (s) du débit mémorisé, et durée pendant laquelle un Runtime neuf s'y fie. */
+export const RATE_MEMORY_SEC = 60;
+export const RATE_WARMUP_SEC = 10;
 
 const up = (s: GameState, id: string) => s.upgrades[id] ?? 0;
 const bl = (s: GameState, id: string) => s.buildings[id] ?? 0;
@@ -241,6 +247,11 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
     rt.net[r] += ((s.res[r] - before[r]) / dt - rt.net[r]) * k;
   }
   rt.echoRate += (echoGross / dt - rt.echoRate) * k;
+  // Débit de valeur moyen sur ~60 s, mémorisé dans la sauvegarde : un Runtime neuf (jeu relancé pendant
+  // la fenêtre) ne doit pas faire tomber l'objectif d'un événement au plancher (QA-03).
+  const vr = sumValue(rt.tickGross) / dt;
+  s.stats.valueRate = (s.stats.valueRate ?? vr) + (vr - (s.stats.valueRate ?? vr)) * Math.min(1, dt / RATE_MEMORY_SEC);
+  rt.age += dt;
   s.stats.playTime += dt;
   s.lastTick = now;
 }
@@ -257,6 +268,9 @@ function ensureEventProgress(s: GameState, rt: Runtime, w: EventWindow) {
   if (s.events[w.key]) return;
   let valueRate = 0;
   for (const r of RES) valueRate += rt.rate[r] * RES_INFO[r].value;
+  // rt.rate (moyenne sur ~3 s) repart de 0 à chaque lancement : tant que le Runtime est neuf, on se fie
+  // au débit mémorisé. En session continue, le calcul reste celui d'origine.
+  if (rt.age < RATE_WARMUP_SEC) valueRate = Math.max(valueRate, s.stats.valueRate ?? 0);
   const goal = w.def.goal;
   const target = Math.max(15 / RES_INFO[goal].value * 4, (valueRate * 240) / RES_INFO[goal].value);
   s.events[w.key] = { target: Math.ceil(target), progress: 0, tier: 0 };
