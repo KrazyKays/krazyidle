@@ -28,13 +28,19 @@ function isIos(): boolean {
   return /iphone|ipad|ipod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
 }
 
+// Posé juste avant un rechargement qui remplace la partie (réinitialisation, import) : sans lui, la
+// sauvegarde de pagehide / visibilitychange réécrivait l'ancienne partie pendant le rechargement (QA-10).
+let replacing = false;
+
 const app = new App(state, rt, {
   save: () => save(),
   reset: () => {
+    replacing = true;
     try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
     location.reload();
   },
   replaceState: (s) => {
+    replacing = true;
     saveLocal(s);
     location.reload();
   },
@@ -57,6 +63,7 @@ const app = new App(state, rt, {
 // state.lastTick est l'instant jusqu'où le jeu a réellement été simulé (mis à jour par tick) :
 // la sauvegarde ne doit pas l'avancer, sinon le temps passé onglet masqué ou fil gelé est perdu.
 function save() {
+  if (replacing) return;
   if (!saveLocal(state)) toast('⚠️ Sauvegarde impossible (stockage plein ou bloqué)', 'bad');
 }
 
