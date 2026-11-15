@@ -22,9 +22,14 @@ export function canMarry(s: GameState): boolean {
   return alliancesUnlocked(s) && !!s.life && !s.hero.spouse;
 }
 
-/** Dot en Or : suit l'économie de la lignée. Réduite de moitié entre joueurs, pour encourager les échanges. */
+/**
+ * Dot en Or : 5 % de l'Or en stock (50 au moins). Elle portait sur 2 % de tout l'Or produit depuis le début,
+ * ce qui la rendait inabordable pour qui dépense et faisait perdre ×0,79 à ×0,69 de valeur à qui se marie
+ * à chaque vie (R11). Réduite de moitié entre joueurs, pour encourager les échanges.
+ */
+export const DOWRY_SHARE = 0.05;
 export function dowry(s: GameState, origin: Spouse['origin']): number {
-  const base = Math.max(50, Math.round(s.totalEver.or * 0.02));
+  const base = Math.max(50, Math.round(s.res.or * DOWRY_SHARE));
   return origin === 'joueur' ? Math.round(base / 2) : base;
 }
 

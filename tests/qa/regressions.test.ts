@@ -101,3 +101,16 @@ describe('R9 — paliers d\'événement progressifs', () => {
     expect(s.events[w.key].progress).toBe(1);
   });
 });
+
+describe('R11 — dot calculée sur l\'Or en stock', () => {
+  test('5 % de l\'Or en stock, 50 au minimum, moitié prix entre joueurs ; l\'Or produit par le passé ne compte plus', async () => {
+    const { dowry } = await import('../../src/engine/alliances');
+    const s = newGame(0, 5);
+    s.totalEver.or = 1e9;
+    s.res.or = 100;
+    expect(dowry(s, 'pnj')).toBe(50);
+    s.res.or = 10_000;
+    expect(dowry(s, 'pnj')).toBe(500);
+    expect(dowry(s, 'joueur')).toBe(250);
+  });
+});

@@ -142,11 +142,13 @@ describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
     expect(LEGACY_DEF.chroniques.base).toBe(160);
     expect(LEGACY_DEF.alliances.base).toBe(90);
   });
-  test('dot : 2 % de l\'Or produit, 50 au minimum, moitié prix entre joueurs ; 8 cadets', () => {
+  test('dot : 5 % de l\'Or en stock (R11), 50 au minimum, moitié prix entre joueurs ; 8 cadets', () => {
     const s = newGame(0, 1);
     expect(dowry(s, 'pnj')).toBe(50);
     expect(dowry(s, 'joueur')).toBe(25);
-    s.totalEver.or = 100_000;
+    s.totalEver.or = 100_000; // l'Or produit par le passé ne compte plus
+    expect(dowry(s, 'pnj')).toBe(50);
+    s.res.or = 40_000;
     expect(dowry(s, 'pnj')).toBe(2000);
     expect(dowry(s, 'joueur')).toBe(1000);
     expect(CADETS_MAX).toBe(8);

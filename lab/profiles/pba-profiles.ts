@@ -396,6 +396,12 @@ const marryFirst = (pick: (s: GameState, now: number) => ReturnType<typeof count
 P['ep-mariage-force'] = { ...P['opti-epargne'], id: 'ep-mariage-force', desc: 'opti-epargne qui paie la dot avant tout achat, à chaque vie, maison prestigieuse (don épique/légendaire).', buy: marryFirst((_s, now) => countyHouses(now)[0]) };
 P['ep-mariage-metier'] = { ...P['opti-epargne'], id: 'ep-mariage-metier', desc: 'opti-epargne qui paie la dot avant tout achat, uniquement avec une maison dont la spécialité = vocation du héros (union de métier : rang +1 à 35 %).', buy: marryFirst((s, now) => countyHouses(now).find((h) => h.spec === s.hero.vocation?.act)) };
 
+// R11 (phase 4, Lead) : variantes de mariage d'un profil marchand, qui a toujours de l'Or pour la dot
+// (les lignées de paysans d'opti-epargne ne se marient presque jamais : 84 % des graines sans mariage).
+P['oc-sans-mariage'] = { ...P['opti-commerce'], id: 'oc-sans-mariage', desc: 'opti-commerce, sans aucun mariage (témoin R11).', buy: (s) => { buySaving(s); bazaar(s); } };
+P['oc-mariage-force'] = { ...P['opti-commerce'], id: 'oc-mariage-force', desc: 'opti-commerce qui paie la dot avant tout achat, à chaque vie, maison prestigieuse.', buy: marryFirst((_s, now) => countyHouses(now)[0]) };
+P['oc-mariage-metier'] = { ...P['opti-commerce'], id: 'oc-mariage-metier', desc: 'opti-commerce qui ne s\'unit qu\'à une maison de sa vocation.', buy: marryFirst((s, now) => countyHouses(now).find((h) => h.spec === s.hero.vocation?.act)) };
+
 for (const [k, p] of Object.entries(P)) PROFILES[k] = instrument(p);
 // Les profils de référence sont aussi instrumentés (mêmes décisions) sous un alias.
 for (const k of ['experimente', 'debutant', 'occasionnel', 'optimiseur', 'mono-cultiver', 'mono-chasser', 'mono-commercer', 'mono-etudier', 'mono-mediter']) {

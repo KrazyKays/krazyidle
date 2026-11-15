@@ -209,9 +209,10 @@ describe('mariages entre joueurs', () => {
     const bruno = withCadet(12, 'Dorval');
     const code = encodeProposal(alice, alice.cadets[0]);
     expect(readProposal(alice, code).ok).toBe(false); // sa propre maison
+    const dot = dowry(bruno, 'joueur'); // la dot dépend de l'Or en stock (R11) : on la lit avant le paiement
     expect(acceptProposal(bruno, code).ok).toBe(true);
     expect(bruno.hero.spouse?.name).toBe('Aliénor');
-    expect(bruno.res.or).toBe(10_000 - dowry(bruno, 'joueur'));
+    expect(bruno.res.or).toBe(10_000 - dot);
     expect(readProposal(bruno, code).ok).toBe(false); // déjà acceptée
 
     // Bruno répond avec l'un de ses cadets : l'alliance est scellée des deux côtés.

@@ -32,7 +32,9 @@ await new Promise<void>((resolve, reject) => {
   let alive = 0;
   for (let i = 0; i < Math.min(workers, jobs.length); i++) {
     alive++;
-    const w = new Worker(join(here, 'worker.ts'), { execArgv: ['--import', join(root, 'lab', 'sim', 'register.mjs')] });
+    // Hérite du chargeur parent (lab/balance/register.mjs pour BAL_PATCH), sinon chargeur de base.
+    const loader = process.execArgv.some((a) => a.includes('register.mjs')) ? process.execArgv : ['--import', join(root, 'lab', 'sim', 'register.mjs')];
+    const w = new Worker(join(here, 'worker.ts'), { execArgv: loader });
     const feed = () => { if (next >= jobs.length) { w.terminate(); return; } w.postMessage(jobs[next++]); };
     w.on('message', (r) => { results.push(r); if (results.length % 50 === 0) process.stderr.write(`  ${results.length}/${jobs.length}\n`); feed(); });
     w.on('error', reject);

@@ -1,0 +1,16 @@
+C050-r11-D0-actuelle 6h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.012 (×0.972) z -1.3 · B meilleur sur 6/100
+C050-r11-D0-actuelle 6h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy 0.000 (×1.001) z 0.0 · B meilleur sur 6/100
+C050-r11-D0-actuelle 12h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.015 (×0.966) z -0.9 · B meilleur sur 1/50
+C050-r11-D0-actuelle 12h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy -0.001 (×0.997) z -0.1 · B meilleur sur 3/50
+C051-r11-D1-fixe50 6h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.004 (×0.990) z -0.4 · B meilleur sur 10/100
+C051-r11-D1-fixe50 6h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy -0.010 (×0.977) z -0.8 · B meilleur sur 7/100
+C051-r11-D1-fixe50 12h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.004 (×0.991) z -0.2 · B meilleur sur 5/50
+C051-r11-D1-fixe50 12h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy -0.021 (×0.953) z -0.9 · B meilleur sur 4/50
+C052-r11-D2-stock10 6h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.018 (×0.958) z -1.7 · B meilleur sur 6/100
+C052-r11-D2-stock10 6h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy -0.001 (×0.997) z -0.1 · B meilleur sur 8/100
+C052-r11-D2-stock10 12h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.007 (×0.985) z -0.4 · B meilleur sur 3/50
+C052-r11-D2-stock10 12h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy 0.001 (×1.002) z 0.0 · B meilleur sur 4/50
+C053-r11-D3-stock5 6h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy -0.005 (×0.989) z -0.5 · B meilleur sur 9/100
+C053-r11-D3-stock5 6h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy -0.001 (×0.997) z -0.1 · B meilleur sur 9/100
+C053-r11-D3-stock5 12h : ep-mariage-force − ep-sans-mariage [log10Value] : Δ moy 0.001 (×1.001) z 0.0 · B meilleur sur 4/50
+C053-r11-D3-stock5 12h : ep-mariage-metier − ep-sans-mariage [log10Value] : Δ moy 0.001 (×1.003) z 0.1 · B meilleur sur 4/50

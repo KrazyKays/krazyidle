@@ -1,0 +1,12 @@
+C054-r11-D0-actuelle 6h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy -0.101 (×0.793) z -6.9 · B meilleur sur 18/200
+C054-r11-D0-actuelle 6h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy -0.006 (×0.985) z -0.5 · B meilleur sur 24/200
+C054-r11-D0-actuelle 12h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy -0.162 (×0.689) z -6.4 · B meilleur sur 6/100
+C054-r11-D0-actuelle 12h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy -0.028 (×0.938) z -1.3 · B meilleur sur 10/100
+C055-r11-D1-fixe50 6h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy 0.011 (×1.026) z 0.8 · B meilleur sur 74/200
+C055-r11-D1-fixe50 6h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy 0.012 (×1.027) z 1.1 · B meilleur sur 43/200
+C055-r11-D1-fixe50 12h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy 0.003 (×1.007) z 0.2 · B meilleur sur 35/100
+C055-r11-D1-fixe50 12h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy 0.009 (×1.021) z 0.6 · B meilleur sur 17/100
+C056-r11-D3-stock5 6h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy -0.014 (×0.969) z -1.1 · B meilleur sur 53/200
+C056-r11-D3-stock5 6h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy 0.009 (×1.021) z 0.8 · B meilleur sur 41/200
+C056-r11-D3-stock5 12h : oc-mariage-force − oc-sans-mariage [log10Value] : Δ moy -0.015 (×0.966) z -0.9 · B meilleur sur 18/100
+C056-r11-D3-stock5 12h : oc-mariage-metier − oc-sans-mariage [log10Value] : Δ moy 0.008 (×1.018) z 0.5 · B meilleur sur 19/100
