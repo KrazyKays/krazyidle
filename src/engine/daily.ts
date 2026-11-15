@@ -1,11 +1,22 @@
 // Destin du jour : une vie identique pour tous les joueurs, rejouable et vérifiable par code.
-import { ACTS, FIRST_NAMES, RES, RES_INFO, TRAITS, type ActId, type ResId } from './data';
+import { ACT, ACTS, FIRST_NAMES, RES, RES_INFO, TRAITS, type ActDef, type ActId, type ResId } from './data';
 import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 import { lifeTick, sumMods, type SimCtx } from './sim';
 import { newLife, zeroActs, zeroRes, type LifeState } from './state';
 
 export const DAILY_DT = 0.1;
+
+/**
+ * Rendements du Destin du jour, figés aux règles de la 0.2.1. Le rééquilibrage de la partie principale
+ * (R10 : Commercer 1,5 → 1,25 Or, Méditer 0,06 → 0,10 Essence) ne doit pas changer le score des codes
+ * déjà partagés, que le jeu vérifie en rejouant la partie.
+ */
+export const DAILY_ACT: Record<ActId, ActDef> = {
+  ...ACT,
+  commercer: { ...ACT.commercer, produce: { or: 1.5 } },
+  mediter: { ...ACT.mediter, produce: { essence: 0.06 } },
+};
 export const DAILY_DUR = 90;
 
 export interface DailyMod {
@@ -90,6 +101,7 @@ export class DailyRun {
       res: this.res,
       eco: this.eco,
       ecoImpactMult: Math.max(0.3, 1 - m.eco),
+      acts: DAILY_ACT,
       prodMult: (a) => {
         let x = harmonyMult(this.eco);
         for (const md of mods) if (md.act?.[a]) x *= md.act[a]!;

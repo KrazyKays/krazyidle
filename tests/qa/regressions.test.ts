@@ -60,3 +60,24 @@ describe('R8 — « le Vénérable » et surnoms répétés (DATA-01, GD-04, PBA
     expect(pickEpithet({ ...f, share, prevVocTier: 10, parentEpithet: 'negociant' })?.id).not.toBe('negociant');
   });
 });
+
+describe('R10 — rééquilibrage des convertisseurs, Destin du jour figé', () => {
+  test('les codes du Destin du jour produits avec les règles de la 0.2.1 restent vérifiables', async () => {
+    const { verifyCode } = await import('../../src/engine/daily');
+    const fx: { date: string; score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
+    expect(fx.length).toBe(9);
+    for (const f of fx) {
+      const v = verifyCode(f.code)!;
+      expect(v.ok).toBe(true);
+      expect(v.actual).toBe(f.score);
+    }
+  });
+  test('nouvelles valeurs de la partie principale', async () => {
+    const { ACT, ACT_UNLOCK, BUILDING } = await import('../../src/engine/data');
+    expect(ACT.commercer.produce.or).toBe(1.25);
+    expect(ACT.mediter.produce.essence).toBe(0.1);
+    expect(BUILDING.sanctuaire.cost.savoir).toBeUndefined();
+    expect(ACT_UNLOCK.etudier.amount).toBe(40);
+    expect(ACT_UNLOCK.mediter.amount).toBe(20);
+  });
+});

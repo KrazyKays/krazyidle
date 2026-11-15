@@ -40,17 +40,17 @@ export const ACT: Record<ActId, ActDef> = {
   commercer: {
     id: 'commercer', name: 'Commercer', icon: '⚖️', color: '#f9a825',
     desc: 'Échange des Vivres contre de l\'Or. Plus rentable avec l\'expérience.',
-    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.5 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
+    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.25 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
   },
   etudier: {
     id: 'etudier', name: 'Étudier', icon: '📖', color: '#0288d1',
     desc: 'Investit de l\'Or dans le Savoir.',
-    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.6 }, consume: { or: 2 }, unlockText: 'Amasser 50 Or',
+    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.6 }, consume: { or: 2 }, unlockText: 'Amasser 40 Or',
   },
   mediter: {
     id: 'mediter', name: 'Méditer', icon: '🕯️', color: '#8e24aa',
     desc: 'Distille de l\'Essence et ramène l\'écosystème vers l\'équilibre.',
-    vocation: 'Mystique', produce: { essence: 0.06 }, consume: {}, unlockText: 'Accumuler 25 Savoir',
+    vocation: 'Mystique', produce: { essence: 0.1 }, consume: {}, unlockText: 'Accumuler 20 Savoir',
   },
 };
 
@@ -58,8 +58,8 @@ export const ACT_UNLOCK: Record<ActId, { res: ResId | null; amount: number }> = 
   cultiver: { res: null, amount: 0 },
   chasser: { res: null, amount: 0 },
   commercer: { res: 'vivres', amount: 40 },
-  etudier: { res: 'or', amount: 50 },
-  mediter: { res: 'savoir', amount: 25 },
+  etudier: { res: 'or', amount: 40 },
+  mediter: { res: 'savoir', amount: 20 },
 };
 
 // --- Compétences ---------------------------------------------------------
@@ -167,7 +167,7 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'pavillon', name: 'Pavillon de chasse', icon: '🛖', desc: 'Chasser +25% / niv.', cost: { vivres: 40, or: 5 }, growth: 1.9, effect: (l) => `Chasser ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'comptoir', name: 'Comptoir', icon: '🏪', desc: 'Commercer +25% / niv.', cost: { or: 30 }, growth: 2.0, effect: (l) => `Commercer ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
-  { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5, savoir: 20 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
+  { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
   { id: 'clepsydre', name: 'Clepsydre', icon: '⌛', desc: 'Durée de vie +4 s / niv.', cost: { savoir: 40, essence: 8 }, growth: 2.4, max: 15, effect: (l) => `Vie +${l * 4} s` },
   { id: 'garde', name: 'Garde forestier', icon: '🌲', desc: 'Le Domaine se régénère vers l\'équilibre (+0,4 %/s / niv.)', cost: { or: 60, vivres: 100 }, growth: 2.0, max: 10, effect: (l) => `Régénération ${(l * 0.4).toFixed(1).replace('.', ',')} %/s` },
 ];

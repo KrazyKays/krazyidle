@@ -39,16 +39,21 @@ describe('hors ligne vs en ligne', () => {
     });
   }
 
-  test('lignée de chasseurs (Affût) : écart hors ligne / en ligne borné à ±5 %', () => {
-    const base = midGame(11);
-    // Deux Échos chasseurs synthétiques et un héros chasseur : sollicite l'Affût.
-    for (const e of base.echoes) { e.acts = e.acts.map(() => 1); }
-    const on = runFor(clone(base), 1200, 0.1, 'chasser');
-    const off = clone(base);
-    if (off.life) setActivity(off, 'chasser');
-    simulateOffline(off, newRuntime(), 1200, T0 + 1200_000);
-    const gOn = value(on) - value(base), gOff = value(off) - value(base);
-    expect(Math.abs(gOff / gOn - 1)).toBeLessThan(0.05);
+  // Une graine seule varie de ±4 % (é.-t. mesuré sur 20 graines, lab/balance/r10/offline-hunt.ts) : le test
+  // porte sur la moyenne de 8 graines. Biais connu : la chasse perd ~3 % au pas de 1 s (QA, confrontation B4).
+  test('lignée de chasseurs (Affût) : écart moyen hors ligne / en ligne borné à ±5 % (8 graines)', () => {
+    const gaps: number[] = [];
+    for (const seed of [11, 12, 13, 14, 15, 16, 17, 18]) {
+      const base = midGame(seed);
+      for (const e of base.echoes) { e.acts = e.acts.map(() => 1); }
+      const on = runFor(clone(base), 1200, 0.1, 'chasser');
+      const off = clone(base);
+      if (off.life) setActivity(off, 'chasser');
+      simulateOffline(off, newRuntime(), 1200, T0 + 1200_000);
+      gaps.push((value(off) - value(base)) / (value(on) - value(base)) - 1);
+    }
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+    expect(Math.abs(mean)).toBeLessThan(0.05);
   });
 });
 

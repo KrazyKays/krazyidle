@@ -7,7 +7,7 @@
   {
     "k": "mobile : la première vie s'écoule",
     "ok": true,
-    "info": "t=4.20 s après 3 s"
+    "info": "t=4.40 s après 3 s"
   },
   {
     "k": "mobile : une entrée par seconde",
@@ -62,7 +62,7 @@
   {
     "k": "mobile : export de sauvegarde lisible",
     "ok": true,
-    "info": "3160 caractères"
+    "info": "3092 caractères"
   },
   {
     "k": "mobile : aucune erreur console",
@@ -77,7 +77,7 @@
   {
     "k": "desktop : la première vie s'écoule",
     "ok": true,
-    "info": "t=3.90 s après 3 s"
+    "info": "t=4.00 s après 3 s"
   },
   {
     "k": "desktop : une entrée par seconde",
@@ -122,7 +122,7 @@
   {
     "k": "desktop : export de sauvegarde lisible",
     "ok": true,
-    "info": "2932 caractères"
+    "info": "3032 caractères"
   },
   {
     "k": "desktop : aucune erreur console",
@@ -137,7 +137,7 @@
   {
     "k": "QA-01 navigateur : la Bénédiction achetée pendant la succession est portée par l'héritier (R4)",
     "ok": true,
-    "info": "{\"traits\":[\"elu\"],\"b\":[],\"e\":0}"
+    "info": "{\"traits\":[\"langue_argent\",\"fragile\",\"elu\"],\"b\":[],\"e\":0}"
   },
   {
     "k": "QA-02 résiduel : sauvegarde locale corrompue (hors import) → plantage au lancement (comportement documenté si OK)",

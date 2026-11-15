@@ -1,5 +1,5 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
-import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActId, type Mods, type ResId } from './data';
+import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActDef, type ActId, type Mods, type ResId } from './data';
 import { AFFUT_DRAW, AFFUT_GAIN, AFFUT_STEALTH, TROPHY_OR, ecoFactor, ecoImpact, ecoPressure, gameScarcity, trophyFactor, type Eco, type Hunt } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
@@ -11,13 +11,15 @@ export interface SimCtx {
   onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
   /** Réserve d'Affût partagée par le héros et ses Échos (absente du Destin du jour). */
   hunt?: Hunt;
+  /** Table des activités ; le Destin du jour garde la sienne, figée, pour que les anciens codes restent vérifiables. */
+  acts?: Record<ActId, ActDef>;
 }
 
 export const ECHO_ECO_STRENGTH = 0.6;
 
 /** Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées). */
 export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength: number, dt: number, fromLife: boolean): number {
-  const def = ACT[act];
+  const def = (ctx.acts ?? ACT)[act];
   let frac = 1;
   const consumeScale = Math.sqrt(Math.max(power, 0.01));
   for (const r in def.consume) {
