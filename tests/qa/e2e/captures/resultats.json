@@ -7,7 +7,7 @@
   {
     "k": "mobile : la première vie s'écoule",
     "ok": true,
-    "info": "t=4.30 s après 3 s"
+    "info": "t=4.20 s après 3 s"
   },
   {
     "k": "mobile : une entrée par seconde",
@@ -62,7 +62,7 @@
   {
     "k": "mobile : export de sauvegarde lisible",
     "ok": true,
-    "info": "2952 caractères"
+    "info": "3108 caractères"
   },
   {
     "k": "mobile : aucune erreur console",
@@ -77,7 +77,7 @@
   {
     "k": "desktop : la première vie s'écoule",
     "ok": true,
-    "info": "t=3.70 s après 3 s"
+    "info": "t=3.90 s après 3 s"
   },
   {
     "k": "desktop : une entrée par seconde",
@@ -122,7 +122,7 @@
   {
     "k": "desktop : export de sauvegarde lisible",
     "ok": true,
-    "info": "2960 caractères"
+    "info": "2868 caractères"
   },
   {
     "k": "desktop : aucune erreur console",
@@ -137,7 +137,7 @@
   {
     "k": "QA-01 navigateur : Bénédiction perdue après validation (bug reproduit si OK)",
     "ok": true,
-    "info": "{\"traits\":[\"main_verte\"],\"b\":[],\"e\":0}"
+    "info": "{\"traits\":[\"maudit\"],\"b\":[],\"e\":0}"
   },
   {
     "k": "QA-02 navigateur : sauvegarde acceptée puis plantage au lancement (bug reproduit si OK)",
@@ -151,7 +151,7 @@
   },
   {
     "k": "QA-06 navigateur : après 20 s de gel visible, temps de jeu rattrapé (bug reproduit si FAIL)",
-    "ok": false,
-    "info": "jeu +7.1 s pour 22.0 s réelles"
+    "ok": true,
+    "info": "jeu +22.0 s pour 22.0 s réelles"
   }
 ]

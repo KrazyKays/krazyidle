@@ -602,9 +602,16 @@ export interface OfflineReport {
   loops: number;
 }
 
-export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, now: number): OfflineReport | null {
+/** Écart minimal (s) rattrapé par simulation : la relance du jeu et le retour d'un onglet en arrière-plan. */
+export const OFFLINE_MIN_SEC = 30;
+
+/**
+ * Simule l'absence par pas d'une seconde, sans événements. minSec abaisse le seuil pour rattraper
+ * aussi les courts trous du moteur (onglet masqué, fil gelé) : voir main.ts.
+ */
+export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, now: number, minSec = OFFLINE_MIN_SEC): OfflineReport | null {
   const sec = Math.min(elapsedSec, offlineCapSec(s));
-  if (sec < 30) return null;
+  if (sec < minSec) return null;
   const before = { ...s.res };
   const loops0 = s.echoes.reduce((a, e) => a + e.loops, 0);
   const hadLife = !!s.life;

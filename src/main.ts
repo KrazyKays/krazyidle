@@ -1,5 +1,5 @@
 import './style.css';
-import { newRuntime, resumeLife, simulateOffline, startLife, tick } from './engine/game';
+import { OFFLINE_MIN_SEC, newRuntime, resumeLife, simulateOffline, startLife, tick } from './engine/game';
 import { loadLocal, saveLocal, SAVE_KEY } from './engine/save';
 import { newGame, type GameState } from './engine/state';
 import { App } from './ui/app';
@@ -54,18 +54,22 @@ const app = new App(state, rt, {
   },
 });
 
+// state.lastTick est l'instant jusqu'où le jeu a réellement été simulé (mis à jour par tick) :
+// la sauvegarde ne doit pas l'avancer, sinon le temps passé onglet masqué ou fil gelé est perdu.
 function save() {
-  state.lastTick = Date.now();
   if (!saveLocal(state)) toast('⚠️ Sauvegarde impossible (stockage plein ou bloqué)', 'bad');
 }
+
+/** Au-delà de cet écart entre l'horloge et le dernier pas simulé, on rattrape par simulation hors ligne. */
+const GAP_SEC = 5;
 
 function catchUp() {
   const now = Date.now();
   const elapsed = (now - state.lastTick) / 1000;
-  if (elapsed > 30) {
-    const rep = simulateOffline(state, rt, elapsed, now);
+  if (elapsed > GAP_SEC) {
+    const rep = simulateOffline(state, rt, elapsed, now, GAP_SEC);
     state.lastTick = now;
-    if (rep) app.showOffline(rep);
+    if (rep && rep.seconds >= OFFLINE_MIN_SEC) app.showOffline(rep);
   }
 }
 
@@ -75,6 +79,8 @@ const isNew = !state.flags.started;
 if (isNew) {
   app.openIntro(() => {
     state.flags.started = true;
+    // Le temps passé dans la cérémonie d'ouverture ne compte pas comme une absence.
+    state.lastTick = Date.now();
     startLife(state);
     save();
     // Arrivé par un lien de mariage : on garde la demande sous les yeux après la fondation.
@@ -95,7 +101,14 @@ let acc = 0;
 function loop(t: number) {
   const dtReal = Math.min(5, (t - last) / 1000);
   last = t;
-  if (state.flags.started) {
+  if (state.flags.started && Date.now() - state.lastTick > GAP_SEC * 1000) {
+    // Le moteur n'a pas tourné (onglet masqué, fil gelé, veille) : on rattrape d'un bloc.
+    catchUp();
+    acc = 0;
+    // L'horodatage de cette trame peut précéder la fin du gel : sans ce recalage, la trame
+    // suivante rejouerait jusqu'à 5 s déjà rattrapées.
+    last = performance.now();
+  } else if (state.flags.started) {
     acc += dtReal;
     let n = 0;
     while (acc >= STEP && n < 60) {
