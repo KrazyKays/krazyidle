@@ -138,6 +138,8 @@ export interface EventProgress {
   target: number;
   progress: number;
   tier: number; // paliers atteints 0..3
+  /** règle de calcul : 2 = toute la production compte (R9) ; absent = ancienne règle (ressource visée seule) */
+  v?: number;
 }
 
 export interface DailyRecord {

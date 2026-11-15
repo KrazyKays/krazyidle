@@ -142,7 +142,12 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
       }
       if (rt.online && rt.event) {
         const ep = s.events[rt.event.key];
-        if (ep && rt.event.def.goal === r) ep.progress += amt;
+        if (ep) {
+          const goal = rt.event.def.goal;
+          // v2 : toute la production compte (en équivalent de la ressource visée), la ressource visée davantage.
+          if (ep.v === 2) ep.progress += (amt * RES_INFO[r].value / RES_INFO[goal].value) * (r === goal ? EVENT_GOAL_WEIGHT : 1);
+          else if (goal === r) ep.progress += amt;
+        }
       }
     },
   };
@@ -271,15 +276,24 @@ function ensureEventProgress(s: GameState, rt: Runtime, w: EventWindow) {
   // rt.rate (moyenne sur ~3 s) repart de 0 à chaque lancement : tant que le Runtime est neuf, on se fie
   // au débit mémorisé. En session continue, le calcul reste celui d'origine.
   if (rt.age < RATE_WARMUP_SEC) valueRate = Math.max(valueRate, s.stats.valueRate ?? 0);
+  // Objectif sur le débit moyen de ~60 s (plus stable que rt.rate, et moins sensible à une baisse volontaire
+  // juste avant la fenêtre). Bronze ≈ EVENT_BASE_SEC secondes de production habituelle.
+  valueRate = Math.max(valueRate, s.stats.valueRate ?? 0);
   const goal = w.def.goal;
-  const target = Math.max(15 / RES_INFO[goal].value * 4, (valueRate * 240) / RES_INFO[goal].value);
-  s.events[w.key] = { target: Math.ceil(target), progress: 0, tier: 0 };
+  const target = Math.max(15 / RES_INFO[goal].value * 4, (valueRate * EVENT_BASE_SEC) / RES_INFO[goal].value);
+  s.events[w.key] = { target: Math.ceil(target), progress: 0, tier: 0, v: 2 };
   // ménage
   const keys = Object.keys(s.events).sort();
   while (keys.length > 30) delete s.events[keys.shift()!];
 }
 
-export const EVENT_TIERS = [1, 2.5, 5];
+/**
+ * Événements (R9) : paliers progressifs au lieu du tout ou rien. Toute la production compte vers l'objectif,
+ * la ressource visée EVENT_GOAL_WEIGHT fois ; Bronze ≈ EVENT_BASE_SEC s de production habituelle.
+ */
+export const EVENT_GOAL_WEIGHT = 3;
+export const EVENT_BASE_SEC = 1200;
+export const EVENT_TIERS = [1, 3, 8];
 export const EVENT_REWARDS = [1, 2, 3];
 const TIER_NAMES = ['Bronze', 'Argent', 'Or'];
 

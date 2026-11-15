@@ -6,7 +6,7 @@ import { DAILY_DUR, DAILY_TIERS, DailyRun, dailySetup, encodeRun, verifyCode } f
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  BLESSING_COST, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
+  BLESSING_COST, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
   VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoPower, echoPowerMult, echoSlots, echoValueRate, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -733,9 +733,9 @@ export class App {
         h('div', { class: 'label' }, 'Événement en cours'),
         h('h2', null, `${ev.def.icon} ${ev.def.name}`),
         h('p', null, ev.def.desc),
-        b.text(h('p', { class: 'muted' }), () => `Se termine dans ${fmtDur((ev.end - Date.now()) / 1000)} · Objectif : produire ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name}`),
+        b.text(h('p', { class: 'muted' }), () => `Se termine dans ${fmtDur((ev.end - Date.now()) / 1000)} · Toute ta production compte, ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name} ×${ep?.v === 2 ? EVENT_GOAL_WEIGHT : 1}`),
         h('div', { class: 'bar bar-tiers' }, fill, marks),
-        b.text(h('p', { class: 'small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon} · Récompenses : ${EVENT_REWARDS.join(' / ')} ✦` : '')));
+        b.text(h('p', { class: 'small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}${ep.v === 2 ? ' (équivalent)' : ''} · Récompenses : ${EVENT_REWARDS.join(' / ')} ✦` : '')));
     }
     const ups = upcomingEvents(now, 7).filter((w) => w.key !== ev?.key).slice(0, 6);
     parts.push(h('div', { class: 'card' },

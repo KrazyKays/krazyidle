@@ -1,0 +1,19 @@
+{
+ "id": "C030-r9-avant",
+ "commit": "73d3d3f",
+ "srcDirty": false,
+ "date": "2026-11-15T16:52:13.465Z",
+ "profiles": [
+  "experimente",
+  "evenementiel",
+  "optimiseur"
+ ],
+ "seeds": "1-50",
+ "hours": 24,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 150,
+ "wallMs": 116897,
+ "command": "npm run sim -- --profiles=experimente,evenementiel,optimiseur --seeds=1-50 --hours=24 --events --id=C030-r9-avant"
+}

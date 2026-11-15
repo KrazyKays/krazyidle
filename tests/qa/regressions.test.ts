@@ -81,3 +81,23 @@ describe('R10 — rééquilibrage des convertisseurs, Destin du jour figé', () 
     expect(ACT_UNLOCK.mediter.amount).toBe(20);
   });
 });
+
+describe('R9 — paliers d\'événement progressifs', () => {
+  test('toute la production compte, la ressource visée triple ; l\'ancienne règle reste pour une fenêtre déjà ouverte', async () => {
+    const { makeCtx, EVENT_GOAL_WEIGHT } = await import('../../src/engine/game');
+    const { upcomingEvents } = await import('../../src/engine/events');
+    const w = upcomingEvents(Date.UTC(2026, 10, 16), 50).find((x) => x.def.goal === 'or')!;
+    const s = newGame(0, 4);
+    const rt = newRuntime();
+    rt.event = w;
+    s.events[w.key] = { target: 100, progress: 0, tier: 0, v: 2 };
+    const ctx = makeCtx(s, rt);
+    ctx.onProduce!('vivres', 10, false, 'cultiver'); // 10 Vivres = 10 pts = 5 Or équivalent
+    ctx.onProduce!('or', 1, false, 'commercer');
+    expect(s.events[w.key].progress).toBeCloseTo(5 + EVENT_GOAL_WEIGHT);
+    s.events[w.key] = { target: 100, progress: 0, tier: 0 }; // ouverte avant la mise à jour
+    ctx.onProduce!('vivres', 10, false, 'cultiver');
+    ctx.onProduce!('or', 1, false, 'commercer');
+    expect(s.events[w.key].progress).toBe(1);
+  });
+});

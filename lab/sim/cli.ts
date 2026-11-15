@@ -59,7 +59,10 @@ async function main() {
     const spawn = () => {
       if (next >= jobs.length) { if (alive === 0) resolve(); return; }
       alive++;
-      const w = new Worker(join(here, 'worker.ts'), { execArgv: ['--import', join(here, 'register.mjs')] });
+      // Les workers héritent du chargeur du processus parent (ex. lab/balance/register.mjs + BAL_PATCH pour
+      // les surcharges en mémoire), sinon du chargeur de base.
+      const loader = process.execArgv.some((a) => a.includes('register.mjs')) ? process.execArgv : ['--import', join(here, 'register.mjs')];
+      const w = new Worker(join(here, 'worker.ts'), { execArgv: loader });
       const feed = () => {
         if (next >= jobs.length) { w.terminate(); return; }
         w.postMessage(jobs[next++]);

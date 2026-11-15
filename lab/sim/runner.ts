@@ -46,6 +46,8 @@ export interface RunResult {
   traitFreq60: Record<string, number>;
   epithetsFound: number; epithetLives: number;
   eclatsEnd: number; eventsDone: number;
+  /** palier atteint (0 à 3) à chaque fenêtre d'événement vue, dans l'ordre */
+  eventTiers: number[];
   married: number;
   vocationTierMax: number;
   /** points de contrôle horaires */
@@ -181,7 +183,7 @@ export function runGame(o: RunOpts): RunResult {
     pausedShare: live ? paused / live : 0,
     traitCombos60: combos.size, traitFreq60: freq,
     epithetsFound: Object.keys(s.epithets).length, epithetLives: s.ancestors.filter((a) => a.epithet).length,
-    eclatsEnd: s.eclats, eventsDone: s.stats.eventsDone, married, vocationTierMax: vocMax,
+    eclatsEnd: s.eclats, eventsDone: s.stats.eventsDone, eventTiers: Object.keys(s.events).sort().map((k) => s.events[k].tier), married, vocationTierMax: vocMax,
     hourly, anomalies, ms: Math.round(performance.now() - t0),
   };
 }
