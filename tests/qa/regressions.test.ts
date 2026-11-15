@@ -166,3 +166,14 @@ describe('R14 — paliers du Destin du jour relatifs au jour', () => {
     for (const f of fx) expect(verifyCode(f.code)!.actual).toBe(f.score);
   });
 });
+
+describe('R15 — présélection et pts/s des Échos selon leur force réelle', () => {
+  test('à valeur égale, l\'Écho aux traits d\'Écho et au surnom puissants est mieux classé', async () => {
+    const { echoExpectedRate, echoValueRate } = await import('../../src/engine/game');
+    const s = newGame(0, 7);
+    const mk = (id: number, strength: number, epithet?: string) => ({ id, heroId: id, name: 'X', gen: 2, traits: [], vocation: null, acts: Array(60).fill(0), pow: Array(60).fill(1), strength, pos: 0, loops: 0, pinned: false, value: 600, epithet });
+    const plain = mk(1, 0), strong = mk(2, 0.8, 'grand');
+    expect(echoValueRate(plain)).toBe(echoValueRate(strong));
+    expect(echoExpectedRate(s, newRuntime(), strong)).toBeGreaterThan(echoExpectedRate(s, newRuntime(), plain) * 1.8);
+  });
+});

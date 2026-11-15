@@ -7,7 +7,7 @@ import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, eco
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
-  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoPower, echoPowerMult, echoSlots, echoValueRate, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
+  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -594,7 +594,7 @@ export class App {
       timeline,
       h('div', { class: 'row-between small' },
         doing,
-        h('span', { class: 'muted', title: 'Production moyenne par seconde de boucle, hors bonus : une vie courte ne rapporte pas plus parce qu\'elle boucle plus vite.' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s · ${fmt(echoValueRate(e))} pts/s`),
+        h('span', { class: 'muted', title: 'Production attendue par seconde, hors bonus d\'événement : la valeur de sa vie par seconde × sa puissance de rejeu. Une vie courte ne rapporte pas plus parce qu\'elle boucle plus vite.' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s`),
         h('span', { class: 'row' },
           h('button', { class: 'icon-btn sm', title: e.pinned ? 'Désépingler' : 'Épingler (protégé lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '📌' : '📍'),
           h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
@@ -811,7 +811,7 @@ export class App {
     const all = [...s.echoes, sc.newEcho];
     const slots = echoSlots(s);
     if (!this.echoSel) {
-      const ranked = [...all].sort((a, b) => (b.pinned ? 1e18 : 0) + echoValueRate(b) - ((a.pinned ? 1e18 : 0) + echoValueRate(a)));
+      const ranked = [...all].sort((a, b) => (b.pinned ? 1e18 : 0) + echoExpectedRate(s, this.rt, b) - ((a.pinned ? 1e18 : 0) + echoExpectedRate(s, this.rt, a)));
       // le nouvel Écho est gardé par défaut s'il n'est pas le pire
       this.echoSel = new Set(ranked.slice(0, slots).map((e) => e.id));
     }
@@ -842,7 +842,7 @@ export class App {
         } },
           h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
           h('div', { class: 'timeline sm', style: { background: stripGradient(e.acts, e.acts.length) } }),
-          h('div', { class: 'muted small', title: 'Production moyenne par seconde de boucle, hors bonus d\'événement' }, `Gén. ${e.gen} · ${fmt(echoValueRate(e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 📌' : ''}`));
+          h('div', { class: 'muted small', title: 'Production attendue par seconde, hors bonus d\'événement (puissance de rejeu, traits d\'Écho et surnom compris)' }, `Gén. ${e.gen} · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 📌' : ''}`));
       }));
       const ok = h('button', { class: 'btn btn-primary btn-lg', onclick: () => {
         if (sel.size > slots) return;

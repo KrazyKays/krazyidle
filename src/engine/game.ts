@@ -673,3 +673,13 @@ export { harmonyMult };
 export function echoValueRate(e: Pick<Echo, 'value' | 'acts'>): number {
   return e.acts.length ? e.value / e.acts.length : 0;
 }
+
+/**
+ * Production attendue d'un Écho en pts/s, hors bonus d'événement : valeur de sa vie par seconde × sa puissance
+ * de rejeu (Mémoire du sang, Sanctuaire, ses traits d'Écho, son surnom). C'est elle qui guide la présélection et
+ * s'affiche sur les cartes : la valeur seule ignorait la force propre et le surnom de l'Écho (GD-02, PBA-14) et
+ * affichait la puissance du héros vivant au lieu de celle de l'Écho (GD-09).
+ */
+export function echoExpectedRate(s: GameState, rt: Runtime, e: Echo): number {
+  return echoValueRate(e) * echoPower(s, { ...rt, online: false }, e);
+}
