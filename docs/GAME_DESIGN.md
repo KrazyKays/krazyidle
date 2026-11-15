@@ -86,7 +86,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 | **0.1 (sortie)** | Tout ce qui précède. PWA, sauvegarde export/import, hors ligne jusqu'à 6 h (+2 h par niveau de Patience). |
 | **0.2 (sortie)** | Chroniques (34 surnoms, Codex) et Alliances (maisons du comté, mariages entre joueurs par code, galerie). |
 | **0.2.1 (sortie)** | Échos mesurés en pts/s, budget génétique et usure du sang, Affût de chasse. |
-| **0.2.2 (prête, non publiée)** | Audit de l'équipe d'analyse (`audits/2026-11-14/`) et corrections R1 à R16 (`lab/CHANGELOG-EQUILIBRAGE.md`) : temps de jeu rattrapé onglet masqué, import et réinitialisation réparés, rééquilibrage Commercer/Méditer, événements progressifs, surnoms variés, dot sur l'Or en stock, Héritage selon la durée de vie, paliers relatifs au Destin du jour. |
+| **0.2.2 (sortie)** | Audit de l'équipe d'analyse (`audits/2026-11-14/`) et corrections R1 à R16 (`lab/CHANGELOG-EQUILIBRAGE.md`) : temps de jeu rattrapé onglet masqué, import et réinitialisation réparés, rééquilibrage Commercer/Méditer, événements progressifs, surnoms variés, dot sur l'Or en stock, Héritage selon la durée de vie, paliers relatifs au Destin du jour. |
 | 0.2.x | Sons et musique d'ambiance, haptique mobile, succès, statistiques détaillées. |
 | 0.3 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
 | 0.4 | Classement en ligne optionnel (backend léger) qui réutilise les codes vérifiables du Destin du jour. |
