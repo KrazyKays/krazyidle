@@ -12,7 +12,7 @@ Usage : python3 lab/balance/r10/analyze.py [suffixe]
 import json, sys, math, os
 X = sys.argv[1] if len(sys.argv) > 1 else ''
 ROOT = os.path.join(os.path.dirname(__file__), '..', '..', 'profiles', 'results')
-V = ['0-r10-V0-reference', '1-r10-Va-c406', '2-r10-Vb-c314', '3-r10-Vd', '4-r10-Ve', '5-r10-Vf']
+V = ['0-r10-V0-reference', '1-r10-Va-c406', '2-r10-Vb-c314', '3-r10-Vd', '4-r10-Ve', '5-r10-Vf', '6-r10-Vg', '7-r10-Vh']
 MONO = ['cultiver', 'chasser', 'commercer', 'etudier', 'mediter']
 def load(v):
     p = os.path.join(ROOT, f'C02{v}{X}', 'runs.jsonl')
