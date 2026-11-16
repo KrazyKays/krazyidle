@@ -177,7 +177,7 @@ export interface GameState {
   daily: Record<string, DailyRecord>;
   ancestors: Ancestor[];
   flags: Record<string, boolean>;
-  settings: { notation: 'lettres' | 'scientifique'; reducedMotion: boolean };
+  settings: { notation: 'lettres' | 'scientifique'; reducedMotion: boolean; /** empêche la mise en veille de l'écran tant que le jeu est affiché */ keepAwake: boolean };
   /** identifiant stable de la maison (codes d'alliance) */
   houseId: string;
   /** surnoms découverts : nombre de fois portés */
@@ -239,7 +239,7 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     alliances: {},
     cadets: [],
     usedCodes: [],
-    settings: { notation: 'lettres', reducedMotion: false },
+    settings: { notation: 'lettres', reducedMotion: false, keepAwake: false },
     stats: { lives: 0, playTime: 0, eventsDone: 0, bestLife: 0 },
   };
   return s;

@@ -177,3 +177,15 @@ describe('R15 — présélection et pts/s des Échos selon leur force réelle', 
     expect(echoExpectedRate(s, newRuntime(), strong)).toBeGreaterThan(echoExpectedRate(s, newRuntime(), plain) * 1.8);
   });
 });
+
+describe('R16 — réglage « Garder l\'écran allumé »', () => {
+  test('désactivé par défaut et complété dans les anciennes sauvegardes', async () => {
+    const { exportSave, importSave } = await import('../../src/engine/save');
+    expect(newGame(0, 1).settings.keepAwake).toBe(false);
+    const old = newGame(0, 2);
+    delete (old.settings as any).keepAwake;
+    const st = importSave(exportSave(old));
+    expect(st).not.toBeNull();
+    expect(st!.settings.keepAwake).toBe(false);
+  });
+});

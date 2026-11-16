@@ -4,6 +4,7 @@ import { loadLocal, saveLocal, SAVE_KEY } from './engine/save';
 import { newGame, type GameState } from './engine/state';
 import { App } from './ui/app';
 import { closeTopModal, toast } from './ui/dom';
+import { setKeepAwake } from './ui/wakelock';
 
 const STEP = 0.1; // pas de simulation fixe (s)
 
@@ -58,7 +59,9 @@ const app = new App(state, rt, {
     const choice = await Promise.resolve(ev.userChoice).catch(() => null);
     return choice?.outcome === 'accepted';
   },
+  keepAwake: (on) => setKeepAwake(on),
 });
+if (state.settings.keepAwake) setKeepAwake(true);
 
 // state.lastTick est l'instant jusqu'où le jeu a réellement été simulé (mis à jour par tick) :
 // la sauvegarde ne doit pas l'avancer, sinon le temps passé onglet masqué ou fil gelé est perdu.

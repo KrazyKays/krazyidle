@@ -43,6 +43,8 @@ export interface AppHooks {
   installMode: () => 'prompt' | 'ios' | 'installed' | null;
   /** Ouvre l'invite native ; résout à true si le joueur a accepté. */
   installPrompt: () => Promise<boolean>;
+  /** Applique le réglage « Garder l'écran allumé » ; false si le navigateur ne le permet pas. */
+  keepAwake: (on: boolean) => boolean;
 }
 
 export class App {
@@ -1141,6 +1143,15 @@ export class App {
         h('button', { class: 'btn btn-sm', onclick: (e: Event) => { s.settings.notation = s.settings.notation === 'lettres' ? 'scientifique' : 'lettres'; setNotation(s.settings.notation); (e.target as HTMLElement).textContent = s.settings.notation === 'lettres' ? '1.5M' : '1.5e6'; } }, s.settings.notation === 'lettres' ? '1.5M' : '1.5e6')),
       h('div', { class: 'row-between' }, h('span', null, 'Réduire les animations'),
         h('button', { class: 'btn btn-sm', onclick: (e: Event) => { s.settings.reducedMotion = !s.settings.reducedMotion; document.body.classList.toggle('reduced-motion', s.settings.reducedMotion); (e.target as HTMLElement).textContent = s.settings.reducedMotion ? 'Oui' : 'Non'; } }, s.settings.reducedMotion ? 'Oui' : 'Non')),
+      h('div', { class: 'row-between' }, h('span', null, 'Garder l\'écran allumé'),
+        h('button', { class: 'btn btn-sm', onclick: (e: Event) => {
+          const on = !s.settings.keepAwake;
+          if (on && !this.hooks.keepAwake(true)) { toast('Ce navigateur ne permet pas d\'empêcher la mise en veille', 'bad'); return; }
+          if (!on) this.hooks.keepAwake(false);
+          s.settings.keepAwake = on;
+          (e.target as HTMLElement).textContent = on ? 'Oui' : 'Non';
+        } }, s.settings.keepAwake ? 'Oui' : 'Non')),
+      h('p', { class: 'muted small' }, 'Empêche l\'écran de s\'éteindre tant que le jeu est affiché (consomme davantage de batterie).'),
       h('h3', { class: 'section-t' }, 'Sauvegarde'),
       h('p', { class: 'muted small' }, 'Sauvegarde automatique toutes les 10 s dans ce navigateur. Exporte-la pour la transférer (ex. ordinateur → téléphone).'),
       ta,
