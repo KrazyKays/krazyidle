@@ -70,16 +70,19 @@ export class Binder {
 }
 
 // --- Toasts -------------------------------------------------------------
+export const TOASTS_MAX = 3;
+
 export function toast(text: string, kind = 'info', ms = 3200) {
   const root = document.getElementById('toasts')!;
   const el = h('div', { class: `toast toast-${kind}`, role: 'status' }, text);
+  const close = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); };
+  // Un toucher ferme la notification : elle ne gêne jamais longtemps ce qu'elle recouvre.
+  el.addEventListener('click', close);
   root.appendChild(el);
-  while (root.children.length > 4) root.firstChild!.remove();
+  // Trois au plus : les notifications du moteur peuvent arriver en rafale.
+  while (root.children.length > TOASTS_MAX) root.firstChild!.remove();
   requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => {
-    el.classList.remove('show');
-    setTimeout(() => el.remove(), 300);
-  }, ms);
+  setTimeout(close, ms);
 }
 
 // --- Modales ------------------------------------------------------------

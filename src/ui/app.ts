@@ -98,6 +98,11 @@ export class App {
     this.elTabCol = h('div', { class: 'tab-col' }, this.elTab);
     this.elMain = h('main', { class: 'layout' }, this.elLife, this.elEcho, this.elTabCol);
     root.append(this.elTop, this.elMain, this.elNav);
+    // Les notifications s'affichent sous la barre du haut (fixe sur téléphone), jamais devant :
+    // elles masquaient les ressources et les boutons pendant plusieurs secondes.
+    const topH = () => document.documentElement.style.setProperty('--top-h', `${this.elTop.getBoundingClientRect().height}px`);
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(topH).observe(this.elTop);
+    topH();
     const mq2 = window.matchMedia('(min-width: 900px)');
     const mq3 = window.matchMedia('(min-width: 1280px)');
     const apply = () => {
