@@ -22,7 +22,7 @@ npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 [--even
 npm run sim:guard -- <id-référence> <id-candidat>   # décision avant/après : code 1 = garde-fou rouge
 # e2e (Chromium préinstallé) :
 npm run build && npx vite preview --port 4173 --strictPort &
-NODE_PATH=$(npm root -g) node tests/qa/e2e/parcours.cjs http://localhost:4173/   # aussi import-reset.cjs, onglet-masque.cjs
+NODE_PATH=$(npm root -g) node tests/qa/e2e/parcours.cjs http://localhost:4173/   # aussi import-reset.cjs, onglet-masque.cjs, retours-ui.cjs
 ```
 
 Les scripts TypeScript de `lab/` s'exécutent sous Node avec `node --import ./lab/sim/register.mjs <script.ts>` (ou `./lab/balance/register.mjs` pour les surcharges en mémoire `BAL_PATCH` / `BAL_OBJ`, qui ne touchent jamais les fichiers du jeu).
