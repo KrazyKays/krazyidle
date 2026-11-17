@@ -1,6 +1,6 @@
 // Destin du jour : « la Commande du comté ». Une vie identique pour tous les joueurs, une commande à livrer
 // le plus jeune possible, rejouable et vérifiable par code.
-import { ACTS, FIRST_NAMES, RES, TRAITS, type ActId, type ResId } from './data';
+import { ACTS, DAILY_NAMES, RES, TRAITS, type ActId, type ResId } from './data';
 import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 import { lifeTick, sumMods, type SimCtx } from './sim';
@@ -59,7 +59,7 @@ export const ORDER_TARGET: [number, number] = [56, 66];
 /** Tirage du jour sans commande (héros, traits, modificateurs, monde). */
 function baseSetup(date: string): Omit<DailySetup, 'order'> {
   const rng = new Rng(hashStr('daily:' + date));
-  const name = rng.pick(FIRST_NAMES);
+  const name = rng.pick(DAILY_NAMES);
   const pos = TRAITS.filter((t) => !t.neg && !t.shop && t.rarity <= 1 && !t.mods.heirs && !t.mods.echo && !t.mods.life);
   const neg = TRAITS.filter((t) => t.neg && !t.mods.echo && !t.mods.life);
   const traits: string[] = [];

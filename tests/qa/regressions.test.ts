@@ -303,3 +303,14 @@ describe('NOM-1 — les prénoms des héritiers ont leur propre aléa', () => {
     expect(new Set(n1).size).toBe(n1.length);
   });
 });
+
+describe('NOM-2 — 80 prénoms médiévaux, autant de chaque genre', () => {
+  test('liste sans doublon, 40 prénoms féminins et 40 masculins', async () => {
+    const { FIRST_NAMES, FEMININE_NAMES } = await import('../../src/engine/data');
+    expect(new Set(FIRST_NAMES).size).toBe(FIRST_NAMES.length);
+    expect(FIRST_NAMES).toHaveLength(80);
+    expect(FEMININE_NAMES.size).toBe(40);
+    for (const n of ['Esclarmonde', 'Jehanne', 'Azalaïs']) expect(FEMININE_NAMES.has(n)).toBe(true);
+    for (const n of ['Foulques', 'Archambaud', 'Évrard']) expect(FEMININE_NAMES.has(n)).toBe(false);
+  });
+});

@@ -241,11 +241,22 @@ export const FIRST_NAMES = [
   'Guenièvre', 'Hugues', 'Isaure', 'Jehan', 'Léodegar', 'Mahaut', 'Mélisende', 'Ombeline', 'Perceval', 'Pétronille',
   'Roland', 'Sibylle', 'Tancrède', 'Thibaut', 'Ysolde', 'Yvain', 'Adélaïde', 'Godefroy', 'Hildegarde', 'Lancelot',
   'Morgane', 'Rodolphe', 'Séraphine', 'Tristan', 'Viviane', 'Baudouin', 'Iseult', 'Gauvain', 'Héloïse', 'Arnaud',
+  'Aude', 'Alix', 'Azalaïs', 'Aénor', 'Béatrix', 'Blanche', 'Brunehaut', 'Constance', 'Cunégonde', 'Ermessende',
+  'Esclarmonde', 'Frédégonde', 'Gersende', 'Jehanne', 'Odile', 'Oriane', 'Philippa', 'Radegonde', 'Richilde', 'Sancie',
+  'Aimery', 'Amaury', 'Anseau', 'Archambaud', 'Bohémond', 'Eudes', 'Évrard', 'Foulques', 'Galaad', 'Gautier',
+  'Géraud', 'Hardouin', 'Josselin', 'Lothaire', 'Mérovée', 'Odon', 'Raimbaut', 'Renaud', 'Thierry', 'Ulric',
 ];
+/**
+ * Les 40 premiers prénoms (ceux de la 0.2.2) : le héros du Destin du jour y reste tiré, pour qu'il porte
+ * le même prénom chez tous les joueurs, quelle que soit leur version.
+ */
+export const DAILY_NAMES = FIRST_NAMES.slice(0, 40);
 /** Prénoms féminins de FIRST_NAMES : le genre d'un personnage en est déduit à sa naissance. */
 export const FEMININE_NAMES = new Set([
   'Aliénor', 'Bérénice', 'Clothilde', 'Domitille', 'Ermengarde', 'Guenièvre', 'Isaure', 'Mahaut', 'Mélisende', 'Ombeline',
   'Pétronille', 'Sibylle', 'Ysolde', 'Adélaïde', 'Hildegarde', 'Morgane', 'Séraphine', 'Viviane', 'Iseult', 'Héloïse',
+  'Aude', 'Alix', 'Azalaïs', 'Aénor', 'Béatrix', 'Blanche', 'Brunehaut', 'Constance', 'Cunégonde', 'Ermessende',
+  'Esclarmonde', 'Frédégonde', 'Gersende', 'Jehanne', 'Odile', 'Oriane', 'Philippa', 'Radegonde', 'Richilde', 'Sancie',
 ]);
 export const isFeminine = (name: string) => FEMININE_NAMES.has(name);
 
