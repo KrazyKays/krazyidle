@@ -1,4 +1,5 @@
 import { sexOf } from './data';
+import { rebuildRanks } from './names';
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
 export const SAVE_KEY = 'echos-de-lignee-save';
@@ -35,6 +36,8 @@ function migrate(d: any): GameState {
   s.echoes?.forEach(sexed);
   s.ancestors?.forEach(sexed);
   if (s.succession) { s.succession.heirs?.forEach(sexed); sexed(s.succession.newEcho); sexed(s.succession.ancestor); }
+  // Numérotation dynastique : absente des sauvegardes d'avant, recalculée d'après la généalogie.
+  if (!d.lineage?.names) rebuildRanks(s);
   s.v = SAVE_VERSION;
   return s;
 }

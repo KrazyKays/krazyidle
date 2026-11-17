@@ -2,6 +2,7 @@
 // Débloqué par l'amélioration d'Héritage « Chroniques ». Les conditions restent cachées : le Codex
 // n'en montre qu'un indice, pour qu'on découvre les surnoms en jouant plutôt qu'en cochant une liste.
 import { ACTS, sexOf, type ActId, type Named } from './data';
+import { regnalName, type Ranked } from './names';
 
 /** Ce que l'on sait d'une vie au moment de sa mort. */
 export interface LifeFacts {
@@ -131,10 +132,11 @@ export function epithetLabel(id: string | undefined, p: Named | null): string {
   return p ? (sexOf(p) === 'f' ? e.nameF : e.name) : `${e.name} / ${e.nameF}`;
 }
 
-/** « Jehan le Juste », ou le prénom seul. */
-export function fullName(p: Named & { epithet?: string }): string {
+/** « Jehan III le Juste », ou le prénom seul ; le rang n'est affiché qu'avec les prénoms de la lignée. */
+export function fullName(p: Ranked & { epithet?: string }, names?: Record<string, number>): string {
   const l = epithetLabel(p.epithet, p);
-  return l ? `${p.name} ${l}` : p.name;
+  const n = names ? regnalName(p, names) : p.name;
+  return l ? `${n} ${l}` : n;
 }
 
 /** Résumé lisible de l'effet d'un surnom sur l'Écho. */

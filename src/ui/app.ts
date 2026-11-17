@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun, medalsOf, resultAge, traceFromCode, verifyCode } from '../engine/daily';
@@ -17,6 +17,7 @@ import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHand
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
 import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, fullName } from '../engine/epithets';
+import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 
@@ -178,7 +179,7 @@ export class App {
     }
     // Succession non bloquante : on prévient, le joueur s'en occupe quand il veut.
     const pending = !!this.s.succession;
-    if (pending && !this.hadSuccession) toast(`🕯️ ${fullName(this.s.succession!.ancestor)} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
+    if (pending && !this.hadSuccession) toast(`🕯️ ${fullName(this.s.succession!.ancestor, this.s.lineage.names)} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
     this.hadSuccession = pending;
     if (now - this.lastHist > 2000) {
       this.lastHist = now;
@@ -349,7 +350,7 @@ export class App {
     if (!s.life) {
       parts.push(h('div', { class: 'card death-card' },
         h('div', { class: 'big-i' }, '🕯️'),
-        h('h3', null, `La vie de ${s.hero.name} s'achève.`),
+        h('h3', null, `La vie de ${this.nm(s.hero)} s'achève.`),
         h('p', { class: 'muted' }, s.echoes.length
           ? 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu le souhaites.'
           : 'Sa vie deviendra ton premier Écho et rejouera ses choix pour toujours. Rien ne presse : choisis qui reprendra le flambeau quand tu le souhaites.'),
@@ -387,13 +388,18 @@ export class App {
     this.elLife.replaceChildren(...parts);
   }
 
-  heroCard(hero: Hero, current: boolean) {
+  /** Prénom et rang dynastique (« Jehan III ») d'un membre de la lignée. */
+  nm(p: Ranked): string {
+    return regnalName(p, this.s.lineage.names);
+  }
+
+    heroCard(hero: Hero, current: boolean) {
     const s = this.s;
     const voc = hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : null;
     return h('div', { class: 'card hero-card' },
       h('div', { class: 'avatar' }, this.crestEl('avatar-shield'), h('span', { class: 'avatar-gen' }, roman(hero.gen))),
       h('div', { class: 'hero-info' },
-        h('div', { class: 'hero-name' }, hero.name, ' ', h('span', { class: 'muted' }, s.lineage.name)),
+        h('div', { class: 'hero-name' }, this.nm(hero), ' ', h('span', { class: 'muted' }, s.lineage.name)),
         h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
         this.traitChips(hero.traits, false, hero, current ? heroWear(s, hero) : null),
         spouseLine(hero, hero.spouse, true)));
@@ -614,7 +620,7 @@ export class App {
   echoCard(e: Echo, b: Binder, refresh: () => void) {
     const s = this.s;
     const head = h('div', { class: 'act-head' },
-      h('span', { class: 'echo-name' }, `${fullName(e)} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
+      h('span', { class: 'echo-name' }, `${fullName(e, s.lineage.names)} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
       h('span', { class: 'row' },
         e.pinned ? h('span', { class: 'badge badge-lock' }, '🔒 Protégé') : null,
         b.text(h('span', { class: 'loops' }), () => `↻ ${e.loops}`)));
@@ -637,7 +643,7 @@ export class App {
         h('span', { class: 'row' },
           // L'état ne repose pas que sur l'émoji (📌 et 📍 se confondaient) : bouton doré plein quand l'Écho est protégé.
           h('button', { class: `icon-btn sm lock-btn ${e.pinned ? 'on' : ''}`, 'aria-pressed': String(e.pinned), title: e.pinned ? 'Retirer la protection' : 'Protéger (gardé en priorité lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '🔒' : '🔓'),
-          h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
+          h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${this.nm(e)} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
   }
 
   // --- Domaine --------------------------------------------------------------
@@ -757,7 +763,7 @@ export class App {
     return h('div', { class: 'tree' }, anc.map((a) => h('div', { class: 'tree-node' },
       h('div', { class: 'tree-gen' }, roman(a.gen)),
       h('div', { class: 'tree-body' },
-        h('div', { class: 'row-between' }, h('strong', null, fullName(a)), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
+        h('div', { class: 'row-between' }, h('strong', null, fullName(a, this.s.lineage.names)), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
         h('div', { class: 'row-wrap small' },
           a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${vocationName(a.vocation, a, roman)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
           epithetBadge(a.epithet, a),
@@ -870,7 +876,7 @@ export class App {
         const m = open.map((x) => heroActMult(hero, x));
         const best = open[m.indexOf(Math.max(...m))];
         return h('button', { class: `heir ${i === chosen ? 'chosen' : ''}`, onclick: () => { chosen = i; render(); } },
-          h('div', { class: 'heir-name' }, hero.name),
+          h('div', { class: 'heir-name' }, this.nm(hero)),
           hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
           h('div', { class: 'heir-traits' }, hero.traits.map((id) => {
             const t = TRAIT[id], w = hero.wear?.[id] ?? 0;
@@ -885,7 +891,7 @@ export class App {
           if (on) sel.delete(e.id); else if (sel.size < slots) sel.add(e.id); else { toast(`Seulement ${slots} emplacements : libère d'abord un autre Écho.`, 'bad'); return; }
           render();
         } },
-          h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
+          h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e, s.lineage.names)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
           h('div', { class: 'timeline sm', style: { background: stripGradient(e.acts, e.acts.length) } }),
           h('div', { class: 'muted small', title: 'Production attendue par seconde, hors bonus d\'événement (puissance de rejeu, traits d\'Écho et surnom compris)' }, `Gén. ${e.gen} · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 🔒' : ''}`));
       }));
@@ -897,14 +903,14 @@ export class App {
           this.successionModal = null;
           this.sigLife = '';
           this.sigTab = '';
-          toast(`👑 ${s.hero.name} reprend le flambeau (génération ${s.hero.gen})`, 'good');
+          toast(`👑 ${this.nm(s.hero)} reprend le flambeau (génération ${s.hero.gen})`, 'good');
           this.hooks.save();
         }
       } }, 'Perpétuer la lignée');
       content.replaceChildren(...[
         h('div', { class: 'center' },
           h('div', { class: 'big-i' }, '🕯️'),
-          h('h2', null, `${a.name} rejoint les ancêtres`),
+          h('h2', null, `${this.nm(a)} rejoint les ancêtres`),
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
         this.epithetReveal(),
         h('div', { class: 'stats' },
@@ -915,7 +921,7 @@ export class App {
         over ? h('p', { class: 'muted small' }, 'Tu as plus d\'Échos que d\'emplacements : choisis ceux qui continueront de boucler.') : null,
         echoList,
         h('h3', { class: 'section-t' }, 'Choisis qui portera le nom'),
-        a.spouse ? h('p', { class: 'muted small' }, `Enfants de ${a.name} et de ${fullName(a.spouse)} (Maison ${a.spouse.house.name}) : ils héritent des dons de leurs deux parents.`) : null,
+        a.spouse ? h('p', { class: 'muted small' }, `Enfants de ${this.nm(a)} et de ${fullName(a.spouse)} (Maison ${a.spouse.house.name}) : ils héritent des dons de leurs deux parents.`) : null,
         heirs,
         alliancesUnlocked(s) && sc.heirs.length > 1 ? h('p', { class: 'muted small' }, '💌 Les enfants que tu ne choisis pas deviennent des cadets : tu pourras les marier à d\'autres maisons (Lignée → Alliances).') : null,
         h('div', { class: 'row-end sticky-bottom' }, ok)].filter((x): x is HTMLElement => !!x));
@@ -936,7 +942,7 @@ export class App {
     const e = EPITHET[info.id];
     return h('div', { class: 'card epithet-reveal', style: { '--c': EPITHET_RARITY[e.rarity].color } },
       h('div', { class: 'label' }, info.isNew ? `✨ Nouveau surnom découvert · ${EPITHET_RARITY[e.rarity].name} · +${info.eclats} ✦` : `📜 Les Chroniques retiennent · ${EPITHET_RARITY[e.rarity].name}`),
-      h('h3', null, `${e.icon} ${a.name} ${epithetLabel(e.id, a)}`),
+      h('h3', null, `${e.icon} ${this.nm(a)} ${epithetLabel(e.id, a)}`),
       h('p', { class: 'muted small' }, epithetEffect(e, (x) => ACT[x].name)));
   }
 
@@ -955,7 +961,7 @@ export class App {
       h('h2', null, 'Pendant ton absence…'),
       h('p', { class: 'muted' }, `${fmtDur(r.seconds)} se sont écoulées. Tes Échos ont bouclé ${fmtInt(r.loops)} fois.`),
       h('div', { class: 'stats' }, gains.length ? gains : h('p', { class: 'muted' }, 'Rien n\'a été produit : il te faut des Échos !')),
-      r.died ? h('p', { class: 'accent' }, (() => { const a = this.s.succession?.ancestor; return a ? `🕯️ ${a.name} s'est ${acc(a, 'éteint', 'éteinte')} en ton absence. Une succession t'attend.` : '🕯️ Une vie s\'est achevée en ton absence. Une succession t\'attend.'; })()) : null,
+      r.died ? h('p', { class: 'accent' }, (() => { const a = this.s.succession?.ancestor; return a ? `🕯️ ${this.nm(a)} s'est ${acc(a, 'éteint', 'éteinte')} en ton absence. Une succession t'attend.` : '🕯️ Une vie s\'est achevée en ton absence. Une succession t\'attend.'; })()) : null,
       h('p', { class: 'muted small' }, 'Les événements ne comptent qu\'en ta présence. Reviens aux heures d\'événement !'),
       h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Continuer')));
   }
@@ -1010,7 +1016,7 @@ export class App {
       const crestRow = h('div', { class: 'pick-row intro-picks' }, CHARGE_IDS.map((c) => this.chargePick(c, () => { crest = c; upd(); })));
       const colorRow = h('div', { class: 'pick-row intro-picks' }, CREST_COLORS.map((c) => h('button', { class: 'pick pick-color', 'data-c': c, style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; upd(); } })));
       const found = () => {
-        s.lineage = { name: houseName(), crest, color, partition: 'plein' };
+        s.lineage = { ...s.lineage, name: houseName(), crest, color, partition: 'plein' };
         this.sigTop = '';
         firstOfName();
       };
@@ -1042,8 +1048,7 @@ export class App {
       const dice = h('button', { class: 'btn intro-dice intro-hero-dice', 'aria-label': 'Autre prénom', title: 'Autre prénom', onclick: () => {
         let n = s.hero.name;
         while (n === s.hero.name) n = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
-        s.hero.name = n;
-        s.hero.sex = sexFor(n);
+        renameHead(s, n);
         fill();
         nameEl.classList.remove('reroll');
         void nameEl.offsetWidth;
@@ -1446,13 +1451,7 @@ function stat(label: string, value: string | HTMLElement) {
   return h('div', { class: 'stat' }, h('div', { class: 'stat-l' }, label), h('div', { class: 'stat-v' }, value));
 }
 
-const ROMAN: [number, string][] = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
-export function roman(n: number): string {
-  if (n <= 0 || n > 3999) return String(n);
-  let out = '';
-  for (const [v, r] of ROMAN) while (n >= v) { out += r; n -= v; }
-  return out;
-}
+export { roman };
 
 /** Dégradé CSS représentant une suite d'activités (1 entrée = 1 seconde). */
 export function stripGradient(rec: number[], dur: number): string {

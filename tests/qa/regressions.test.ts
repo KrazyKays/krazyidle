@@ -314,3 +314,57 @@ describe('NOM-2 — 80 prénoms médiévaux, autant de chaque genre', () => {
     for (const n of ['Foulques', 'Archambaud', 'Évrard']) expect(FEMININE_NAMES.has(n)).toBe(false);
   });
 });
+
+describe('NOM-3 — numérotation dynastique (« Jehan III »)', () => {
+  const crowned = async (names: string[]) => {
+    const { confirmSuccession, endLife } = await import('../../src/engine/game');
+    const { renameHead } = await import('../../src/engine/names');
+    const s = newGame(0, 5);
+    renameHead(s, names[0]);
+    startLife(s);
+    for (const n of names.slice(1)) {
+      endLife(s, 0);
+      s.succession!.heirs[0].name = n;
+      confirmSuccession(s, 0, []);
+    }
+    return s;
+  };
+  test('le rang suit les chefs qui ont porté le prénom ; « Ier » / « Ire » dès qu\'un second le porte', async () => {
+    const { regnalName } = await import('../../src/engine/names');
+    const s = await crowned(['Jehan', 'Mahaut', 'Jehan', 'Hugues', 'Jehan']);
+    const n = s.lineage.names;
+    expect(s.ancestors.map((a) => regnalName(a, n))).toEqual(['Jehan Ier', 'Mahaut', 'Jehan II', 'Hugues']);
+    expect(regnalName(s.hero, n)).toBe('Jehan III');
+    const t = await crowned(['Mahaut', 'Hugues', 'Mahaut']);
+    expect(regnalName(t.ancestors[0], t.lineage.names)).toBe('Mahaut Ire');
+  });
+  test('un héritier pas encore couronné montre le rang qu\'il prendrait ; les Échos gardent le leur', async () => {
+    const { endLife } = await import('../../src/engine/game');
+    const { regnalName } = await import('../../src/engine/names');
+    const { fullName } = await import('../../src/engine/epithets');
+    const s = await crowned(['Jehan', 'Jehan']);
+    endLife(s, 0);
+    expect(regnalName({ name: 'Jehan' }, s.lineage.names)).toBe('Jehan III');
+    expect(regnalName({ name: 'Ulric' }, s.lineage.names)).toBe('Ulric');
+    expect(fullName(s.succession!.newEcho, s.lineage.names)).toMatch(/^Jehan II\b/);
+  });
+  test('le dé de la fondation ne laisse pas de rang fantôme', async () => {
+    const { renameHead } = await import('../../src/engine/names');
+    const s = newGame(0, 5);
+    renameHead(s, 'Aude'); renameHead(s, 'Odon');
+    expect(s.lineage.names).toEqual({ Odon: 1 });
+    expect(s.hero.ord).toBe(1);
+  });
+  test('sauvegarde d\'avant la numérotation : rangs recalculés d\'après la généalogie', async () => {
+    const { exportSave, importSave } = await import('../../src/engine/save');
+    const s = await crowned(['Jehan', 'Mahaut', 'Jehan']);
+    const old = JSON.parse(JSON.stringify(s));
+    delete old.lineage.names; delete old.hero.ord;
+    for (const a of old.ancestors) delete a.ord;
+    for (const e of old.echoes) delete e.ord;
+    const back = importSave(exportSave(old))!;
+    expect(back.lineage.names).toEqual({ Jehan: 2, Mahaut: 1 });
+    expect(back.ancestors.map((a) => a.ord)).toEqual([1, 1]);
+    expect(back.hero.ord).toBe(2);
+  });
+});

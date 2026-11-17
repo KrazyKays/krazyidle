@@ -7,6 +7,7 @@ import { addCadets, inbreedingRisk } from './alliances';
 import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
+import { crown } from './names';
 import { hashStr, Rng } from './rng';
 import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
 import { newLife, newLifeStats, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
@@ -385,12 +386,12 @@ export function endLife(s: GameState, now: number) {
   const m = sumMods(hero.traits);
   const ep = chroniclesUnlocked(s) ? pickEpithet(lifeFacts(s, life, voc)) : null;
   const echo: Echo = {
-    id: s.nextId++, heroId: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
+    id: s.nextId++, heroId: hero.id, name: hero.name, sex: sexOf(hero), ord: hero.ord, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
     epithet: ep?.id,
   };
   const ancestor: Ancestor = {
-    id: hero.id, name: hero.name, sex: sexOf(hero), gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
+    id: hero.id, name: hero.name, sex: sexOf(hero), ord: hero.ord, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now, epithet: ep?.id,
     spouse: hero.spouse ? { name: hero.spouse.name, sex: hero.spouse.sex, epithet: hero.spouse.epithet, house: hero.spouse.house, origin: hero.spouse.origin } : undefined,
   };
@@ -552,6 +553,7 @@ export function confirmSuccession(s: GameState, heirIdx: number, keepEchoIds: nu
   s.stats.bestLife = Math.max(s.stats.bestLife, sc.ancestor.value);
   const idx = Math.max(0, Math.min(sc.heirs.length - 1, heirIdx));
   s.hero = sc.heirs[idx];
+  crown(s, s.hero);
   addCadets(s, sc.heirs.filter((_, i) => i !== idx));
   s.blessings = [];
   s.succession = null;

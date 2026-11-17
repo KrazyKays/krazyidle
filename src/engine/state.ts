@@ -12,6 +12,8 @@ export interface Hero {
   name: string;
   /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
   sex?: Sex;
+  /** rang parmi les chefs de la lignée qui ont porté ce prénom (« Jehan III ») ; absent des sauvegardes d'avant */
+  ord?: number;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -94,6 +96,8 @@ export interface Echo {
   name: string;
   /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
   sex?: Sex;
+  /** rang parmi les chefs de la lignée qui ont porté ce prénom (« Jehan III ») ; absent des sauvegardes d'avant */
+  ord?: number;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -113,6 +117,8 @@ export interface Ancestor {
   name: string;
   /** genre, fixé à la naissance (absent des sauvegardes d'avant : déduit du prénom) */
   sex?: Sex;
+  /** rang parmi les chefs de la lignée qui ont porté ce prénom (« Jehan III ») ; absent des sauvegardes d'avant */
+  ord?: number;
   gen: number;
   traits: string[];
   vocation: Vocation | null;
@@ -155,7 +161,7 @@ export interface GameState {
   seed: number;
   createdAt: number;
   lastTick: number;
-  lineage: { name: string; crest: string; color: string; partition?: string };
+  lineage: { name: string; crest: string; color: string; partition?: string; /** nombre de chefs de la lignée ayant porté chaque prénom */ names?: Record<string, number> };
   /** Partitions d'écu débloquées au Bazar céleste ('plein' est offert). */
   partitions: string[];
   res: Record<ResId, number>;
@@ -208,13 +214,13 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
   const color = rng.pick(CREST_COLORS);
   const starter = rng.pick(TRAITS.filter((t) => t.rarity === 0 && !t.neg));
   const name = rng.pick(FIRST_NAMES);
-  const hero: Hero = { id: 1, name, sex: sexFor(name), gen: 1, traits: [starter.id], vocation: null, parentId: null };
+  const hero: Hero = { id: 1, name, sex: sexFor(name), ord: 1, gen: 1, traits: [starter.id], vocation: null, parentId: null };
   const s: GameState = {
     v: SAVE_VERSION,
     seed: rng.s,
     createdAt: now,
     lastTick: now,
-    lineage: { name: 'Sansnom', crest, color, partition: 'plein' },
+    lineage: { name: 'Sansnom', crest, color, partition: 'plein', names: { [name]: 1 } },
     partitions: ['plein'],
     res: zeroRes(),
     totalEver: zeroRes(),
