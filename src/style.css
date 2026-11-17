@@ -188,6 +188,8 @@ p { margin: 6px 0; }
 /* --- Échos ---------------------------------------------------------------- */
 .echo-list { display: grid; gap: 10px; }
 .echo-card.pinned { border-color: var(--gold); box-shadow: var(--shadow), inset 0 0 0 1px var(--gold), 0 0 18px rgba(242, 196, 90, 0.25); }
+.badge-new { border-color: var(--violet); color: var(--violet); background: color-mix(in srgb, var(--violet) 14%, transparent); font-weight: 700; vertical-align: middle; }
+.build-new { border-color: color-mix(in srgb, var(--violet) 55%, var(--line)); }
 .badge-lock { border-color: var(--gold); color: var(--gold); background: rgba(242, 196, 90, 0.14); font-weight: 700; }
 .lock-btn { opacity: 0.55; }
 .lock-btn:hover { opacity: 1; }

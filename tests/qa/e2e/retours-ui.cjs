@@ -78,6 +78,16 @@ async function lock(page, name) {
   await page.locator('.echo-card').first().screenshot({ path: path.join(OUT, `retours-${name}-echo-protege.png`) });
 }
 
+async function legacyUnlock(page, name) {
+  await gotoTab(page, 'Lignée');
+  const cards = page.locator('.card.build', { has: page.locator('.badge-new') });
+  const n = await cards.count();
+  const txt = n ? await cards.first().innerText() : '';
+  log(`${name} : déblocages signalés « Nouvelle fonctionnalité »`, n >= 2, `${n} cartes`);
+  log(`${name} : ni jauge d'épargne ni montant possédé dans la carte`, !/épargne|Tu peux le débloquer|\//.test(txt), txt.replace(/\s+/g, ' '));
+  await cards.first().screenshot({ path: path.join(OUT, `retours-${name}-deblocage.png`) });
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -89,6 +99,7 @@ async function lock(page, name) {
     await toasts(page, name);
     await toGen2(page);
     await lock(page, name);
+    await legacyUnlock(page, name);
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }
