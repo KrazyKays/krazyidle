@@ -1,0 +1,20 @@
+{
+ "id": "C093-reference-v4-avec-evenements",
+ "commit": "beccb7f",
+ "srcDirty": false,
+ "date": "2026-11-17T15:28:21.388Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "occasionnel",
+  "evenementiel"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 800,
+ "wallMs": 78337,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=C093-reference-v4-avec-evenements"
+}

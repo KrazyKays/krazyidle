@@ -50,10 +50,10 @@ Cinq agents dans `.claude/agents/` : `qa-engineer`, `game-designer`, `game-balan
 
 Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.claude/hooks/audit-lock.mjs` interdit alors toute écriture sur `src/`, `public/`, configs et GDD), lancer les agents en parallèle sur un dossier `audits/<date>/`, confronter les divergences, synthétiser, puis supprimer le verrou après validation du propriétaire.
 
-## Références de simulation actuelles (version 0.2.2)
+## Références de simulation actuelles (0.2.2 + prénoms + surnoms, 2026-11-17)
 
-- Sans événements : `C090-reference-v3-sans-evenements` (9 profils × 200 graines × 6 h, dt 0,5).
-- Avec événements : `C091-reference-v3-avec-evenements` (4 profils dont `evenementiel`).
-- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`.
+- Sans événements : `C092-reference-v4-sans-evenements` (9 profils × 200 graines × 6 h, dt 0,5).
+- Avec événements : `C093-reference-v4-avec-evenements` (4 profils dont `evenementiel`).
+- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`. C090/C091 (0.2.2) ne correspondent plus au jeu depuis NOM-1 (prénoms) et GD-SURNOMS A.
 
 Points ouverts (fin de l'audit du 2026-11-14) : `audits/2026-11-14/SYNTHESE.md`, § 10.
