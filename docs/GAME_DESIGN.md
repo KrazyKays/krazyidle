@@ -36,7 +36,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - Chaque seconde de la vie est **enregistrée** (activité et puissance).
 - À la mort, la vie devient un **Écho** qui la rejoue **en boucle et pour toujours**, avec une puissance de base de 40 %. Les bonus d'événement ne sont pas enregistrés : l'Écho n'en profite que lorsqu'il rejoue pendant un événement, et sa valeur (qui guide le choix des Échos à garder) est calculée hors bonus.
 - Les Échos profitent des bonus *actuels* (bâtiments, Harmonie, événements) et agissent aussi sur l'écosystème.
-- Emplacements limités : 2 au départ, +1 par niveau de Crypte ancestrale. On choisit à chaque succession quels Échos garder ; un Écho épinglé est prioritaire.
+- Emplacements limités : 2 au départ, +1 par niveau de Crypte ancestrale. On choisit à chaque succession quels Échos garder ; un Écho protégé (🔒, carte à cadre doré) est prioritaire.
 - **Un Écho se mesure en pts/s** : sa production attendue, soit la valeur de sa vie par seconde × sa puissance de rejeu (Mémoire du sang, Sanctuaire, ses traits d'Écho, son surnom), hors bonus d'événement. C'est ce qu'affichent sa carte et le choix des Échos, et c'est l'ordre de la présélection (0.2.2 : la présélection ignorait auparavant traits d'Écho et surnom ; la corriger rapporte ×1,15 mesuré). Un Écho court n'est pas meilleur parce qu'il boucle plus vite : il produit la moyenne des puissances de sa vie. Or les niveaux montent pendant la vie, donc une vie longue a en général une meilleure moyenne (≈ +50 % entre 60 s et 180 s sans niveau de départ).
 
 ### 2.3 La Lignée (génétique)

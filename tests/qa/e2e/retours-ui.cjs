@@ -46,6 +46,38 @@ async function toasts(page, name) {
   log(`${name} : un toucher ferme la notification`, (await page.locator('#toasts .toast').count()) <= 2);
 }
 
+/** Fin de la première vie et succession : un premier Écho. */
+async function toGen2(page) {
+  await st(page, '(s.life.t = s.life.dur - 0.5, 1)');
+  await page.waitForFunction(() => !!window.krazy.state.succession, null, { timeout: 5000 });
+  if (await page.locator('.succession').count() === 0) await page.locator('.life-pill').click();
+  await page.waitForSelector('.succession');
+  await page.click('text=Perpétuer la lignée');
+  await page.waitForFunction(() => window.krazy.state.hero.gen === 2 && !!window.krazy.state.life, null, { timeout: 3000 });
+}
+
+async function gotoTab(page, label) {
+  const tab = page.locator('nav.tabbar .tab', { hasText: label });
+  if (await tab.count()) { await tab.click(); await sleep(250); }
+}
+
+async function lock(page, name) {
+  await gotoTab(page, 'Échos');
+  const card = page.locator('.echo-card').first();
+  const btn = card.locator('.lock-btn');
+  const off = await btn.evaluate((el) => ({ txt: el.textContent, op: getComputedStyle(el).opacity, bg: getComputedStyle(el).backgroundImage }));
+  await btn.click();
+  await sleep(200);
+  const on = await page.locator('.echo-card').first().evaluate((el) => {
+    const b = el.querySelector('.lock-btn');
+    return { txt: b.textContent, pressed: b.getAttribute('aria-pressed'), op: getComputedStyle(b).opacity, bg: getComputedStyle(b).backgroundImage, badge: !!el.querySelector('.badge-lock'), border: getComputedStyle(el).borderTopColor };
+  });
+  log(`${name} : Écho protégé → 🔒 doré plein, libre → 🔓 estompé`, off.txt === '🔓' && on.txt === '🔒' && on.pressed === 'true' && Number(off.op) < 0.7 && Number(on.op) === 1 && off.bg === 'none' && on.bg.includes('gradient'));
+  log(`${name} : étiquette « Protégé » et cadre doré vif`, on.badge && on.border === 'rgb(242, 196, 90)', on.border);
+  log(`${name} : la protection est enregistrée`, await st(page, 's.echoes[0].pinned') === true);
+  await page.locator('.echo-card').first().screenshot({ path: path.join(OUT, `retours-${name}-echo-protege.png`) });
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -55,6 +87,8 @@ async function toasts(page, name) {
     page.on('pageerror', (e) => errors.push(e.message));
     await ceremony(page);
     await toasts(page, name);
+    await toGen2(page);
+    await lock(page, name);
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

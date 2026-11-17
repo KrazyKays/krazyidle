@@ -590,7 +590,9 @@ export class App {
     const s = this.s;
     const head = h('div', { class: 'act-head' },
       h('span', { class: 'echo-name' }, `${fullName(e)} `, h('span', { class: 'muted' }, `· Gén. ${e.gen}`)),
-      b.text(h('span', { class: 'loops' }), () => `↻ ${e.loops}`));
+      h('span', { class: 'row' },
+        e.pinned ? h('span', { class: 'badge badge-lock' }, '🔒 Protégé') : null,
+        b.text(h('span', { class: 'loops' }), () => `↻ ${e.loops}`)));
     const timeline = h('div', { class: 'timeline', style: { background: stripGradient(e.acts, e.acts.length) } });
     const ph = h('div', { class: 'playhead' });
     timeline.appendChild(ph);
@@ -608,7 +610,8 @@ export class App {
         doing,
         h('span', { class: 'muted', title: 'Production attendue par seconde, hors bonus d\'événement : la valeur de sa vie par seconde × sa puissance de rejeu. Une vie courte ne rapporte pas plus parce qu\'elle boucle plus vite.' }, `Puissance ×${echoPower(s, this.rt, e).toFixed(2)} · ${e.acts.length} s · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s`),
         h('span', { class: 'row' },
-          h('button', { class: 'icon-btn sm', title: e.pinned ? 'Désépingler' : 'Épingler (protégé lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '📌' : '📍'),
+          // L'état ne repose pas que sur l'émoji (📌 et 📍 se confondaient) : bouton doré plein quand l'Écho est protégé.
+          h('button', { class: `icon-btn sm lock-btn ${e.pinned ? 'on' : ''}`, 'aria-pressed': String(e.pinned), title: e.pinned ? 'Retirer la protection' : 'Protéger (gardé en priorité lors des successions)', onclick: () => { e.pinned = !e.pinned; refresh(); } }, e.pinned ? '🔒' : '🔓'),
           h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${e.name} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
   }
 
@@ -856,7 +859,7 @@ export class App {
         } },
           h('div', { class: 'row-between' }, h('strong', null, `${e === sc.newEcho ? '✨ ' : ''}${fullName(e)}`), h('span', { class: 'small' }, on ? '✔ gardé' : '✖ libéré')),
           h('div', { class: 'timeline sm', style: { background: stripGradient(e.acts, e.acts.length) } }),
-          h('div', { class: 'muted small', title: 'Production attendue par seconde, hors bonus d\'événement (puissance de rejeu, traits d\'Écho et surnom compris)' }, `Gén. ${e.gen} · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 📌' : ''}`));
+          h('div', { class: 'muted small', title: 'Production attendue par seconde, hors bonus d\'événement (puissance de rejeu, traits d\'Écho et surnom compris)' }, `Gén. ${e.gen} · ${fmt(echoExpectedRate(s, this.rt, e))} pts/s · ${e.acts.length} s${e.pinned ? ' · 🔒' : ''}`));
       }));
       const ok = h('button', { class: 'btn btn-primary btn-lg', onclick: () => {
         if (sel.size > slots) return;

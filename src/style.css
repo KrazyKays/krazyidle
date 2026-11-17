@@ -187,7 +187,11 @@ p { margin: 6px 0; }
 
 /* --- Échos ---------------------------------------------------------------- */
 .echo-list { display: grid; gap: 10px; }
-.echo-card.pinned { border-color: var(--gold2); }
+.echo-card.pinned { border-color: var(--gold); box-shadow: var(--shadow), inset 0 0 0 1px var(--gold), 0 0 18px rgba(242, 196, 90, 0.25); }
+.badge-lock { border-color: var(--gold); color: var(--gold); background: rgba(242, 196, 90, 0.14); font-weight: 700; }
+.lock-btn { opacity: 0.55; }
+.lock-btn:hover { opacity: 1; }
+.lock-btn.on { opacity: 1; background: linear-gradient(180deg, var(--gold), var(--gold2)); border-color: var(--gold); box-shadow: 0 0 10px rgba(242, 196, 90, 0.45); }
 .echo-name { font-family: var(--title); font-weight: 700; }
 .loops { font-size: 0.8rem; color: var(--violet); font-weight: 700; font-variant-numeric: tabular-nums; }
 .timeline { height: 22px; border-radius: 8px; position: relative; margin: 8px 0; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
