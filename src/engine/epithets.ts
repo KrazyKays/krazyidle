@@ -89,10 +89,9 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'maraicher', name: 'le Maraîcher', nameF: 'la Maraîchère', icon: '🥕', rarity: 1, hint: 'Cultiver, puis porter sa récolte au marché.', test: (f) => f.share.cultiver >= 0.35 && f.share.commercer >= 0.35, mods: { act: { cultiver: 0.1, commercer: 0.1 } } },
   { id: 'batisseur', name: 'le Bâtisseur', nameF: 'la Bâtisseuse', icon: '🏗️', rarity: 1, hint: 'Faire sortir de terre bâtiment sur bâtiment, en une seule vie.', test: (f) => f.builds >= 10, mods: { pow: 0.08 } },
   { id: 'bienheureux', name: 'le Bienheureux', nameF: 'la Bienheureuse', icon: '🌟', rarity: 1, hint: 'Vivre au bon moment, et briller lorsque le monde entier regarde.', test: (f) => f.eventTier >= 3, mods: { pow: 0.1 } },
-  { id: 'constant', name: 'le Constant', nameF: 'la Constante', icon: '🪨', rarity: 1, hint: 'Une seule tâche, du premier au dernier jour.', test: (f) => f.switches <= 1 && Math.max(...ACTS.map((a) => f.share[a])) >= 0.95, mods: { pow: 0.08 } },
   { id: 'ancien', name: 'l\'Ancien', nameF: 'l\'Ancienne', icon: '🧓', rarity: 1, hint: 'Voir passer bien plus de saisons que les autres.', test: (f) => f.durRatio >= 1.4, mods: { pow: 0.08 } },
   { id: 'infortune', name: 'l\'Infortuné', nameF: 'l\'Infortunée', icon: '🌧️', rarity: 1, hint: 'Naître avec plus d\'un mauvais présage dans le sang.', test: (f) => f.negTraits >= 2, mods: { pow: 0.1 } },
-  // --- Communs
+  // --- Communs (« le Constant » : la vie par défaut d'un jeu inactif, il ne vaut ni rareté ni bonus — GD-SURNOMS)
   { id: 'laboureur', name: 'le Laboureur', nameF: 'la Laboureuse', icon: '🌾', rarity: 0, hint: 'Ne vivre que pour la terre.', test: (f) => f.share.cultiver >= 0.75, mods: { act: { cultiver: 0.1 } } },
   { id: 'veneur', name: 'le Veneur', nameF: 'la Veneuse', icon: '🏹', rarity: 0, hint: 'Ne vivre que pour la traque.', test: (f) => f.share.chasser >= 0.75, mods: { act: { chasser: 0.1 } } },
   { id: 'negociant', name: 'le Négociant', nameF: 'la Négociante', icon: '⚖️', rarity: 0, hint: 'Ne vivre que pour le marché.', test: (f) => f.share.commercer >= 0.75, mods: { act: { commercer: 0.1 } } },
@@ -101,6 +100,7 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'touche_a_tout', name: 'le Touche-à-tout', nameF: 'la Touche-à-tout', icon: '🧰', rarity: 0, hint: 'Goûter à chacun des cinq métiers.', test: (f) => f.used >= 5, mods: { pow: 0.05 } },
   { id: 'epris', name: 'l\'Épris', nameF: 'l\'Éprise', icon: '💍', rarity: 0, hint: 'S\'unir à une maison du comté.', test: (f) => f.spouse === 'pnj', mods: { pow: 0.03 } },
   { id: 'obstine', name: 'l\'Obstiné', nameF: 'l\'Obstinée', icon: '⌛', rarity: 0, hint: 'Supplier le Sablier de quelques années de plus.', test: (f) => f.extended, mods: {} },
+  { id: 'constant', name: 'le Constant', nameF: 'la Constante', icon: '🪨', rarity: 0, hint: 'Une seule tâche, du premier au dernier jour.', test: (f) => f.switches <= 1 && Math.max(...ACTS.map((a) => f.share[a])) >= 0.95, mods: {} },
   { id: 'inconstant', name: 'l\'Inconstant', nameF: 'l\'Inconstante', icon: '🎭', rarity: 0, hint: 'Changer d\'avis plus souvent que de chemise.', test: (f) => f.switches >= 25, mods: {} },
   { id: 'bref', name: 'le Bref', nameF: 'la Brève', icon: '🥀', rarity: 0, hint: 'Une vie trop courte pour qu\'on s\'en souvienne… ou presque.', test: (f) => f.durRatio <= 0.85, mods: {} },
   { id: 'faineant', name: 'le Fainéant', nameF: 'la Fainéante', icon: '💤', rarity: 0, hint: 'Faire bien moins que son père ou sa mère.', test: (f) => f.parentValue > 0 && f.value < 0.2 * f.parentValue, mods: {} },

@@ -407,3 +407,18 @@ describe('NOM-4 — easter egg : la Maison Joestar', () => {
     expect(s.ancestors[5].sex).toBe('f');
   });
 });
+
+describe('GD-SURNOMS A — « le Constant » devient un surnom commun, sans effet', () => {
+  test('commun, sans bonus, et battu par « le Laboureur » quand les deux conviennent', async () => {
+    const { EPITHET, pickEpithet } = await import('../../src/engine/epithets');
+    expect(EPITHET.constant.rarity).toBe(0);
+    expect(EPITHET.constant.mods).toEqual({});
+    const f = {
+      share: { cultiver: 1, chasser: 0, commercer: 0, etudier: 0, mediter: 0 }, used: 1, switches: 0,
+      harmonyAvg: 0.5, harmonyMin: 0.5, value: 1, parentValue: 1, bestBefore: 1, gen: 3, traits: [], negTraits: 0,
+      vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 50, predators: 5,
+    };
+    expect(pickEpithet(f)?.id).toBe('laboureur');
+    expect(pickEpithet({ ...f, parentEpithet: 'laboureur' })?.id).toBe('constant');
+  });
+});

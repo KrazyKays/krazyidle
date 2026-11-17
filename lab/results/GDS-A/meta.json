@@ -1,0 +1,25 @@
+{
+ "id": "GDS-A",
+ "commit": "db0498f",
+ "srcDirty": true,
+ "date": "2026-11-17T15:08:56.593Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1800,
+ "wallMs": 97005,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=GDS-A"
+}
