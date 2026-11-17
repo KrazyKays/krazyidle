@@ -281,3 +281,25 @@ describe('CMD-1 — la Commande du comté remplace le Destin à points (validé 
     expect(dailyTiers(date)).toEqual(dailyTiers(date));
   });
 });
+
+describe('NOM-1 — les prénoms des héritiers ont leur propre aléa', () => {
+  test('changer de prénoms ne change ni les traits, ni la suite du tirage génétique', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const a = newGame(0, 7), b = newGame(1_000, 7); // même génétique, autre aléa de prénoms
+    const ra = new Rng(42), rb = new Rng(42);
+    const ha = genHeirs(a, a.hero, ra), hb = genHeirs(b, b.hero, rb);
+    expect(ha.map((h) => h.name)).not.toEqual(hb.map((h) => h.name)); // les prénoms, eux, changent
+    expect(ha.map((h) => h.traits)).toEqual(hb.map((h) => h.traits));
+    expect(ra.s).toBe(rb.s);
+  });
+  test('les prénoms d\'une fratrie restent déterministes et distincts', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const s = newGame(0, 7);
+    const n1 = genHeirs(s, s.hero, new Rng(1)).map((h) => h.name);
+    const n2 = genHeirs(s, s.hero, new Rng(1)).map((h) => h.name);
+    expect(n1).toEqual(n2);
+    expect(new Set(n1).size).toBe(n1.length);
+  });
+});

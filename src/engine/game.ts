@@ -7,7 +7,7 @@ import { addCadets, inbreedingRisk } from './alliances';
 import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
-import { Rng } from './rng';
+import { hashStr, Rng } from './rng';
 import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
 import { newLife, newLifeStats, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
 
@@ -442,6 +442,8 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
   const inbred = inbreedingRisk(s, spouse);
   const out: Hero[] = [];
   const used = new Set<string>();
+  // Les prénoms ont leur propre aléa : allonger la liste ne change ni les traits ni la suite de la partie.
+  const names = new Rng(hashStr(`prenoms:${s.createdAt}:${parent.id}`));
   const pw = heroWear(s, parent);
   // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux.
   const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + 1;
@@ -490,8 +492,8 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     } else if (!parent.vocation && spouse?.vocation && rng.chance(0.4)) {
       vocation = { act: spouse.vocation.act, tier: Math.max(1, spouse.vocation.tier - 1) };
     }
-    let name = rng.pick(FIRST_NAMES);
-    for (let k = 0; k < 5 && used.has(name); k++) name = rng.pick(FIRST_NAMES);
+    let name = names.pick(FIRST_NAMES);
+    for (let k = 0; k < 5 && used.has(name); k++) name = names.pick(FIRST_NAMES);
     used.add(name);
     out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id, wear: kept });
   }
