@@ -1,0 +1,18 @@
+{
+ "id": "GD-surnoms-v022",
+ "commit": "164e0e8",
+ "profiles": [
+  "debutant",
+  "experimente",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer"
+ ],
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "runs": 200,
+ "wallMs": 12205,
+ "command": "node --import ./lab/sim/register.mjs lab/metrics/collect-extra.ts --profiles=debutant,experimente,optimiseur,mono-cultiver,mono-commercer --seeds=1-40 --hours=6 --id=GD-surnoms-v022 --workers=4"
+}
