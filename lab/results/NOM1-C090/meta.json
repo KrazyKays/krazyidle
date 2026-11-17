@@ -1,0 +1,25 @@
+{
+ "id": "NOM1-C090",
+ "commit": "cdfe570",
+ "srcDirty": false,
+ "date": "2026-11-17T14:36:24.406Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1800,
+ "wallMs": 135415,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=NOM1-C090"
+}
