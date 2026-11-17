@@ -1,7 +1,7 @@
 // QA — codes : Destin du jour (score vérifiable) et codes d'alliance (bornes, réutilisation, propre maison).
 import { describe, expect, test } from 'vitest';
 import { ACTS, TRAIT } from '../../src/engine/data';
-import { DailyRun, dailySetup, decodeRun, encodeRun, verifyCode } from '../../src/engine/daily';
+import { dailySetup, dailySolution, decodeRun, encodeRun, playActions, verifyCode } from '../../src/engine/daily';
 import { acceptProposal, codeKey, decodeProposal, encodeProposal, readProposal } from '../../src/engine/alliances';
 import { startLife } from '../../src/engine/game';
 import { hashStr } from '../../src/engine/rng';
@@ -9,20 +9,11 @@ import { newGame, type GameState } from '../../src/engine/state';
 
 const b64url = (raw: string) => btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-function playDaily(date: string) {
-  const run = new DailyRun(dailySetup(date));
-  while (!run.done) {
-    const t = run.tickN * 0.1;
-    const a = t < 30 ? 'cultiver' : t < 60 ? 'commercer' : 'etudier';
-    if (run.life.act !== a) run.setAct(a);
-    run.step();
-  }
-  return run;
-}
-
 describe('Destin du jour : codes trafiqués', () => {
   const date = '2026-11-14';
-  const run = playDaily(date);
+  // Partie qui livre la commande (plan du solveur) : son résultat est un âge de livraison au dixième,
+  // qui change dès qu'on touche à la date ou à une action.
+  const run = playActions(dailySetup(date), dailySolution(date).actions);
   const score = run.score();
   const good = encodeRun(date, run.actions, score);
 
@@ -40,13 +31,13 @@ describe('Destin du jour : codes trafiqués', () => {
   test('codes malformés : null, jamais d\'exception', () => {
     const bad = [
       '', 'EL1', b64url('EL1|2026-11-14|zz|10'), b64url('EL1|2026-11-14|0' + '9|10'), b64url('EL1|2026-13-99'),
-      b64url('EL2|2026-11-14|00|0'), b64url('EL1|14/11/2026|00|0'), '%%%%', b64url('EL1|2026-11-14|.|0'),
+      b64url('EL1|2026-11-14|00|0'), b64url('EL3|2026-11-14|00|0'), b64url('EL1|14/11/2026|00|0'), '%%%%', b64url('EL1|2026-11-14|.|0'),
     ];
     for (const c of bad) {
       expect(() => verifyCode(c)).not.toThrow();
     }
-    expect(decodeRun(b64url('EL1|2026-11-14|09|10'))).toBeNull(); // activité 9 inexistante
-    expect(decodeRun(b64url('EL2|2026-11-14|00|10'))).toBeNull();
+    expect(decodeRun(b64url('EL2|2026-11-14|09|10'))).toBeNull(); // activité 9 inexistante
+    expect(decodeRun(b64url('EL1|2026-11-14|00|10'))).toBeNull(); // ancien Destin à points
   });
 
   test('actions hors ordre ou hors durée : le replay reste celui d\'une vraie partie (pas de score impossible)', () => {
@@ -69,7 +60,7 @@ describe('Destin du jour : codes trafiqués', () => {
   });
 
   test('score non numérique dans le code : refusé (claimed NaN ≠ actual)', () => {
-    const raw = `EL1|${date}|00|abc`;
+    const raw = `EL2|${date}|00|abc`;
     const r = verifyCode(b64url(raw));
     expect(r?.ok ?? false).toBe(false);
   });

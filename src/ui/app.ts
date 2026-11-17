@@ -2,7 +2,7 @@ import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
-import { DAILY_DUR, DailyRun, type DailyTrace, dailyReferenceTrace, dailySetup, dailyTiers, encodeRun, traceFromCode, verifyCode } from '../engine/daily';
+import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun, medalsOf, resultAge, traceFromCode, verifyCode } from '../engine/daily';
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
@@ -12,7 +12,7 @@ import {
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
 import { heroActMult, lifePower } from '../engine/sim';
-import type { Echo, GameState, Hero } from '../engine/state';
+import type { DailyRecord, Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
@@ -296,7 +296,7 @@ export class App {
       case 'destin': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
-        return evOpen || !s.daily[utcDateStr(Date.now())];
+        return evOpen || !this.dailyRec(utcDateStr(Date.now()));
       }
     }
   }
@@ -321,7 +321,7 @@ export class App {
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans l\'onglet Lignée pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
       ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, cultiver ou réduire la chasse le rétablit.'],
-      ['destin', s.hero.gen >= 3 && !s.daily[utcDateStr(Date.now())], 'Le Destin du jour t\'attend : la même vie pour tous les joueurs, compare ton score !'],
+      ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
     ];
     for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
     return null;
@@ -570,7 +570,7 @@ export class App {
         + '|' + s.cadets.length + JSON.stringify(s.alliances) + Object.keys(s.epithets).length + '|' + weekIndex(Date.now());
       case 'destin': {
         const ev = this.rt.event;
-        return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(s.daily[utcDateStr(Date.now())] ?? null) + s.blessings.join() + s.partitions.join() + this.lineageSig() + Math.floor(Date.now() / 60000);
+        return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(this.dailyRec(utcDateStr(Date.now())) ?? null) + s.blessings.join() + s.partitions.join() + this.lineageSig() + Math.floor(Date.now() / 60000);
       }
     }
   }
@@ -796,17 +796,19 @@ export class App {
     // Défi du jour
     const date = utcDateStr(now);
     const setup = dailySetup(date);
-    const rec = s.daily[date];
+    const rec = this.dailyRec(date);
     const nextDay = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate() + 1);
+    const tiers = dailyTiers(date);
     parts.push(h('div', { class: 'card daily-card' },
       h('div', { class: 'label' }, `Destin du jour · ${new Date(now).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`),
-      h('h2', null, `🎲 La vie de ${setup.name}`),
-      h('p', { class: 'muted small' }, `Une vie de ${DAILY_DUR} s, identique pour tous les joueurs. Maximise la valeur finale (🌾×1, 🪙×2, 📜×8, ✨×20) et partage ton score vérifiable.`),
+      h('h2', null, `📜 La Commande du comté`),
+      h('p', { class: 'muted small' }, `La vie de ${setup.name}, identique pour tous les joueurs. Réunis la commande en stock, au même moment, le plus jeune possible, et partage ton résultat vérifiable.`),
+      this.orderChips(setup.order),
       this.traitChips(setup.traits, false, setup),
       h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
       h('div', { class: 'stats' },
-        stat('Meilleur score', rec ? fmtInt(rec.best) : '—'),
-        stat('Paliers du jour', (() => { const t = dailyTiers(date); return `🥉 ${t[0]} · 🥈 ${t[1]} · 🥇 ${t[2]}`; })()),
+        stat('Ton record', rec ? `${(() => { const n = medalsOf(date, rec.best); return n ? MEDALS[n - 1] + ' ' : ''; })()}${fmtDailyResult(rec.best)}` : '—'),
+        stat('Médailles (âge de livraison)', `🥉 ${tiers[0]} · 🥈 ${tiers[1]} · 🥇 ${tiers[2]} ans`),
         stat('Nouveau destin', b.text(h('span'), () => fmtDur((nextDay - Date.now()) / 1000)))),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-primary', onclick: () => this.openDaily() }, rec ? '🔁 Rejouer' : '▶️ Jouer'),
@@ -1211,6 +1213,18 @@ export class App {
   }
 
   // --- Défi du jour ------------------------------------------------------------
+  /** Record du jour sous les règles de la Commande (les records de l'ancien Destin à points sont ignorés). */
+  dailyRec(date: string): DailyRecord | undefined {
+    const r = this.s.daily[date];
+    return r && r.v === 2 ? r : undefined;
+  }
+
+  /** Lignes de la commande, sous forme de pastilles « 🌾 60 ». */
+  orderChips(order: DailyOrder) {
+    return h('div', { class: 'row-wrap daily-order-chips' }, RES.filter((r) => order[r] > 0).map((r) =>
+      h('span', { class: 'badge daily-order-chip', title: RES_INFO[r].name }, `${RES_INFO[r].icon} ${fmtInt(order[r])}`)));
+  }
+
   openDaily() {
     const date = utcDateStr(Date.now());
     const setup = dailySetup(date);
@@ -1218,12 +1232,15 @@ export class App {
     const b = this.dailyBinder;
     const intro = () => {
       b.reset();
+      const tiers = dailyTiers(date);
       content.replaceChildren(
-        h('div', { class: 'center' }, h('div', { class: 'big-i' }, '🎲'), h('h2', null, `Destin du jour : ${setup.name}`)),
-        h('p', null, `Tu as ${DAILY_DUR} secondes, décomptées dès ta première activité. Même destin, même monde, mêmes règles pour tous. Ta lignée principale est mise en pause (tes Échos continuent).`),
+        h('div', { class: 'center' }, h('div', { class: 'big-i' }, '📜'), h('h2', null, `La Commande du comté : ${setup.name}`)),
+        h('p', null, 'Le comté passe commande. Réunis tout en même temps, en stock, et la commande est livrée : plus tu la livres jeune, meilleure est ta médaille.'),
+        this.orderChips(setup.order),
+        h('p', { class: 'small' }, `🥉 livrée avant ${tiers[0]} ans · 🥈 avant ${tiers[1]} ans · 🥇 avant ${tiers[2]} ans`),
+        h('p', { class: 'muted small' }, `Même destin, même monde, mêmes règles pour tous ; les compétences repartent de zéro. Ce que tu dépenses (Vivres vendus, Or étudié) ne compte plus pour la commande. Le chrono démarre à ta première activité. Ta lignée principale est mise en pause (tes Échos continuent).`),
         this.traitChips(setup.traits, false, setup),
         h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
-        h('p', { class: 'muted small' }, 'Score = valeur finale des ressources : 🌾×1, 🪙×2, 📜×8, ✨×20. Les compétences repartent de zéro.'),
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary btn-lg', onclick: start }, 'Commencer')));
     };
     const start = () => {
@@ -1231,29 +1248,24 @@ export class App {
       this.dailyAcc = 0;
       this.rt.pauseLife = true;
       const run = this.daily;
-      const best = this.s.daily[date]?.best ?? 0;
-      const DAILY_TIERS = dailyTiers(date);
+      const rec = this.dailyRec(date);
+      const tiers = dailyTiers(date);
       b.reset();
+      // Fantôme : la partie du record du jour, rejouée depuis son code (rien de plus n'est sauvegardé).
+      const ghost = rec?.code ? traceFromCode(rec.code) : null;
 
-      // Score et paliers de médaille
-      // Courbe du score en direct, sur le fantôme du record du jour (ou de la partie de référence au premier essai).
-      const recCode = this.s.daily[date]?.code;
-      const ghostTrace = (best > 0 && recCode ? traceFromCode(recCode) : null);
-      const chart = this.dailyChart(b, run, ghostTrace ?? dailyReferenceTrace(date), ghostTrace ? 'record' : 'reference', DAILY_TIERS);
-      const tierText = b.text(h('div', { class: 'small' }), () => {
-        const sc = run.score();
-        const next = DAILY_TIERS.findIndex((t) => sc < t);
-        const goal = next < 0 ? `${MEDALS[2]} Or atteint !` : `Prochain palier ${MEDALS[next]} ${DAILY_TIERS[next]} pts : encore ${fmtInt(DAILY_TIERS[next] - sc)}`;
-        return goal + (best > 0 ? ` · Record du jour : ${fmtInt(best)}` : '');
-      });
-      const rate = b.text(h('span', null), () => {
-        const v = this.dailyNetValue(run, run.life.act);
-        return run.life.act ? `${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))} pts/s` : '';
+      const tierText = b.text(h('div', { class: 'small daily-next' }), () => {
+        const age = run.tickN / 10;
+        const next = [2, 1, 0].find((i) => age < tiers[i]);
+        const goal = next === undefined ? 'Plus de médaille possible : livre quand même pour ton record !' : `${MEDALS[next]} si livrée avant ${tiers[next]} ans (encore ${fmtInt(tiers[next] - age)} ans)`;
+        return goal + (rec ? ` · Record : ${fmtDailyResult(rec.best)}` : '');
       });
 
-      // Temps et ligne de vie
+      // Temps, ligne de vie et repères des médailles sur la barre du temps
       const timeFill = b.width(h('div', { class: 'bar-fill' }), () => run.tickN / run.totalTicks);
       b.cls(timeFill, 'late', () => run.tickN / run.totalTicks > 0.8);
+      const timeBar = h('div', { class: 'bar daily-timebar' }, timeFill,
+        ...[1, 2].map((i) => h('span', { class: 'daily-tier-mark', style: { left: (tiers[i] / DAILY_DUR * 100) + '%' }, title: `${MEDALS[i]} avant ${tiers[i]} ans` }, MEDALS[i])));
       const strip = h('div', { class: 'strip' });
       let lastLen = -1;
       b.add(() => {
@@ -1267,13 +1279,29 @@ export class App {
         : '⏳ Prends ton temps : le chrono démarre à ta première activité (touches 1 à 5), puis ne s\'arrête plus.');
       b.add(() => { idle.hidden = !!run.life.act || run.done; });
 
-      // Ressources (avec leur valeur en points)
+      // La commande : une ligne par ressource demandée, avec l'âge auquel le record l'avait remplie.
+      const lines = h('div', { class: 'daily-order' }, RES.filter((r) => setup.order[r] > 0).map((r) => {
+        const need = setup.order[r];
+        const fill = b.width(h('div', { class: 'bar-fill', style: { background: RES_INFO[r].color } }), () => Math.min(1, run.res[r] / need));
+        const row = h('div', { class: 'daily-line' },
+          h('div', { class: 'row-between small' },
+            h('span', null, `${RES_INFO[r].icon} ${RES_INFO[r].name}`),
+            b.text(h('span', { class: 'daily-line-v' }), () => {
+              const t = run.lineTick[r];
+              return `${fmt(Math.min(run.res[r], 9999))} / ${fmtInt(need)}` + (run.res[r] >= need ? ' ✓' : t !== undefined ? ` (rempli à ${fmtAge(t)})` : '');
+            })),
+          h('div', { class: 'bar bar-thin' }, fill),
+          ghost ? h('div', { class: 'muted small daily-line-ghost' }, ghost.lineTick[r] !== undefined ? `┄ record : rempli à ${fmtAge(ghost.lineTick[r]!)}` : '┄ record : jamais rempli') : null);
+        b.cls(row, 'done', () => run.res[r] >= need);
+        return row;
+      }));
+
+      // Stock de chaque ressource (même non demandée : Vivres et Or servent à la chaîne)
       const mini = (label: string, value: HTMLElement, sub: HTMLElement, title?: string) =>
         h('div', { class: 'stat stat-mini', title }, h('div', { class: 'stat-l' }, label), value, sub);
-      const res = h('div', { class: 'stats stats-4' }, RES.map((r) => mini(`${RES_INFO[r].icon} ×${RES_INFO[r].value}`,
+      const res = h('div', { class: 'stats stats-4' }, RES.map((r) => mini(`${RES_INFO[r].icon} ${RES_INFO[r].name}`,
         b.text(h('div', { class: 'stat-v' }), () => fmt(run.res[r])),
-        b.text(h('div', { class: 'muted small' }), () => `${fmtInt(run.res[r] * RES_INFO[r].value)} pts`),
-        `${RES_INFO[r].name} : chaque unité vaut ${RES_INFO[r].value} pt${RES_INFO[r].value > 1 ? 's' : ''}`)));
+        h('div', { class: 'muted small' }, setup.order[r] > 0 ? `commande : ${fmtInt(setup.order[r])}` : 'hors commande'))));
 
       // Écosystème
       const ecoMini = (icon: string, name: string, k: 'F' | 'G' | 'P') => mini(`${icon} ${name}`,
@@ -1298,11 +1326,6 @@ export class App {
           for (const r in def.consume) o.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))}${RES_INFO[r as ResId].icon}/s`);
           return o.join(' ');
         });
-        const val = b.text(h('div', { class: 'act-val' }), () => {
-          const v = this.dailyNetValue(run, a);
-          return `≈ ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v))} pts/s`;
-        });
-        b.cls(val, 'bad', () => this.dailyNetValue(run, a) < 0);
         const note = b.text(h('div', { class: 'act-note small' }), () => {
           const out: string[] = [];
           const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
@@ -1315,35 +1338,35 @@ export class App {
         b.cls(note, 'bad', () => note.textContent?.includes('⚠️') ?? false);
         const btn = h('button', { class: 'act', style: { '--c': def.color }, onclick: () => run.setAct(run.life.act === a ? null : a) },
           h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(i + 1))),
-          h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), h('div', { class: 'bar bar-thin' }, xp), rateEl, val, note));
+          h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), h('div', { class: 'bar bar-thin' }, xp), rateEl, note));
         b.cls(btn, 'active', () => run.life.act === a);
         return btn;
       }));
 
       content.replaceChildren(
-        h('div', { class: 'row-between daily-head' }, h('h2', null, `🎲 ${setup.name}`),
-          h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${fmtInt(run.score())} pts`), b.cls(h('div', { class: 'small good' }, rate), 'bad', () => this.dailyNetValue(run, run.life.act) < 0))),
-        chart,
+        h('div', { class: 'row-between daily-head' }, h('h2', null, `📜 ${setup.name}`),
+          h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${Math.floor(run.progress() * 100)} %`), h('div', { class: 'muted small' }, 'de la commande'))),
+        lines,
         tierText,
-        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
-          run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
         h('div', { class: 'row-between small' }, b.text(h('span'), () => `Âge ${Math.floor(run.tickN / 10)} / ${DAILY_DUR} ans`), b.text(h('span', { class: 'muted' }), () => `${fmtDur(DAILY_DUR - run.tickN / 10)} restantes`)),
-        h('div', { class: 'bar' }, timeFill),
+        timeBar,
         strip,
         idle,
-        res, acts, eco,
+        acts, res, eco,
+        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
+          run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost btn-sm', onclick: () => { this.endDaily(false); this.dailyModal?.close(); } }, 'Abandonner')));
     };
     const finish = () => {
       const run = this.daily!;
-      const score = run.score();
-      const code = encodeRun(date, run.actions, score);
+      const result = run.score();
+      const code = encodeRun(date, run.actions, result);
       const s = this.s;
-      const rec = s.daily[date] ?? { best: 0, code: '', rewarded: 0 };
-      const DAILY_TIERS = dailyTiers(date);
-      const isBest = score > rec.best;
-      if (isBest) { rec.best = score; rec.code = code; }
-      const levels = 1 + DAILY_TIERS.filter((t) => rec.best >= t).length;
+      const prev = this.dailyRec(date);
+      const rec: DailyRecord = prev ?? { best: -1, code: '', rewarded: 0, v: 2 };
+      const isBest = result > rec.best;
+      if (isBest) { rec.best = result; rec.code = code; }
+      const levels = 1 + medalsOf(date, rec.best);
       const gain = Math.max(0, levels - rec.rewarded);
       rec.rewarded = Math.max(rec.rewarded, levels);
       s.daily[date] = rec;
@@ -1351,18 +1374,20 @@ export class App {
       this.endDaily(true);
       this.hooks.save();
       b.reset();
-      const medal = score >= DAILY_TIERS[2] ? '🥇' : score >= DAILY_TIERS[1] ? '🥈' : score >= DAILY_TIERS[0] ? '🥉' : '🎗️';
+      const n = medalsOf(date, result);
+      const miss = run.missing();
       content.replaceChildren(
         h('div', { class: 'center' },
-          h('div', { class: 'big-i' }, medal),
-          h('h2', null, `${fmtInt(score)} points`),
-          h('p', { class: 'muted' }, isBest ? 'Nouveau record personnel du jour !' : `Ton record du jour reste ${fmtInt(rec.best)} pts.`),
+          h('div', { class: 'big-i' }, n ? MEDALS[n - 1] : '🎗️'),
+          h('h2', null, run.delivered ? `Commande livrée à ${fmtAge(run.deliveredTick!)}` : `Commande remplie à ${Math.floor(run.progress() * 100)} %`),
+          run.delivered ? null : h('p', { class: 'muted' }, `Il manquait ${RES.filter((r) => miss[r]).map((r) => `${fmt(Math.max(0.1, miss[r]!))} ${RES_INFO[r].icon}`).join(', ')}.`),
+          h('p', { class: 'muted' }, isBest ? 'Nouveau record personnel du jour !' : `Ton record du jour reste : ${fmtDailyResult(rec.best)}.`),
           gain ? h('p', { class: 'accent' }, `+${gain} ✦ Éclats célestes`) : null),
-        h('div', { class: 'timeline', style: { background: stripGradient(recFromActions(run.actions, run.totalTicks), DAILY_DUR) } }),
-        h('p', { class: 'muted small' }, 'Code vérifiable (tout le monde peut rejouer ta partie et confirmer ton score) :'),
+        h('div', { class: 'timeline', style: { background: stripGradient(run.life.rec, run.life.rec.length || 1) } }),
+        h('p', { class: 'muted small' }, 'Code vérifiable (tout le monde peut rejouer ta partie et confirmer ton résultat) :'),
         h('textarea', { class: 'input mono', rows: 2, readonly: true }, code),
         h('div', { class: 'row-wrap' },
-          h('button', { class: 'btn btn-primary', onclick: () => this.shareDaily(date, score, code) }, '📤 Partager'),
+          h('button', { class: 'btn btn-primary', onclick: () => this.shareDaily(date, result, code) }, '📤 Partager'),
           h('button', { class: 'btn', onclick: () => { intro(); } }, '🔁 Rejouer'),
           h('button', { class: 'btn btn-ghost', onclick: () => this.dailyModal?.close() }, 'Fermer')));
     };
@@ -1372,102 +1397,6 @@ export class App {
   }
 
   dailyFinish: (() => void) | null = null;
-
-  /**
-   * Graphique du Destin du jour : score en direct (doré) sur le fantôme d'une partie déjà jouée, tracé en
-   * pointillés aux couleurs de ses activités, et paliers de médaille en lignes horizontales. L'écart au
-   * fantôme au même âge dit au joueur s'il est en avance, ce qu'une courbe qui monte toujours ne dit pas.
-   */
-  dailyChart(b: Binder, run: DailyRun, ghost: DailyTrace, kind: 'record' | 'reference', tiers: number[]) {
-    const NS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${DAILY_DUR} 100`);
-    svg.setAttribute('preserveAspectRatio', 'none');
-    svg.setAttribute('class', 'daily-svg');
-    const line = (pts: string, cls: string, color?: string) => {
-      const el = document.createElementNS(NS, 'polyline');
-      el.setAttribute('points', pts);
-      el.setAttribute('class', cls);
-      el.setAttribute('vector-effect', 'non-scaling-stroke');
-      if (color) el.style.stroke = color;
-      return el;
-    };
-    const labels = h('div', { class: 'daily-chart-labels' });
-    const dot = h('div', { class: 'daily-dot' });
-    const ghostMax = ghost.curve[ghost.curve.length - 1];
-    let yMax = 0;
-    let drawn = -1;
-    const draw = () => {
-      const cur = run.curve;
-      const top = Math.max(tiers[2] * 1.15, ghostMax * 1.05, cur[cur.length - 1] * 1.08);
-      const y = (v: number) => (100 - Math.min(1, v / yMax) * 100).toFixed(2);
-      // Le fantôme et les paliers ne bougent que si l'échelle change (score qui dépasse le haut du graphique).
-      if (top > yMax) {
-        yMax = top;
-        svg.replaceChildren();
-        labels.replaceChildren();
-        let prev = 200;
-        tiers.forEach((v, i) => {
-          svg.appendChild(line(`0,${y(v)} ${DAILY_DUR},${y(v)}`, 'daily-tier'));
-          // Argent et Or ne sont séparés que de 10 % : on écarte les médailles pour qu'elles restent lisibles.
-          const ly = Math.min(Number(y(v)), prev - 11);
-          prev = ly;
-          labels.appendChild(h('span', { class: 'daily-tier-l', style: { top: ly + '%' } }, MEDALS[i]));
-        });
-        let s0 = 0;
-        for (let k = 1; k <= ghost.rec.length; k++) {
-          if (k < ghost.rec.length && ghost.rec[k] === ghost.rec[s0]) continue;
-          const a = ghost.rec[s0];
-          const pts: string[] = [];
-          for (let j = s0; j <= k; j++) pts.push(`${j},${y(ghost.curve[j])}`);
-          svg.appendChild(line(pts.join(' '), 'daily-ghost', a >= 0 ? ACT[ACTS[a]].color : 'var(--strip-idle)'));
-          s0 = k;
-        }
-        svg.appendChild(line('', 'daily-live'));
-        drawn = -1;
-      }
-      if (cur.length === drawn) return;
-      drawn = cur.length;
-      (svg.lastChild as SVGPolylineElement).setAttribute('points', cur.map((v, k) => `${k},${y(v)}`).join(' '));
-      const k = cur.length - 1;
-      dot.style.left = (k / DAILY_DUR * 100) + '%';
-      dot.style.top = y(cur[k]) + '%';
-    };
-    b.add(draw);
-    const gap = b.text(h('span', { class: 'daily-gap' }), () => {
-      const k = run.curve.length - 1;
-      if (k === 0) return '';
-      const d = run.curve[k] - ghost.curve[Math.min(k, ghost.curve.length - 1)];
-      return `${d >= 0 ? '▲ +' : '▼ −'}${fmtInt(Math.abs(d))} pts sur ${kind === 'record' ? 'ton record' : 'la référence'} à ${k} ans`;
-    });
-    b.cls(gap, 'good', () => { const k = run.curve.length - 1; return k > 0 && run.curve[k] >= ghost.curve[k]; });
-    b.cls(gap, 'bad', () => { const k = run.curve.length - 1; return k > 0 && run.curve[k] < ghost.curve[k]; });
-    const legend = kind === 'record' ? `┄ Ton record : ${fmtInt(ghostMax)} pts` : `┄ Référence 🥈 : ${fmtInt(ghostMax)} pts`;
-    const legendTip = kind === 'record'
-      ? 'Ta meilleure partie du jour, rejouée depuis son code, aux couleurs de ses activités.'
-      : 'Pas encore de record aujourd\'hui : la meilleure activité tenue toute la vie (palier Argent), aux couleurs de cette activité.';
-    return h('div', { class: 'daily-chart-wrap' },
-      h('div', { class: 'daily-chart' }, svg, labels, dot),
-      h('div', { class: 'row-between small' }, h('span', { class: 'muted', title: legendTip }, legend), gap));
-  }
-
-  /** Variation estimée du score par seconde si le héros du défi fait l'activité a. */
-  dailyNetValue(run: DailyRun, a: ActId | null): number {
-    if (!a) return 0;
-    const def = ACT[a];
-    const p = lifePower(run.life, run.hero, a);
-    let frac = 1;
-    for (const r in def.consume) {
-      const need = def.consume[r as ResId]! * Math.sqrt(Math.max(p, 0.01)) * 0.1;
-      if (need > 0) frac = Math.min(frac, run.res[r as ResId] / need);
-    }
-    frac = Math.max(0, Math.min(1, frac));
-    const m = run.ctx.prodMult(a) * ecoFactor(a, run.eco) * p * frac;
-    let v = 0;
-    for (const r in def.produce) v += def.produce[r as ResId]! * m * RES_INFO[r as ResId].value;
-    for (const r in def.consume) v -= def.consume[r as ResId]! * Math.sqrt(Math.max(p, 0.01)) * frac * RES_INFO[r as ResId].value;
-    return v;
-  }
 
   /** Appelé par la boucle principale avec le temps réel écoulé. */
   dailyStep(dtSec: number) {
@@ -1482,11 +1411,10 @@ export class App {
     this.daily = null;
   }
 
-  async shareDaily(date: string, score: number, code: string) {
+  async shareDaily(date: string, result: number, code: string) {
     const d = new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR');
-    const DAILY_TIERS = dailyTiers(date);
-    const medal = score >= DAILY_TIERS[2] ? '🥇' : score >= DAILY_TIERS[1] ? '🥈' : score >= DAILY_TIERS[0] ? '🥉' : '🎗️';
-    const text = `⏳ Échos de Lignée — Destin du ${d}\n${medal} ${fmtInt(score)} points\nVérifie mon score : ${code}\n${GAME_URL}`;
+    const n = medalsOf(date, result);
+    const text = `📜 Échos de Lignée — Commande du ${d}\n${n ? MEDALS[n - 1] : '🎗️'} ${fmtDailyResult(result)}\nVérifie mon résultat : ${code}\n${GAME_URL}`;
     try {
       if (navigator.share) { await navigator.share({ text }); return; }
     } catch { /* annulé */ }
@@ -1494,18 +1422,18 @@ export class App {
   }
 
   openVerify() {
-    const input = h('textarea', { class: 'input mono', rows: 3, placeholder: 'Colle un code de score…' }) as HTMLTextAreaElement;
+    const input = h('textarea', { class: 'input mono', rows: 3, placeholder: 'Colle un code de résultat…' }) as HTMLTextAreaElement;
     const out = h('div');
     modal(h('div', null,
-      h('h2', null, '🔎 Vérifier un score'),
-      h('p', { class: 'muted small' }, 'Le jeu rejoue exactement la partie décrite par le code et compare le score annoncé.'),
+      h('h2', null, '🔎 Vérifier un résultat'),
+      h('p', { class: 'muted small' }, 'Le jeu rejoue exactement la partie décrite par le code et compare le résultat annoncé.'),
       input,
       h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary', onclick: () => {
         const m = input.value.match(/[A-Za-z0-9_-]{12,}/g);
         const code = m ? m.sort((a, b) => b.length - a.length)[0] : '';
         const r = verifyCode(code);
-        if (!r) out.replaceChildren(h('p', { class: 'bad' }, '❌ Code illisible.'));
-        else out.replaceChildren(h('p', { class: r.ok ? 'good' : 'bad' }, r.ok ? `✅ Authentique : ${fmtInt(r.actual)} points le ${r.date}.` : `❌ Falsifié : annoncé ${fmtInt(r.claimed)}, réel ${fmtInt(r.actual)}.`));
+        if (!r) out.replaceChildren(h('p', { class: 'bad' }, '❌ Code illisible (ou d\'une ancienne version du Destin).'));
+        else out.replaceChildren(h('p', { class: r.ok ? 'good' : 'bad' }, r.ok ? `✅ Authentique : ${fmtDailyResult(r.actual)} le ${r.date}.` : `❌ Falsifié : annoncé « ${fmtDailyResult(r.claimed)} », réel « ${fmtDailyResult(r.actual)} ».`));
       } }, 'Vérifier')),
       out));
   }
@@ -1543,14 +1471,14 @@ export function stripGradient(rec: number[], dur: number): string {
   return `linear-gradient(90deg, ${stops.join(', ')})`;
 }
 
-function recFromActions(actions: [number, number][], totalTicks: number): number[] {
-  const out: number[] = [];
-  let cur = -1, j = 0;
-  for (let s = 0; s < totalTicks / 10; s++) {
-    while (j < actions.length && actions[j][0] <= s * 10 + 5) { cur = actions[j][1]; j++; }
-    out.push(cur);
-  }
-  return out;
+/** Âge d'un tic du Destin, au dixième d'année (« 58,3 ans »). */
+function fmtAge(tick: number): string {
+  return `${(tick / 10).toFixed(1).replace('.', ',')} ans`;
+}
+/** Résultat du Destin en clair : « livrée à 58,3 ans » ou « remplie à 83 % ». */
+function fmtDailyResult(result: number): string {
+  const age = resultAge(result);
+  return age !== null ? `livrée à ${fmtAge(age * 10)}` : `remplie à ${Math.max(0, Math.floor(result / 10))} %`;
 }
 
 function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number; P: number }[], series: [string, string][]) {

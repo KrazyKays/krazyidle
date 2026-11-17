@@ -9,7 +9,8 @@ import { newGame } from '../src/engine/state';
 
 function playDaily(date: string, plan: (t: number, run: DailyRun) => ActId | null) {
   const run = new DailyRun(dailySetup(date));
-  while (!run.done) {
+  // Borné : sans aucune activité, le chrono ne démarre jamais (la partie ne finit pas d'elle-même).
+  for (let i = 0; i < 900 && !run.done; i++) {
     const a = plan(run.tickN * 0.1, run);
     if (a !== run.life.act) run.setAct(a);
     run.step();
@@ -58,7 +59,8 @@ describe('défi du jour', () => {
     const out: Record<string, number[]> = {};
     for (const [k, f] of Object.entries(strategies)) out[k] = dates.map((d) => playDaily(d, f).score());
     if (process.env.BAL) console.log(JSON.stringify(out));
-    expect(out.rien.every((x) => x < 100)).toBe(true);
+    expect(out.rien.every((x) => x < 1000)).toBe(true); // jamais livrée
+    expect(out.cultiver.every((x) => x < 1000) && out.mediter.every((x) => x < 1000)).toBe(true);
   });
 });
 

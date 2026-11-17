@@ -4,7 +4,7 @@ Idle game dynastique (PWA) en TypeScript + Vite, sans framework. Tout le contenu
 
 ## Architecture
 
-- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine) ; `daily.ts` (Destin du jour) ; `epithets.ts` (Chroniques) ; `alliances.ts` ; `save.ts`.
+- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `alliances.ts` ; `save.ts`.
 - `src/ui/` : DOM natif. `src/main.ts` : boucle (pas fixe de 0,1 s), sauvegarde, rattrapage du temps.
 - `docs/GAME_DESIGN.md` : la spécification. La garder en accord avec le code (chiffres mesurés, pas supposés).
 - `tests/` : Vitest (unitaires + bot d'équilibrage) ; `tests/qa/` : invariants, déterminisme, sauvegarde, hors-ligne, codes, et **régressions de chaque correction** (`regressions.test.ts`) ; `tests/qa/e2e/` : parcours Playwright, lancés à la main.
@@ -38,7 +38,7 @@ Les scripts TypeScript de `lab/` s'exécutent sous Node avec `node --import ./la
 
 ## Pièges connus
 
-- **Destin du jour** : ses rendements sont figés aux règles 0.2.1 (`DAILY_ACT` dans `daily.ts`) pour que les codes partagés restent vérifiables. Ne pas les relier aux valeurs de `ACT` ; `tests/qa/fixtures-destin-v021.json` le garantit.
+- **Destin du jour (Commande du comté)** : rendements = `ACT` de base (sans bonus de progression). Toucher à `ACT`, à l'écosystème ou au moteur de vie change les commandes, les paliers et invalide les codes `EL2` déjà partagés : le dire, et recalibrer avec `lab/balance/commande/calibrage.ts`. La commande et l'Or sont calculés par un solveur au premier affichage du jour (~0,3 s sous Node, mis en cache). Les anciens codes `EL1` (Destin à points) sont refusés.
 - **Sauvegardes** : ajouter un champ = le rendre optionnel ou le compléter dans `migrate()` (`save.ts`). L'import refuse une sauvegarde injouable (`isPlayable`), la sauvegarde locale n'est jamais écartée.
 - `state.lastTick` n'est avancé que par `tick` : ne pas le toucher dans `save()` (sinon le temps passé onglet masqué est perdu).
 - Les événements gardent l'ancienne règle de progression pour une fenêtre ouverte avant une mise à jour (`EventProgress.v`).

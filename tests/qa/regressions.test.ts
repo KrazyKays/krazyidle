@@ -61,17 +61,8 @@ describe('R8 — « le Vénérable » et surnoms répétés (DATA-01, GD-04, PBA
   });
 });
 
-describe('R10 — rééquilibrage des convertisseurs, Destin du jour figé', () => {
-  test('les codes du Destin du jour produits avec les règles de la 0.2.1 restent vérifiables', async () => {
-    const { verifyCode } = await import('../../src/engine/daily');
-    const fx: { date: string; score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
-    expect(fx.length).toBe(9);
-    for (const f of fx) {
-      const v = verifyCode(f.code)!;
-      expect(v.ok).toBe(true);
-      expect(v.actual).toBe(f.score);
-    }
-  });
+describe('R10 — rééquilibrage des convertisseurs', () => {
+  // Le gel du Destin du jour aux règles 0.2.1 a été levé par CMD-1 (Commande du comté) : voir plus bas.
   test('nouvelles valeurs de la partie principale', async () => {
     const { ACT, ACT_UNLOCK, BUILDING } = await import('../../src/engine/data');
     expect(ACT.commercer.produce.or).toBe(1.25);
@@ -149,23 +140,7 @@ describe('R13 — Temps suspendu n\'entre pas dans la durée relative', () => {
   });
 });
 
-describe('R14 — paliers du Destin du jour relatifs au jour', () => {
-  test('référence = meilleure activité tenue toute la vie ; paliers 70 / 100 / 110 %, identiques à chaque appel', async () => {
-    const { ACTS } = await import('../../src/engine/data');
-    const { DailyRun, dailySetup, dailyReference, dailyTiers } = await import('../../src/engine/daily');
-    const date = '2026-11-14';
-    let best = 0;
-    for (const a of ACTS) { const r = new DailyRun(dailySetup(date)); r.setAct(a); while (!r.done) r.step(); best = Math.max(best, r.score()); }
-    expect(dailyReference(date)).toBe(best);
-    expect(dailyTiers(date)).toEqual([Math.round(best * 0.7), best, Math.round(best * 1.1)]);
-    expect(dailyTiers(date)).toEqual(dailyTiers(date));
-  });
-  test('le score et la vérification des codes ne changent pas', async () => {
-    const { verifyCode } = await import('../../src/engine/daily');
-    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
-    for (const f of fx) expect(verifyCode(f.code)!.actual).toBe(f.score);
-  });
-});
+// R14 (paliers relatifs à la meilleure activité) : remplacé par CMD-1, paliers en âge de livraison.
 
 describe('R15 — présélection et pts/s des Échos selon leur force réelle', () => {
   test('à valeur égale, l\'Écho aux traits d\'Écho et au surnom puissants est mieux classé', async () => {
@@ -190,31 +165,27 @@ describe('R16 — réglage « Garder l\'écran allumé »', () => {
   });
 });
 
-describe('UI-1 — courbe et fantôme du Destin du jour (retours du 2026-11-17)', () => {
-  test('la courbe note le score à chaque seconde et finit sur le score de la partie', async () => {
+describe('UI-1 — fantôme du Destin du jour (retours du 2026-11-17), adapté à la Commande', () => {
+  test('la courbe note l\'avancement de la commande à chaque seconde et finit sur celui de la partie', async () => {
     const { DailyRun, DAILY_DUR, dailySetup } = await import('../../src/engine/daily');
     const run = new DailyRun(dailySetup('2026-11-17'));
     run.setAct('cultiver');
     while (!run.done) run.step();
+    expect(run.delivered).toBe(false); // Cultiver seul ne livre jamais (Savoir et Essence demandés)
     expect(run.curve).toHaveLength(DAILY_DUR + 1);
-    expect(run.curve[DAILY_DUR]).toBe(run.score());
+    expect(run.curve[DAILY_DUR]).toBe(run.progress());
   });
   test('le fantôme du record se reconstruit depuis son code, sans rien ajouter à la sauvegarde', async () => {
-    const { DAILY_DUR, traceFromCode, verifyCode } = await import('../../src/engine/daily');
-    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
-    for (const f of fx) {
-      const tr = traceFromCode(f.code)!;
-      expect(tr.curve[DAILY_DUR]).toBe(f.score);
-      expect(tr.rec).toHaveLength(DAILY_DUR);
-      expect(verifyCode(f.code)!.actual).toBe(f.score); // la vérification des codes ne change pas
-    }
+    const { dailySetup, dailySolution, encodeRun, playActions, traceFromCode, verifyCode } = await import('../../src/engine/daily');
+    const date = '2026-11-17';
+    const sol = dailySolution(date);
+    const run = playActions(dailySetup(date), sol.actions);
+    const code = encodeRun(date, run.actions, run.score());
+    const tr = traceFromCode(code)!;
+    expect(tr.deliveredTick).toBe(run.deliveredTick);
+    expect(tr.lineTick).toEqual(run.lineTick);
+    expect(verifyCode(code)!.ok).toBe(true);
     expect(traceFromCode('pas-un-code')).toBeNull();
-  });
-  test('sans record, le fantôme est la partie de référence des paliers', async () => {
-    const { DAILY_DUR, dailyReference, dailyReferenceTrace, dailyTiers } = await import('../../src/engine/daily');
-    const date = '2026-11-14';
-    expect(dailyReferenceTrace(date).curve[DAILY_DUR]).toBe(dailyReference(date));
-    expect(dailyTiers(date)[1]).toBe(dailyReference(date));
   });
 });
 
@@ -242,9 +213,71 @@ describe('UI-2 — le chrono du Destin du jour démarre à la première activit�
     run.advance(1000);
     expect(run.done).toBe(true);
   });
-  test('les codes partagés, même avec une attente au départ, restent vérifiables', async () => {
-    const { verifyCode } = await import('../../src/engine/daily');
-    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
-    for (const f of fx) expect(verifyCode(f.code)!.actual).toBe(f.score);
+  test('un code dont la première action est retardée se rejoue comme s\'il commençait à 0 (pas de temps à vide)', async () => {
+    const { encodeRun, replay } = await import('../../src/engine/daily');
+    const date = '2026-11-17';
+    expect(replay(date, [[300, 0], [500, 2]])).toBe(replay(date, [[0, 0], [200, 2]]));
+    expect(encodeRun(date, [], 0)).toBeTruthy();
+    expect(replay(date, [])).toBe(0);
+  });
+});
+
+describe('CMD-1 — la Commande du comté remplace le Destin à points (validé le 2026-11-17)', () => {
+  const date = '2026-11-17';
+  test('la commande demande toujours du Savoir et de l\'Essence, et au moins une ligne de Vivres ou d\'Or', async () => {
+    const { dailySetup } = await import('../../src/engine/daily');
+    for (let d = 1; d <= 20; d++) {
+      const o = dailySetup(`2026-12-${String(d).padStart(2, '0')}`).order;
+      expect(o.savoir).toBeGreaterThan(0);
+      expect(o.essence).toBeGreaterThan(0);
+      expect(o.vivres + o.or).toBeGreaterThan(0);
+    }
+  });
+  test('aucune activité tenue seule ne livre la commande', async () => {
+    const { dailySetup, playActions } = await import('../../src/engine/daily');
+    for (const dd of ['2026-11-17', '2026-11-18', '2026-11-19']) for (let a = 0; a < 5; a++) expect(playActions(dailySetup(dd), [[0, a]]).delivered).toBe(false);
+  });
+  test('stock au même moment : la partie s\'arrête à la livraison, au tic où tout est réuni', async () => {
+    const { dailySetup, dailySolution, playActions, RES_ORDER } = await import('../../src/engine/daily').then((m) => ({ ...m, RES_ORDER: ['vivres', 'or', 'savoir', 'essence'] as const }));
+    const setup = dailySetup(date);
+    const run = playActions(setup, dailySolution(date).actions);
+    expect(run.delivered).toBe(true);
+    expect(run.done).toBe(true);
+    expect(run.tickN).toBe(run.deliveredTick);
+    for (const r of RES_ORDER) expect(run.res[r]).toBeGreaterThanOrEqual(setup.order[r]);
+    run.step(); // plus rien ne bouge après la livraison
+    expect(run.tickN).toBe(run.deliveredTick);
+  });
+  test('paliers en âges : Bronze 90, Or = solveur + 2 ans, Argent à mi-chemin ; le solveur décroche l\'Or', async () => {
+    const { DAILY_DUR, GOLD_MARGIN, dailySolution, dailyTiers, dailyResult, medalsOf } = await import('../../src/engine/daily');
+    const sol = dailySolution(date);
+    const t = dailyTiers(date);
+    expect(t[0]).toBe(DAILY_DUR);
+    expect(t[2]).toBe(Math.ceil(sol.tick / 10) + GOLD_MARGIN);
+    expect(t[1]).toBe(Math.round((t[2] + DAILY_DUR) / 2));
+    expect(medalsOf(date, dailyResult(sol.tick, 1))).toBe(3);
+    expect(medalsOf(date, dailyResult(null, 0.99))).toBe(0);
+    expect(medalsOf(date, dailyResult(t[1] * 10 + 1, 1))).toBe(1);
+  });
+  test('résultat comparable : livrer plus jeune bat livrer plus vieux, qui bat ne pas livrer', async () => {
+    const { dailyResult, resultAge } = await import('../../src/engine/daily');
+    expect(dailyResult(500, 1)).toBeGreaterThan(dailyResult(600, 1));
+    expect(dailyResult(899, 1)).toBeGreaterThan(dailyResult(null, 0.999));
+    expect(resultAge(dailyResult(583, 1))).toBeCloseTo(58.3);
+    expect(resultAge(dailyResult(null, 0.5))).toBeNull();
+  });
+  test('rendements de la partie principale (plus de règles figées 0.2.1) ; les anciens codes EL1 sont refusés', async () => {
+    const { ACT } = await import('../../src/engine/data');
+    const { dailySetup, verifyCode, DailyRun } = await import('../../src/engine/daily');
+    const run = new DailyRun(dailySetup(date));
+    expect(run.ctx.acts).toBeUndefined(); // table ACT de la partie principale
+    expect(ACT.commercer.produce.or).toBe(1.25);
+    const fx: { code: string }[] = (await import('./fixtures-destin-v021.json')).default;
+    for (const f of fx) expect(verifyCode(f.code)).toBeNull();
+  });
+  test('la commande et les paliers sont identiques à chaque appel (déterministes, pour tous les joueurs)', async () => {
+    const { dailySetup, dailyTiers } = await import('../../src/engine/daily');
+    expect(dailySetup(date)).toEqual(dailySetup(date));
+    expect(dailyTiers(date)).toEqual(dailyTiers(date));
   });
 });

@@ -436,18 +436,15 @@ p { margin: 6px 0; }
 
 /* --- Défi du jour en cours ------------------------------------------------- */
 .daily-ctx { margin: 4px 0; }
-.daily-chart-wrap { margin: 6px 0 2px; }
-.daily-chart { position: relative; height: 120px; margin-right: 22px; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.daily-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.daily-svg polyline { fill: none; stroke-linejoin: round; stroke-linecap: round; }
-.daily-tier { stroke: rgba(255, 255, 255, 0.28); stroke-width: 1; stroke-dasharray: 3 4; }
-.daily-ghost { stroke-width: 2; stroke-dasharray: 4 3; opacity: 0.75; }
-.daily-live { stroke: var(--gold); stroke-width: 3; filter: drop-shadow(0 0 3px rgba(242, 196, 90, 0.6)); }
-.daily-chart-labels { position: absolute; inset: 0; pointer-events: none; }
-.daily-tier-l { position: absolute; right: -22px; transform: translateY(-50%); font-size: 13px; line-height: 1; }
-.daily-dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--gold); pointer-events: none; }
-.daily-gap { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-@media (min-width: 600px) { .daily-chart { height: 150px; } }
+.daily-order { display: grid; gap: 6px; margin: 6px 0; }
+.daily-order-chips .daily-order-chip { font-size: 0.95rem; font-weight: 700; }
+.daily-line { padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; }
+.daily-line.done { border-color: rgba(124, 179, 66, 0.7); background: rgba(124, 179, 66, 0.08); }
+.daily-line-v { font-variant-numeric: tabular-nums; font-weight: 700; }
+.daily-line-ghost { margin-top: 2px; }
+.daily-timebar { position: relative; overflow: visible; }
+.daily-tier-mark { position: absolute; top: 50%; transform: translate(-50%, -50%); font-size: 12px; line-height: 1; pointer-events: auto; }
+.daily-next { margin: 2px 0 4px; }
 .daily-idle { color: var(--gold); background: rgba(242, 196, 90, 0.1); border: 1px solid rgba(242, 196, 90, 0.4); border-radius: 10px; padding: 6px 10px; }
 .act-val { font-size: 0.78rem; font-weight: 700; color: var(--good); font-variant-numeric: tabular-nums; }
 .act-val.bad { color: var(--bad); }

@@ -105,37 +105,43 @@ async function topLife(page, name, mobile) {
   log(`${name} : un toucher sur la frise ramène à la Vie`, (await page.locator('#panel-life').isVisible()) && !(await strip.isVisible()));
 }
 
-/** Destin du jour : courbe en direct sur un fantôme (record injecté, ou référence au premier essai). */
+/** Destin du jour, Commande du comté : lignes de la commande, repères des médailles, fantôme du record (injecté). */
 async function dailyGhost(page, name, withRecord) {
   await page.evaluate((withRecord) => {
     const s = window.krazy.state;
     const date = new Date().toISOString().slice(0, 10);
-    // Record : Cultiver toute la vie (code « EL1|date|00|score » ; le fantôme rejoue les actions, pas le score).
-    if (withRecord) s.daily[date] = { best: 123, code: btoa(`EL1|${date}|00|123`).replace(/=+$/, ''), rewarded: 0 };
+    // Record : Cultiver toute la vie (code « EL2|date|00|résultat » ; le fantôme rejoue les actions, pas le résultat).
+    if (withRecord) s.daily[date] = { best: 100, code: btoa(`EL2|${date}|00|100`).replace(/=+$/, ''), rewarded: 0, v: 2 };
     else delete s.daily[date];
   }, withRecord);
   await gotoTab(page, 'Destin');
+  const card = await page.locator('.daily-card').innerText();
+  log(`${name} : carte du Destin = Commande du comté, paliers en âges`, /Commande du comté/.test(card) && /🥇 \d+ ans/.test(card.replace(/\n/g, ' ')), card.split('\n').slice(0, 3).join(' · '));
   await page.locator('button', { hasText: /Jouer|Rejouer/ }).first().click();
+  const intro = await page.locator('.daily').innerText();
+  log(`${name} : l'introduction montre la commande et les âges des médailles`, /🥉 livrée avant 90 ans/.test(intro) && /📜/.test(intro));
   await page.locator('button', { hasText: 'Commencer' }).click();
-  await page.waitForSelector('.daily-chart');
+  await page.waitForSelector('.daily-order');
   await sleep(2000);
   const wait = await page.evaluate(() => ({
-    tick: window.krazy.app?.daily?.tickN ?? document.querySelector('.daily .bar-fill')?.style.width,
+    tick: document.querySelector('.daily-timebar .bar-fill')?.style.width,
     idle: document.querySelector('.daily-idle')?.textContent || '',
   }));
-  log(`${name} : le chrono attend la première activité`, (wait.tick === 0 || wait.tick === '0%') && /démarre à ta première activité/.test(wait.idle), `tic=${wait.tick}`);
-  await page.keyboard.press('2');
-  await sleep(4500);
+  log(`${name} : le chrono attend la première activité`, (wait.tick === '0%' || wait.tick === '0') && /démarre à ta première activité/.test(wait.idle), `barre=${wait.tick}`);
+  await page.keyboard.press('1');
+  await sleep(3500);
   const info = await page.evaluate(() => ({
-    ghosts: document.querySelectorAll('.daily-ghost').length,
-    tiers: document.querySelectorAll('.daily-tier').length,
-    live: (document.querySelector('.daily-live')?.getAttribute('points') || '').trim().split(' ').filter(Boolean).length,
-    gap: document.querySelector('.daily-gap')?.textContent || '',
-    legend: document.querySelector('.daily-chart-wrap .muted')?.textContent || '',
+    lines: document.querySelectorAll('.daily-line').length,
+    ghosts: document.querySelectorAll('.daily-line-ghost').length,
+    marks: document.querySelectorAll('.daily-tier-mark').length,
+    pct: document.querySelector('.daily-head .score')?.textContent || '',
+    next: document.querySelector('.daily-next')?.textContent || '',
+    age: document.querySelector('.daily-timebar .bar-fill')?.style.width || '',
   }));
-  log(`${name} : fantôme ${withRecord ? 'du record' : 'de référence'} et trois paliers tracés`, info.ghosts >= 1 && info.tiers === 3 && (withRecord ? /record/.test(info.legend) : /Référence/.test(info.legend)), info.legend);
-  log(`${name} : courbe en direct, un point par seconde`, info.live >= 4 && info.live <= 7, `${info.live} points après 4,5 s`);
-  log(`${name} : écart au fantôme au même âge`, new RegExp(`pts sur ${withRecord ? 'ton record' : 'la référence'} à \\d+ ans`).test(info.gap), info.gap);
+  log(`${name} : trois lignes de commande au moins, repères 🥈 et 🥇 sur la barre du temps`, info.lines >= 3 && info.marks === 2, `${info.lines} lignes`);
+  log(`${name} : avancement de la commande et prochaine médaille affichés`, /\d+ %/.test(info.pct) && /🥇 si livrée avant \d+ ans/.test(info.next), `${info.pct} · ${info.next}`);
+  log(`${name} : le temps avance après la première activité`, parseFloat(info.age) > 2, info.age);
+  log(`${name} : fantôme ${withRecord ? 'du record sur chaque ligne' : 'absent sans record'}`, withRecord ? info.ghosts === info.lines : info.ghosts === 0, `${info.ghosts} repères`);
   log(`${name} : pas de défilement horizontal dans le défi`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await page.evaluate(() => document.querySelectorAll('#toasts .toast').forEach((el) => el.remove()));
   await page.locator('.modal').first().screenshot({ path: path.join(OUT, `retours-${name}-destin.png`) });

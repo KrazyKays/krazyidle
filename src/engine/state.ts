@@ -146,6 +146,8 @@ export interface DailyRecord {
   best: number;
   code: string;
   rewarded: number; // paliers récompensés
+  /** 2 = Commande du comté (best = résultat de `dailyResult`) ; absent = ancien Destin à points, ignoré. */
+  v?: number;
 }
 
 export interface GameState {
