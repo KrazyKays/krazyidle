@@ -422,3 +422,14 @@ describe('GD-SURNOMS A — « le Constant » devient un surnom commun, sans effe
     expect(pickEpithet({ ...f, parentEpithet: 'laboureur' })?.id).toBe('constant');
   });
 });
+
+describe('GD-SURNOMS C — un surnom commun déjà connu ne déploie plus la grande carte', () => {
+  test('carte pour une découverte ou un surnom Rare et plus, ligne discrète pour un Commun connu', async () => {
+    const { epithetRevealKind } = await import('../../src/engine/epithets');
+    expect(epithetRevealKind('laboureur', true)).toBe('carte');
+    expect(epithetRevealKind('laboureur', false)).toBe('ligne');
+    expect(epithetRevealKind('constant', false)).toBe('ligne');
+    expect(epithetRevealKind('juste', false)).toBe('carte');
+    expect(epithetRevealKind('venerable', false)).toBe('carte');
+  });
+});

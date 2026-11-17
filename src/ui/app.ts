@@ -16,7 +16,7 @@ import type { DailyRecord, Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
-import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, fullName } from '../engine/epithets';
+import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName } from '../engine/epithets';
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
@@ -940,6 +940,10 @@ export class App {
       return chroniclesUnlocked(this.s) ? h('p', { class: 'muted small center' }, '📜 Une vie sans éclat : les Chroniques ne lui donnent pas de surnom.') : null;
     }
     const e = EPITHET[info.id];
+    if (epithetRevealKind(info.id, info.isNew) === 'ligne') {
+      return h('p', { class: 'muted small center', title: epithetEffect(e, (x) => ACT[x].name) },
+        `📜 Les Chroniques retiennent ${this.nm(a)} ${epithetLabel(e.id, a)} ${e.icon} · ${EPITHET_RARITY[e.rarity].name}`);
+    }
     return h('div', { class: 'card epithet-reveal', style: { '--c': EPITHET_RARITY[e.rarity].color } },
       h('div', { class: 'label' }, info.isNew ? `✨ Nouveau surnom découvert · ${EPITHET_RARITY[e.rarity].name} · +${info.eclats} ✦` : `📜 Les Chroniques retiennent · ${EPITHET_RARITY[e.rarity].name}`),
       h('h3', null, `${e.icon} ${this.nm(a)} ${epithetLabel(e.id, a)}`),

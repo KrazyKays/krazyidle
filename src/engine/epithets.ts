@@ -124,6 +124,14 @@ export function pickEpithet(f: LifeFacts): EpithetDef | null {
   return best;
 }
 
+/**
+ * Comment la succession annonce un surnom : la grande carte pour une découverte ou un surnom Rare et plus,
+ * une ligne discrète pour un Commun déjà connu (sinon la carte revient à chaque vie et on ne la lit plus).
+ */
+export function epithetRevealKind(id: string, isNew: boolean): 'carte' | 'ligne' {
+  return isNew || (EPITHET[id]?.rarity ?? 0) >= 1 ? 'carte' : 'ligne';
+}
+
 /** « le Juste » ou « la Juste » selon le personnage. */
 export function epithetLabel(id: string | undefined, p: Named | null): string {
   const e = id ? EPITHET[id] : undefined;
