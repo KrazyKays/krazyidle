@@ -258,7 +258,17 @@ export const FEMININE_NAMES = new Set([
   'Aude', 'Alix', 'Azalaïs', 'Aénor', 'Béatrix', 'Blanche', 'Brunehaut', 'Constance', 'Cunégonde', 'Ermessende',
   'Esclarmonde', 'Frédégonde', 'Gersende', 'Jehanne', 'Odile', 'Oriane', 'Philippa', 'Radegonde', 'Richilde', 'Sancie',
 ]);
-export const isFeminine = (name: string) => FEMININE_NAMES.has(name);
+export const isFeminine = (name: string) => FEMININE_NAMES.has(name) || name === 'Jolyne';
+
+// --- Easter egg : la Maison Joestar ----------------------------------------
+/**
+ * Dans une maison nommée Joestar, un enfant de chaque génération porte le prénom du JoJo de la partie
+ * correspondante (génération I = Jonathan, II = Joseph…), puis le cycle reprend. Purement cosmétique.
+ */
+export const JOJO_LINE = ['Jonathan', 'Joseph', 'Jotaro', 'Josuke', 'Giorno', 'Jolyne', 'Johnny', 'Josuke', 'Jodio'];
+/** « Joestar », « JOESTAR », « Joëstar », « Joe Star »… */
+export const isJoestar = (house: string) => house.normalize('NFD').replace(/[^a-z]/gi, '').toLowerCase() === 'joestar';
+export const isJojo = (name: string) => JOJO_LINE.includes(name);
 
 // --- Accords ---------------------------------------------------------------
 export type Sex = 'f' | 'm';

@@ -368,3 +368,42 @@ describe('NOM-3 — numérotation dynastique (« Jehan III »)', () => {
     expect(back.hero.ord).toBe(2);
   });
 });
+
+describe('NOM-4 — easter egg : la Maison Joestar', () => {
+  test('nom de maison reconnu quelle que soit la graphie', async () => {
+    const { isJoestar } = await import('../../src/engine/data');
+    for (const n of ['Joestar', 'JOESTAR', 'joëstar', 'Joe Star']) expect(isJoestar(n)).toBe(true);
+    for (const n of ['Joestars', 'Valombre', 'Jo']) expect(isJoestar(n)).toBe(false);
+  });
+  test('un seul héritier par génération porte le prénom du JoJo, aux mêmes traits qu\'une maison normale', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const { JOJO_LINE, isJojo } = await import('../../src/engine/data');
+    const a = newGame(0, 9), b = newGame(0, 9);
+    b.lineage.name = 'Joestar';
+    for (const gen of [1, 5, 9]) {
+      a.hero.gen = gen; b.hero.gen = gen;
+      const ha = genHeirs(a, a.hero, new Rng(3)), hb = genHeirs(b, b.hero, new Rng(3));
+      expect(ha.some((h) => isJojo(h.name))).toBe(false);
+      expect(hb.filter((h) => isJojo(h.name)).map((h) => h.name)).toEqual([JOJO_LINE[gen % 9]]);
+      expect(hb.map((h) => h.traits)).toEqual(ha.map((h) => h.traits)); // renommer sa maison ne relance rien
+    }
+  });
+  test('la saga suit les générations ; Jolyne est accordée au féminin ; Josuke II, puis Jonathan II', async () => {
+    const { confirmSuccession, endLife } = await import('../../src/engine/game');
+    const { isJojo } = await import('../../src/engine/data');
+    const { regnalName, renameHead } = await import('../../src/engine/names');
+    const s = newGame(0, 4);
+    s.lineage.name = 'Joestar';
+    renameHead(s, 'Jonathan');
+    startLife(s);
+    for (let g = 0; g < 9; g++) {
+      endLife(s, 0);
+      const i = s.succession!.heirs.findIndex((h) => isJojo(h.name));
+      confirmSuccession(s, i, []);
+    }
+    const line = [...s.ancestors, s.hero].map((p) => regnalName(p, s.lineage.names));
+    expect(line).toEqual(['⭐ Jonathan Ier', '⭐ Joseph', '⭐ Jotaro', '⭐ Josuke Ier', '⭐ Giorno', '⭐ Jolyne', '⭐ Johnny', '⭐ Josuke II', '⭐ Jodio', '⭐ Jonathan II']);
+    expect(s.ancestors[5].sex).toBe('f');
+  });
+});

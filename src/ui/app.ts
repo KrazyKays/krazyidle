@@ -1,5 +1,5 @@
 import {
-  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, isJoestar, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun, medalsOf, resultAge, traceFromCode, verifyCode } from '../engine/daily';
@@ -1038,8 +1038,10 @@ export class App {
       const nameEl = h('h2', { class: 'intro-hero' });
       const lineEl = h('p', { class: 'intro-line' });
       const traitEl = t ? h('span') : null;
+      // Maison Joestar : le fondateur est Jonathan (le dé reste libre de changer d'avis).
+      if (isJoestar(s.lineage.name) && s.hero.gen === 1 && s.hero.name !== 'Jonathan') renameHead(s, 'Jonathan');
       const fill = () => {
-        nameEl.textContent = s.hero.name;
+        nameEl.textContent = this.nm(s.hero);
         lineEl.textContent = acc(s.hero, 'premier du nom', 'première du nom');
         if (t && traitEl) traitEl.textContent = `${t.icon} ${traitName(t, s.hero)}`;
       };
@@ -1101,7 +1103,7 @@ export class App {
     const s = this.s;
     const input = h('input', { class: 'input', maxlength: 20, value: s.lineage.name }) as HTMLInputElement;
     const m = modal(h('div', null, h('h2', null, 'Renommer la maison'), input,
-      h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary', onclick: () => { const n = input.value.trim().replace(/[<>]/g, ''); if (n) s.lineage.name = n; m.close(); this.sigTop = ''; this.sigTab = ''; } }, 'Valider'))));
+      h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary', onclick: () => { const n = input.value.trim().replace(/[<>]/g, ''); if (n) { if (!isJoestar(s.lineage.name) && isJoestar(n)) toast('⭐ Une étoile apparaît sur l\'épaule des enfants à naître : le sang des Joestar coule dans ta lignée.', 'good', 6000); s.lineage.name = n; } m.close(); this.sigTop = ''; this.sigTab = ''; } }, 'Valider'))));
   }
 
   openCrest() {

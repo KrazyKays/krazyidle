@@ -1,6 +1,6 @@
 // Logique de la partie principale : vie, Échos, Domaine, succession, événements.
 import {
-  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
+  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
 } from './data';
 import { addCadets, inbreedingRisk } from './alliances';
@@ -445,6 +445,9 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
   const used = new Set<string>();
   // Les prénoms ont leur propre aléa : allonger la liste ne change ni les traits ni la suite de la partie.
   const names = new Rng(hashStr(`prenoms:${s.createdAt}:${parent.id}`));
+  // Maison Joestar : un enfant par génération porte le prénom du JoJo de sa génération.
+  const jojo = isJoestar(s.lineage.name) ? JOJO_LINE[parent.gen % JOJO_LINE.length] : null;
+  const jojoAt = jojo ? parent.id % n : -1;
   const pw = heroWear(s, parent);
   // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux.
   const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + 1;
@@ -495,6 +498,7 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     }
     let name = names.pick(FIRST_NAMES);
     for (let k = 0; k < 5 && used.has(name); k++) name = names.pick(FIRST_NAMES);
+    if (i === jojoAt) name = jojo!;
     used.add(name);
     out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id, wear: kept });
   }

@@ -1,6 +1,6 @@
 // Numérotation dynastique : quand un prénom revient parmi les chefs de la lignée, il prend son rang
 // (« Jehan III »). Le premier du nom devient « Ier » (« Ire ») dès qu'un second le porte, comme chez les rois.
-import { sexFor, sexOf, type Named } from './data';
+import { isJojo, sexFor, sexOf, type Named } from './data';
 import type { GameState } from './state';
 
 /** Ce qui peut porter un rang : héros, Écho, ancêtre (absent des sauvegardes d'avant : recalculé). */
@@ -43,10 +43,11 @@ export function regnal(p: Ranked, names: Record<string, number> | undefined): st
   return ord === 1 ? (sexOf(p) === 'f' ? 'Ire' : 'Ier') : roman(ord);
 }
 
-/** « Jehan III », ou le prénom seul. */
+/** « Jehan III », ou le prénom seul ; les JoJo de la Maison Joestar portent la marque de l'étoile. */
 export function regnalName(p: Ranked, names: Record<string, number> | undefined): string {
   const r = regnal(p, names);
-  return r ? `${p.name} ${r}` : p.name;
+  const n = r ? `${p.name} ${r}` : p.name;
+  return isJojo(p.name) ? `⭐ ${n}` : n;
 }
 
 /** Rangs des sauvegardes d'avant la numérotation, recalculés dans l'ordre de la généalogie. */
