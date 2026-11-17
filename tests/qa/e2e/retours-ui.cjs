@@ -88,6 +88,23 @@ async function legacyUnlock(page, name) {
   await cards.first().screenshot({ path: path.join(OUT, `retours-${name}-deblocage.png`) });
 }
 
+async function topLife(page, name, mobile) {
+  await gotoTab(page, mobile ? 'Domaine' : 'Lignée');
+  await sleep(300);
+  const strip = page.locator('.top-life');
+  if (!mobile) { log(`${name} : pas de frise dans la barre (la Vie est déjà en colonne)`, !(await strip.isVisible())); return; }
+  log(`${name} : frise de la vie visible hors de l'onglet Vie`, await strip.isVisible());
+  const bg = await page.locator('.top-life-fill').evaluate((el) => el.style.background);
+  log(`${name} : la frise reprend les activités de la vie`, bg.includes('gradient'), bg.slice(0, 60));
+  const top = await page.locator('.topbar').boundingBox();
+  const f = await page.locator('.top-life-fill').boundingBox();
+  log(`${name} : la frise ne grandit pas la barre`, f.y + f.height <= top.y + top.height + 1, `frise bas=${(f.y + f.height).toFixed(0)}, barre bas=${(top.y + top.height).toFixed(0)}`);
+  await page.screenshot({ path: path.join(OUT, `retours-${name}-frise-haut.png`), clip: { x: 0, y: 0, width: top.width, height: top.height + 20 } });
+  await strip.click();
+  await sleep(300);
+  log(`${name} : un toucher sur la frise ramène à la Vie`, (await page.locator('#panel-life').isVisible()) && !(await strip.isVisible()));
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -100,6 +117,7 @@ async function legacyUnlock(page, name) {
     await toGen2(page);
     await lock(page, name);
     await legacyUnlock(page, name);
+    await topLife(page, name, name === 'mobile');
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

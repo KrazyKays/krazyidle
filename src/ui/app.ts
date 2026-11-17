@@ -243,7 +243,32 @@ export class App {
     this.elTop.replaceChildren(
       h('div', { class: 'top-row' }, brand, evPill, lifePill, h('div', { class: 'top-meta' }, legacy, eclats, gear)),
       h('div', { class: 'res-row' }, chips),
+      this.topLifeStrip(b),
     );
+  }
+
+  /**
+   * Frise de la vie en cours, au bord bas de la barre du haut (téléphone, hors de l'onglet Vie) :
+   * on suit la vie depuis n'importe quel onglet, et un toucher y ramène. Sur ordinateur la Vie est
+   * toujours affichée en colonne, la frise est donc inutile.
+   */
+  topLifeStrip(b: Binder) {
+    const s = this.s;
+    const fill = h('span', { class: 'top-life-fill' });
+    const el = h('button', { class: 'top-life', 'aria-label': 'Vie en cours : revenir à la Vie', onclick: () => this.setTab('vie') }, fill);
+    let lastKey = '';
+    b.add(() => {
+      el.hidden = this.desktop || this.tab === 'vie';
+      if (el.hidden) return;
+      const life = s.life;
+      // Elle pulse quand la vie attend le joueur : succession en attente ou vie en pause.
+      el.classList.toggle('waiting', !!s.succession || isPaused(s));
+      const key = life ? life.rec.length + '/' + life.dur : 'fin';
+      if (key === lastKey) return;
+      lastKey = key;
+      fill.style.background = life ? stripGradient(life.rec, life.dur) : 'var(--gold)';
+    });
+    return el;
   }
 
   renderNav() {

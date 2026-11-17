@@ -66,6 +66,11 @@ p { margin: 6px 0; }
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
+/* Frise de la vie en cours : 4 px dessinés, zone de toucher de 14 px prise sur la marge basse de la barre. */
+.top-life { position: absolute; left: 0; right: 0; bottom: -4px; height: 14px; padding: 5px 12px; background: none; border: 0; display: block; cursor: pointer; z-index: 1; }
+.top-life[hidden] { display: none; }
+.top-life-fill { display: block; height: 4px; border-radius: 2px; background: var(--strip-empty); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); }
+.top-life.waiting .top-life-fill { animation: pulse 1.4s ease-in-out infinite; }
 .top-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .brand > div { min-width: 0; }
 .top-row .event-pill { order: 5; flex: 1 1 100%; max-width: none; text-align: center; }
