@@ -217,3 +217,34 @@ describe('UI-1 — courbe et fantôme du Destin du jour (retours du 2026-11-17)'
     expect(dailyTiers(date)[1]).toBe(dailyReference(date));
   });
 });
+
+describe('UI-2 — le chrono du Destin du jour démarre à la première activité (retours du 2026-11-17)', () => {
+  test('avant toute activité, le temps réel écoulé ne fait rien avancer et n\'est pas mis de côté', async () => {
+    const { DailyRun, dailySetup } = await import('../../src/engine/daily');
+    const run = new DailyRun(dailySetup('2026-11-17'));
+    expect(run.started).toBe(false);
+    expect(run.advance(30)).toBe(0);
+    run.setAct(null); // « aucune activité » ne lance pas le chrono
+    expect(run.advance(30)).toBe(0);
+    expect(run.tickN).toBe(0);
+    run.setAct('cultiver');
+    expect(run.started).toBe(true);
+    expect(run.actions[0][0]).toBe(0); // la première action est au tic 0
+    run.advance(1.05);
+    expect(run.tickN).toBe(10);
+  });
+  test('une fois lancé, le chrono continue même sans activité, jusqu\'à la fin', async () => {
+    const { DailyRun, dailySetup } = await import('../../src/engine/daily');
+    const run = new DailyRun(dailySetup('2026-11-17'));
+    run.setAct('cultiver');
+    run.advance(5);
+    run.setAct(null);
+    run.advance(1000);
+    expect(run.done).toBe(true);
+  });
+  test('les codes partagés, même avec une attente au départ, restent vérifiables', async () => {
+    const { verifyCode } = await import('../../src/engine/daily');
+    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
+    for (const f of fx) expect(verifyCode(f.code)!.actual).toBe(f.score);
+  });
+});

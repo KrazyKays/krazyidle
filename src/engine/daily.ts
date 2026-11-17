@@ -120,6 +120,23 @@ export class DailyRun {
   get done() {
     return this.tickN >= this.totalTicks;
   }
+  /** Le chrono ne démarre qu'à la première activité choisie ; ensuite il ne s'arrête plus. */
+  get started() {
+    return this.actions.length > 0;
+  }
+
+  /**
+   * Avance la partie du temps réel écoulé (accumulé dans `acc`) et renvoie le reste à reporter.
+   * Avant la première activité, rien n'avance et le temps d'attente n'est pas mis de côté.
+   */
+  advance(acc: number): number {
+    if (!this.started) return 0;
+    while (acc >= DAILY_DT && !this.done) {
+      this.step();
+      acc -= DAILY_DT;
+    }
+    return acc;
+  }
 
   setAct(a: ActId | null) {
     if (this.done) return;

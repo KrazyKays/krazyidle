@@ -1220,7 +1220,7 @@ export class App {
       b.reset();
       content.replaceChildren(
         h('div', { class: 'center' }, h('div', { class: 'big-i' }, '🎲'), h('h2', null, `Destin du jour : ${setup.name}`)),
-        h('p', null, `Tu as ${DAILY_DUR} secondes. Même destin, même monde, mêmes règles pour tous. Ta lignée principale est mise en pause (tes Échos continuent).`),
+        h('p', null, `Tu as ${DAILY_DUR} secondes, décomptées dès ta première activité. Même destin, même monde, mêmes règles pour tous. Ta lignée principale est mise en pause (tes Échos continuent).`),
         this.traitChips(setup.traits, false, setup),
         h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
         h('p', { class: 'muted small' }, 'Score = valeur finale des ressources : 🌾×1, 🪙×2, 📜×8, ✨×20. Les compétences repartent de zéro.'),
@@ -1261,7 +1261,10 @@ export class App {
         lastLen = run.life.rec.length;
         strip.style.background = stripGradient(run.life.rec, DAILY_DUR);
       });
-      const idle = h('div', { class: 'daily-idle small' }, '⏸️ Aucune activité : le temps passe sans rien produire ! Choisis une activité (touches 1 à 5).');
+      const idle = h('div', { class: 'daily-idle small' });
+      b.text(idle, () => run.started
+        ? '⏸️ Aucune activité : le temps passe sans rien produire ! Choisis une activité (touches 1 à 5).'
+        : '⏳ Prends ton temps : le chrono démarre à ta première activité (touches 1 à 5), puis ne s\'arrête plus.');
       b.add(() => { idle.hidden = !!run.life.act || run.done; });
 
       // Ressources (avec leur valeur en points)
@@ -1470,11 +1473,7 @@ export class App {
   dailyStep(dtSec: number) {
     const run = this.daily;
     if (!run || run.done) return;
-    this.dailyAcc += dtSec;
-    while (this.dailyAcc >= 0.1 && !run.done) {
-      run.step();
-      this.dailyAcc -= 0.1;
-    }
+    this.dailyAcc = run.advance(this.dailyAcc + dtSec);
     if (run.done) this.dailyFinish?.();
   }
 

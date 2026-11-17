@@ -118,6 +118,12 @@ async function dailyGhost(page, name, withRecord) {
   await page.locator('button', { hasText: /Jouer|Rejouer/ }).first().click();
   await page.locator('button', { hasText: 'Commencer' }).click();
   await page.waitForSelector('.daily-chart');
+  await sleep(2000);
+  const wait = await page.evaluate(() => ({
+    tick: window.krazy.app?.daily?.tickN ?? document.querySelector('.daily .bar-fill')?.style.width,
+    idle: document.querySelector('.daily-idle')?.textContent || '',
+  }));
+  log(`${name} : le chrono attend la première activité`, (wait.tick === 0 || wait.tick === '0%') && /démarre à ta première activité/.test(wait.idle), `tic=${wait.tick}`);
   await page.keyboard.press('2');
   await sleep(4500);
   const info = await page.evaluate(() => ({
