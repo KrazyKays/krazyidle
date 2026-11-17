@@ -105,6 +105,37 @@ async function topLife(page, name, mobile) {
   log(`${name} : un toucher sur la frise ramène à la Vie`, (await page.locator('#panel-life').isVisible()) && !(await strip.isVisible()));
 }
 
+/** Destin du jour : courbe en direct sur un fantôme (record injecté, ou référence au premier essai). */
+async function dailyGhost(page, name, withRecord) {
+  await page.evaluate((withRecord) => {
+    const s = window.krazy.state;
+    const date = new Date().toISOString().slice(0, 10);
+    // Record : Cultiver toute la vie (code « EL1|date|00|score » ; le fantôme rejoue les actions, pas le score).
+    if (withRecord) s.daily[date] = { best: 123, code: btoa(`EL1|${date}|00|123`).replace(/=+$/, ''), rewarded: 0 };
+    else delete s.daily[date];
+  }, withRecord);
+  await gotoTab(page, 'Destin');
+  await page.locator('button', { hasText: /Jouer|Rejouer/ }).first().click();
+  await page.locator('button', { hasText: 'Commencer' }).click();
+  await page.waitForSelector('.daily-chart');
+  await page.keyboard.press('2');
+  await sleep(4500);
+  const info = await page.evaluate(() => ({
+    ghosts: document.querySelectorAll('.daily-ghost').length,
+    tiers: document.querySelectorAll('.daily-tier').length,
+    live: (document.querySelector('.daily-live')?.getAttribute('points') || '').trim().split(' ').filter(Boolean).length,
+    gap: document.querySelector('.daily-gap')?.textContent || '',
+    legend: document.querySelector('.daily-chart-wrap .muted')?.textContent || '',
+  }));
+  log(`${name} : fantôme ${withRecord ? 'du record' : 'de référence'} et trois paliers tracés`, info.ghosts >= 1 && info.tiers === 3 && (withRecord ? /record/.test(info.legend) : /Référence/.test(info.legend)), info.legend);
+  log(`${name} : courbe en direct, un point par seconde`, info.live >= 4 && info.live <= 7, `${info.live} points après 4,5 s`);
+  log(`${name} : écart au fantôme au même âge`, new RegExp(`pts sur ${withRecord ? 'ton record' : 'la référence'} à \\d+ ans`).test(info.gap), info.gap);
+  log(`${name} : pas de défilement horizontal dans le défi`, await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  await page.evaluate(() => document.querySelectorAll('#toasts .toast').forEach((el) => el.remove()));
+  await page.locator('.modal').first().screenshot({ path: path.join(OUT, `retours-${name}-destin.png`) });
+  await page.locator('button', { hasText: 'Abandonner' }).click();
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -118,6 +149,7 @@ async function topLife(page, name, mobile) {
     await lock(page, name);
     await legacyUnlock(page, name);
     await topLife(page, name, name === 'mobile');
+    await dailyGhost(page, name, name === 'mobile');
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }

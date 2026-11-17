@@ -18,6 +18,7 @@ export const DAILY_ACT: Record<ActId, ActDef> = {
   mediter: { ...ACT.mediter, produce: { essence: 0.06 } },
 };
 export const DAILY_DUR = 90;
+const TICKS_PER_SEC = Math.round(1 / DAILY_DT);
 
 export interface DailyMod {
   id: string;
@@ -85,6 +86,8 @@ export class DailyRun {
   ctx: SimCtx;
   hero: { traits: string[]; vocation: null };
   xpMult: number;
+  /** Score à chaque seconde écoulée (curve[k] = score à k s) : courbe en direct et fantôme du record. */
+  curve: number[];
 
   constructor(setup: DailySetup) {
     this.setup = setup;
@@ -108,6 +111,7 @@ export class DailyRun {
         return x;
       },
     };
+    this.curve = [this.score()];
   }
 
   get totalTicks() {
@@ -131,6 +135,7 @@ export class DailyRun {
     ecoStep(this.eco, DAILY_DT);
     lifeTick(this.ctx, this.life, this.hero, this.xpMult, DAILY_DT);
     this.tickN++;
+    if (this.tickN % TICKS_PER_SEC === 0) this.curve.push(this.score());
   }
 
   score(): number {
@@ -142,6 +147,21 @@ export class DailyRun {
 
 /** Rejoue une liste d'actions et renvoie le score. */
 export function replay(date: string, actions: [number, number][]): number {
+  return replayRun(date, actions).score();
+}
+
+/** Trace d'une partie : score à chaque seconde et activité de chaque seconde (pour le fantôme). */
+export interface DailyTrace { curve: number[]; rec: number[] }
+
+/** Trace d'une partie partagée par son code (le record du jour), ou null si le code est illisible. */
+export function traceFromCode(code: string): DailyTrace | null {
+  const d = decodeRun(code);
+  if (!d) return null;
+  const run = replayRun(d.date, d.actions);
+  return { curve: run.curve, rec: run.life.rec };
+}
+
+function replayRun(date: string, actions: [number, number][]): DailyRun {
   const run = new DailyRun(dailySetup(date));
   let i = 0;
   while (!run.done) {
@@ -152,7 +172,7 @@ export function replay(date: string, actions: [number, number][]): number {
     }
     run.step();
   }
-  return run.score();
+  return run;
 }
 
 const PREFIX = 'EL1';
@@ -199,20 +219,28 @@ export const DAILY_TIERS_FIXED = [250, 500, 800];
  * Or 110 % (faire mieux qu'une seule activité). Le score n'est pas touché : les codes restent vérifiables.
  */
 export const DAILY_TIER_SHARES = [0.7, 1, 1.1];
-const refCache = new Map<string, number>();
+const refCache = new Map<string, DailyTrace>();
 export function dailyReference(date: string): number {
+  return dailyReferenceTrace(date).curve[DAILY_DUR];
+}
+
+/**
+ * Trace de la partie de référence (meilleure activité tenue toute la vie) : fantôme de la première
+ * partie du jour, quand il n'y a pas encore de record à battre.
+ */
+export function dailyReferenceTrace(date: string): DailyTrace {
   const hit = refCache.get(date);
-  if (hit !== undefined) return hit;
+  if (hit) return hit;
   const setup = dailySetup(date);
-  let best = 0;
+  let best: DailyTrace | null = null;
   for (const a of ACTS) {
     const run = new DailyRun(setup);
     run.setAct(a);
     while (!run.done) run.step();
-    best = Math.max(best, run.score());
+    if (!best || run.score() > best.curve[DAILY_DUR]) best = { curve: run.curve, rec: run.life.rec };
   }
-  refCache.set(date, best);
-  return best;
+  refCache.set(date, best!);
+  return best!;
 }
 export function dailyTiers(date: string): number[] {
   const r = dailyReference(date);

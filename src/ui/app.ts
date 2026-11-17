@@ -2,7 +2,7 @@ import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, sexFor, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
-import { DAILY_DUR, DailyRun, dailySetup, dailyTiers, encodeRun, verifyCode } from '../engine/daily';
+import { DAILY_DUR, DailyRun, type DailyTrace, dailyReferenceTrace, dailySetup, dailyTiers, encodeRun, traceFromCode, verifyCode } from '../engine/daily';
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
@@ -1236,10 +1236,10 @@ export class App {
       b.reset();
 
       // Score et paliers de médaille
-      const scaleMax = Math.max(DAILY_TIERS[2] * 1.15, best * 1.05);
-      const scoreFill = b.width(h('div', { class: 'bar-fill' }), () => run.score() / scaleMax);
-      const marks = DAILY_TIERS.map((t, i) => h('div', { class: 'tier-mark', style: { left: (t / scaleMax * 100) + '%' } }, h('span', null, MEDALS[i])));
-      const bestMark = best > 0 ? h('div', { class: 'best-mark', style: { left: Math.min(100, best / scaleMax * 100) + '%' }, title: `Ton record du jour : ${fmtInt(best)} pts` }) : null;
+      // Courbe du score en direct, sur le fantôme du record du jour (ou de la partie de référence au premier essai).
+      const recCode = this.s.daily[date]?.code;
+      const ghostTrace = (best > 0 && recCode ? traceFromCode(recCode) : null);
+      const chart = this.dailyChart(b, run, ghostTrace ?? dailyReferenceTrace(date), ghostTrace ? 'record' : 'reference', DAILY_TIERS);
       const tierText = b.text(h('div', { class: 'small' }), () => {
         const sc = run.score();
         const next = DAILY_TIERS.findIndex((t) => sc < t);
@@ -1320,7 +1320,7 @@ export class App {
       content.replaceChildren(
         h('div', { class: 'row-between daily-head' }, h('h2', null, `🎲 ${setup.name}`),
           h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${fmtInt(run.score())} pts`), b.cls(h('div', { class: 'small good' }, rate), 'bad', () => this.dailyNetValue(run, run.life.act) < 0))),
-        h('div', { class: 'bar bar-tiers' }, scoreFill, marks, bestMark),
+        chart,
         tierText,
         h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
           run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
@@ -1369,6 +1369,84 @@ export class App {
   }
 
   dailyFinish: (() => void) | null = null;
+
+  /**
+   * Graphique du Destin du jour : score en direct (doré) sur le fantôme d'une partie déjà jouée, tracé en
+   * pointillés aux couleurs de ses activités, et paliers de médaille en lignes horizontales. L'écart au
+   * fantôme au même âge dit au joueur s'il est en avance, ce qu'une courbe qui monte toujours ne dit pas.
+   */
+  dailyChart(b: Binder, run: DailyRun, ghost: DailyTrace, kind: 'record' | 'reference', tiers: number[]) {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', `0 0 ${DAILY_DUR} 100`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    svg.setAttribute('class', 'daily-svg');
+    const line = (pts: string, cls: string, color?: string) => {
+      const el = document.createElementNS(NS, 'polyline');
+      el.setAttribute('points', pts);
+      el.setAttribute('class', cls);
+      el.setAttribute('vector-effect', 'non-scaling-stroke');
+      if (color) el.style.stroke = color;
+      return el;
+    };
+    const labels = h('div', { class: 'daily-chart-labels' });
+    const dot = h('div', { class: 'daily-dot' });
+    const ghostMax = ghost.curve[ghost.curve.length - 1];
+    let yMax = 0;
+    let drawn = -1;
+    const draw = () => {
+      const cur = run.curve;
+      const top = Math.max(tiers[2] * 1.15, ghostMax * 1.05, cur[cur.length - 1] * 1.08);
+      const y = (v: number) => (100 - Math.min(1, v / yMax) * 100).toFixed(2);
+      // Le fantôme et les paliers ne bougent que si l'échelle change (score qui dépasse le haut du graphique).
+      if (top > yMax) {
+        yMax = top;
+        svg.replaceChildren();
+        labels.replaceChildren();
+        let prev = 200;
+        tiers.forEach((v, i) => {
+          svg.appendChild(line(`0,${y(v)} ${DAILY_DUR},${y(v)}`, 'daily-tier'));
+          // Argent et Or ne sont séparés que de 10 % : on écarte les médailles pour qu'elles restent lisibles.
+          const ly = Math.min(Number(y(v)), prev - 11);
+          prev = ly;
+          labels.appendChild(h('span', { class: 'daily-tier-l', style: { top: ly + '%' } }, MEDALS[i]));
+        });
+        let s0 = 0;
+        for (let k = 1; k <= ghost.rec.length; k++) {
+          if (k < ghost.rec.length && ghost.rec[k] === ghost.rec[s0]) continue;
+          const a = ghost.rec[s0];
+          const pts: string[] = [];
+          for (let j = s0; j <= k; j++) pts.push(`${j},${y(ghost.curve[j])}`);
+          svg.appendChild(line(pts.join(' '), 'daily-ghost', a >= 0 ? ACT[ACTS[a]].color : 'var(--strip-idle)'));
+          s0 = k;
+        }
+        svg.appendChild(line('', 'daily-live'));
+        drawn = -1;
+      }
+      if (cur.length === drawn) return;
+      drawn = cur.length;
+      (svg.lastChild as SVGPolylineElement).setAttribute('points', cur.map((v, k) => `${k},${y(v)}`).join(' '));
+      const k = cur.length - 1;
+      dot.style.left = (k / DAILY_DUR * 100) + '%';
+      dot.style.top = y(cur[k]) + '%';
+    };
+    b.add(draw);
+    const gap = b.text(h('span', { class: 'daily-gap' }), () => {
+      const k = run.curve.length - 1;
+      if (k === 0) return '';
+      const d = run.curve[k] - ghost.curve[Math.min(k, ghost.curve.length - 1)];
+      return `${d >= 0 ? '▲ +' : '▼ −'}${fmtInt(Math.abs(d))} pts sur ${kind === 'record' ? 'ton record' : 'la référence'} à ${k} ans`;
+    });
+    b.cls(gap, 'good', () => { const k = run.curve.length - 1; return k > 0 && run.curve[k] >= ghost.curve[k]; });
+    b.cls(gap, 'bad', () => { const k = run.curve.length - 1; return k > 0 && run.curve[k] < ghost.curve[k]; });
+    const legend = kind === 'record' ? `┄ Ton record : ${fmtInt(ghostMax)} pts` : `┄ Référence 🥈 : ${fmtInt(ghostMax)} pts`;
+    const legendTip = kind === 'record'
+      ? 'Ta meilleure partie du jour, rejouée depuis son code, aux couleurs de ses activités.'
+      : 'Pas encore de record aujourd\'hui : la meilleure activité tenue toute la vie (palier Argent), aux couleurs de cette activité.';
+    return h('div', { class: 'daily-chart-wrap' },
+      h('div', { class: 'daily-chart' }, svg, labels, dot),
+      h('div', { class: 'row-between small' }, h('span', { class: 'muted', title: legendTip }, legend), gap));
+  }
 
   /** Variation estimée du score par seconde si le héros du défi fait l'activité a. */
   dailyNetValue(run: DailyRun, a: ActId | null): number {

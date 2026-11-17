@@ -189,3 +189,31 @@ describe('R16 — réglage « Garder l\'écran allumé »', () => {
     expect(st!.settings.keepAwake).toBe(false);
   });
 });
+
+describe('UI-1 — courbe et fantôme du Destin du jour (retours du 2026-11-17)', () => {
+  test('la courbe note le score à chaque seconde et finit sur le score de la partie', async () => {
+    const { DailyRun, DAILY_DUR, dailySetup } = await import('../../src/engine/daily');
+    const run = new DailyRun(dailySetup('2026-11-17'));
+    run.setAct('cultiver');
+    while (!run.done) run.step();
+    expect(run.curve).toHaveLength(DAILY_DUR + 1);
+    expect(run.curve[DAILY_DUR]).toBe(run.score());
+  });
+  test('le fantôme du record se reconstruit depuis son code, sans rien ajouter à la sauvegarde', async () => {
+    const { DAILY_DUR, traceFromCode, verifyCode } = await import('../../src/engine/daily');
+    const fx: { score: number; code: string }[] = (await import('./fixtures-destin-v021.json')).default;
+    for (const f of fx) {
+      const tr = traceFromCode(f.code)!;
+      expect(tr.curve[DAILY_DUR]).toBe(f.score);
+      expect(tr.rec).toHaveLength(DAILY_DUR);
+      expect(verifyCode(f.code)!.actual).toBe(f.score); // la vérification des codes ne change pas
+    }
+    expect(traceFromCode('pas-un-code')).toBeNull();
+  });
+  test('sans record, le fantôme est la partie de référence des paliers', async () => {
+    const { DAILY_DUR, dailyReference, dailyReferenceTrace, dailyTiers } = await import('../../src/engine/daily');
+    const date = '2026-11-14';
+    expect(dailyReferenceTrace(date).curve[DAILY_DUR]).toBe(dailyReference(date));
+    expect(dailyTiers(date)[1]).toBe(dailyReference(date));
+  });
+});
