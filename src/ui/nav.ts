@@ -62,6 +62,15 @@ export function subsShown(s: GameState, tab: Tab, layout: Layout): SubDef[] {
 }
 
 /** Onglets proposés : sur ordinateur la Vie est toujours affichée en colonne. */
+/**
+ * Place de la barre des sous-onglets. Sur téléphone, en bas, juste au-dessus des onglets : le pouce enchaîne
+ * onglet puis sous-onglet sans traverser l'écran, et la barre ne touche plus la frise de vie du haut.
+ * Sur ordinateur, en tête de la colonne de l'onglet, sous les onglets qui y sont accrochés.
+ */
+export function subBarPlace(layout: Layout): 'dock' | 'panneau' {
+  return layout === 'mobile' ? 'dock' : 'panneau';
+}
+
 export function tabsShown(layout: Layout): TabDef[] {
   return TABS.filter((t) => !(layout !== 'mobile' && t.id === 'vie'));
 }

@@ -491,3 +491,20 @@ describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
     expect(seen.fresh('codex', affordableKeys(s, 'codex'))).toBe(1);
   });
 });
+
+describe('UX-NAV 4 — sous-onglets en bas sur téléphone, à portée du pouce', () => {
+  test('sur téléphone la barre des sous-onglets rejoint le bloc du bas ; sur ordinateur elle reste en tête de colonne', async () => {
+    const { subBarPlace } = await import('../../src/ui/nav');
+    expect(subBarPlace('mobile')).toBe('dock');
+    expect(subBarPlace('two')).toBe('panneau');
+    expect(subBarPlace('three')).toBe('panneau');
+  });
+  test('la frise de vie ne déborde plus sous la barre du haut ; sous-onglets de 44 px au moins', async () => {
+    const { readFileSync } = await import('node:fs');
+    const css = readFileSync(new URL('../../src/style.css', import.meta.url), 'utf8');
+    const rule = (sel: string) => css.match(new RegExp(`^${sel.replace('.', '\\.')} \\{([^}]*)\\}`, 'm'))?.[1] ?? '';
+    expect(rule('.top-life')).toMatch(/bottom: 0;/);
+    expect(rule('.subtab')).toMatch(/min-height: 44px/);
+    expect(rule('.dock')).toMatch(/position: fixed; bottom: 0/);
+  });
+});

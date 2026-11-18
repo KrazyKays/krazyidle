@@ -20,7 +20,7 @@ import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
-import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
+import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
 const ANCESTORS_SHOWN = 12;
 
@@ -65,6 +65,9 @@ export class App {
   elLife!: HTMLElement;
   elTab!: HTMLElement;
   elNav!: HTMLElement;
+  /** Téléphone : bloc fixé en bas, sous-onglets au-dessus des onglets. */
+  elDock!: HTMLElement;
+  elSubDock!: HTMLElement;
   ecoHist: { F: number; G: number; P: number }[] = [];
   lastHist = 0;
   lastNav = 0;
@@ -95,19 +98,26 @@ export class App {
     // Sur ordinateur, les onglets sont accrochés à la colonne qu'ils pilotent.
     this.elTabCol = h('div', { class: 'tab-col' }, this.elTab);
     this.elMain = h('main', { class: 'layout' }, this.elLife, this.elEcho, this.elTabCol);
-    root.append(this.elTop, this.elMain, this.elNav);
+    this.elSubDock = h('div', { class: 'subdock' });
+    this.elDock = h('div', { class: 'dock' }, this.elSubDock, this.elNav);
+    root.append(this.elTop, this.elMain, this.elDock);
     // Les notifications s'affichent sous la barre du haut (fixe sur téléphone), jamais devant :
     // elles masquaient les ressources et les boutons pendant plusieurs secondes.
     const topH = () => document.documentElement.style.setProperty('--top-h', `${this.elTop.getBoundingClientRect().height}px`);
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(topH).observe(this.elTop);
     topH();
+    // Le contenu garde une marge basse à la hauteur du bloc du bas (qui grandit avec les sous-onglets).
+    const dockH = () => document.documentElement.style.setProperty('--dock-h', `${this.elDock.getBoundingClientRect().height}px`);
+    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(dockH).observe(this.elDock);
+    dockH();
     const mq2 = window.matchMedia('(min-width: 900px)');
     const mq3 = window.matchMedia('(min-width: 1280px)');
     const apply = () => {
       this.layout = mq3.matches ? 'three' : mq2.matches ? 'two' : 'mobile';
       this.desktop = this.layout !== 'mobile';
       this.tab = this.normTab(this.tab);
-      if (this.desktop) this.elTabCol.prepend(this.elNav); else root.append(this.elNav);
+      if (this.desktop) this.elTabCol.prepend(this.elNav); else this.elDock.append(this.elNav);
+      this.elDock.hidden = this.desktop;
       this.elMain.dataset.layout = this.layout;
       this.renderNav();
       this.sigTab = '';
@@ -145,6 +155,8 @@ export class App {
     this.renderNav();
     this.applyTabVisibility();
     this.sigTab = '';
+    // Rendu immédiat : la barre des sous-onglets du bas change sous le pouce, sans attendre l'image suivante.
+    if (!this.elTab.hidden) { this.sigTab = this.sigTabNow(); this.renderTabPanel(); }
     if (this.desktop) this.elTab.scrollTop = 0; else window.scrollTo({ top: 0 });
   }
 
@@ -154,6 +166,8 @@ export class App {
     this.elLife.hidden = !showLife;
     this.elTab.hidden = !showTab;
     this.elEcho.hidden = this.layout !== 'three';
+    // Les sous-onglets du bas appartiennent au panneau de l'onglet : ils disparaissent avec lui.
+    if (!showTab || subBarPlace(this.layout) !== 'dock') this.elSubDock.replaceChildren();
   }
 
   onKey(e: KeyboardEvent) {
@@ -665,7 +679,9 @@ export class App {
     // Les sous-onglets et le contenu sont frères : l'espacement du panneau s'applique à tous.
     const root = h('div', { 'data-sub': sub ?? '' });
     const bar = this.subBar(t, sub);
-    if (bar) root.append(bar);
+    if (subBarPlace(this.layout) === 'dock') {
+      if (bar) this.elSubDock.replaceChildren(bar); else this.elSubDock.replaceChildren();
+    } else if (bar) root.append(bar);
     if (el) root.append(...Array.from(el.childNodes));
     if (sub) this.markSeen(sub);
     this.elTab.replaceChildren(root);

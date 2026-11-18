@@ -66,8 +66,9 @@ p { margin: 6px 0; }
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--line);
 }
-/* Frise de la vie en cours : 4 px dessinés, zone de toucher de 14 px prise sur la marge basse de la barre. */
-.top-life { position: absolute; left: 0; right: 0; bottom: -4px; height: 14px; padding: 5px 12px; background: none; border: 0; display: block; cursor: pointer; z-index: 1; }
+/* Frise de la vie en cours : 4 px dessinés, zone de toucher de 10 px prise sur la marge basse de la barre,
+   sans déborder sur le contenu qui défile dessous. */
+.top-life { position: absolute; left: 0; right: 0; bottom: 0; height: 10px; padding: 3px 12px; background: none; border: 0; display: block; cursor: pointer; z-index: 1; }
 .top-life[hidden] { display: none; }
 .top-life-fill { display: block; height: 4px; border-radius: 2px; background: var(--strip-empty); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06); }
 .top-life.waiting .top-life-fill { animation: pulse 1.4s ease-in-out infinite; }
@@ -97,7 +98,7 @@ p { margin: 6px 0; }
 .event-pill { --c: var(--gold); border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; background: color-mix(in srgb, var(--c) 12%, transparent); animation: glow 2s ease-in-out infinite; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
 
 /* --- Disposition --------------------------------------------------------- */
-.layout { padding: 12px 12px calc(84px + var(--safe-b)); max-width: 1320px; margin: 0 auto; }
+.layout { padding: 12px 12px calc(var(--dock-h, calc(72px + var(--safe-b))) + 16px); max-width: 1320px; margin: 0 auto; }
 .panel { display: flex; flex-direction: column; gap: 12px; }
 .panel-tab > div { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .panel-tab > div > * { min-width: 0; }
@@ -108,8 +109,12 @@ p { margin: 6px 0; }
 .empty { text-align: center; }
 
 /* --- Barre d'onglets --------------------------------------------------- */
+/* Téléphone : bloc fixé en bas, sous-onglets juste au-dessus des onglets (portée du pouce). */
+.dock { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; }
+.dock[hidden] { display: none; }
+.subdock { padding: 6px 8px 8px; background: rgba(20, 17, 31, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-top: 1px solid var(--line); }
+.subdock:empty { display: none; }
 .tabbar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
   display: flex; justify-content: space-around;
   padding: 6px 4px calc(6px + var(--safe-b));
   background: rgba(20, 17, 31, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -504,9 +509,10 @@ p { margin: 6px 0; }
 .codex-lore { margin-top: 10px; }
 
 /* --- Sous-onglets (Domaine, Améliorer, Maison, Destin) ------------------------------------------------ */
-.subtabs { position: sticky; top: var(--top-h, 0px); z-index: 5; display: flex; gap: 4px; padding: 4px; margin: -4px 0 0; background: color-mix(in srgb, var(--bg2) 92%, transparent); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-x: auto; scrollbar-width: none; }
+/* Pilules dans un cadre arrondi : bien distinctes de la barre d'onglets pleine juste dessous. */
+.subtabs { position: sticky; top: 0; z-index: 5; display: flex; gap: 4px; padding: 4px; margin: -4px 0 0; background: color-mix(in srgb, var(--bg2) 92%, transparent); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-x: auto; scrollbar-width: none; }
 .subtabs::-webkit-scrollbar { display: none; }
-.subtab { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: color 0.2s, background 0.2s; }
+.subtab { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: color 0.2s, background 0.2s; }
 .subtab.active { color: var(--gold); background: rgba(242, 196, 90, 0.12); }
 .sub-i { font-size: 1rem; line-height: 1; }
 .sub-n { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 0.7rem; line-height: 18px; text-align: center; }
@@ -514,9 +520,7 @@ p { margin: 6px 0; }
 .plain-list { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .link-btn { color: var(--violet); text-decoration: underline; padding: 0; }
 .next-ev { --c: var(--gold); display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; text-align: left; width: 100%; }
-@media (min-width: 900px) {
-  .subtabs { top: 0; }
-}
+.subdock .subtabs { position: static; margin: 0; }
 
 /* Carte du héros compacte (téléphone, onglet Vie) : la génération est déjà dans la barre du haut et sur l'écu. */
 .hero-compact { padding: 12px; }
