@@ -385,9 +385,10 @@ export class App {
     // Sur téléphone l'astuce passe en tête ; sur ordinateur elle ne repousse pas le héros et va en bas de colonne.
     // L'astuce d'accueil (« Change d'activité… ») va sous les activités : en tête, elle les repoussait hors
     // de l'écran au premier lancement sur téléphone (GD-11).
-    const noticeBelow = !this.desktop && hint?.id === 'start';
+    // Depuis UX-NAV 2, toutes les astuces vont sous les activités sur téléphone : la Vie tient en un écran.
+    const noticeBelow = !this.desktop;
     if (notice && !this.desktop && !noticeBelow) parts.push(notice);
-    parts.push(this.heroCard(s.hero, true));
+    parts.push(this.heroCard(s.hero, true, !this.desktop));
 
     if (!s.life) {
       parts.push(h('div', { class: 'card death-card' },
@@ -410,22 +411,30 @@ export class App {
       ? h('button', { class: 'btn btn-sm btn-ghost', onclick: () => { if (buyTemps(s)) { toast('⌛ +30 s de vie', 'good'); this.sigLife = ''; } } }, `⌛ +30 s (${SHOP.temps.cost} ✦)`) : null;
     const pauseBtn = paused
       ? h('button', { class: 'btn btn-primary btn-resume', onclick: () => resumeLife(s) }, `▶ Reprendre${this.desktop ? ' (Espace)' : ''}`)
-      : h('button', { class: 'btn btn-sm btn-ghost', onclick: () => setActivity(s, null) }, `⏸️ Pause${this.desktop ? ' (Espace)' : ''}`);
+      : h('button', { class: 'btn btn-sm btn-ghost btn-pause', 'aria-label': 'Pause', onclick: () => setActivity(s, null) }, this.desktop ? '⏸️ Pause (Espace)' : '⏸️');
     parts.push(h('div', { class: `card timer ${paused ? 'paused' : ''}` },
       paused ? h('div', { class: 'pause-banner' }, h('strong', null, '⏸️ Vie en pause'), h('span', { class: 'muted small' }, ' · le sablier est figé, tes Échos continuent · 🌿 le Domaine se repose')) : null,
-      h('div', { class: 'row-between' },
-        h('div', null, h('div', { class: 'label' }, 'Âge'), b.text(h('div', { class: 'timer-v' }), () => `${Math.floor(life.t)} / ${Math.round(life.dur)} ans`)),
-        h('div', { class: 'right' }, h('div', { class: 'label' }, 'Temps restant'), b.text(h('div', { class: 'timer-v' }), () => fmtDur(life.dur - life.t)))),
+      // Âge, temps restant et boutons sur une ligne : la rangée de boutons dédiée repoussait les activités.
+      h('div', { class: 'row-between timer-head' },
+        h('div', null,
+          h('div', { class: 'label' }, 'Âge'),
+          b.text(h('div', { class: 'timer-v' }), () => `${Math.floor(life.t)} / ${Math.round(life.dur)} ans`),
+          b.text(h('div', { class: 'muted small timer-left' }), () => `reste ${fmtDur(life.dur - life.t)}`)),
+        h('div', { class: 'row timer-btns' }, tempsBtn, pauseBtn)),
       h('div', { class: 'bar' }, bar),
       this.recStrip(b),
       s.ancestors.length > 0 ? this.vocationGauge(b) : null,
-      h('div', { class: 'row-end' }, tempsBtn, pauseBtn),
     ));
 
     // Activités
     const grid = h('div', { class: 'acts' });
     ACTS.forEach((a, i) => grid.appendChild(this.actCard(a, i, b)));
-    parts.push(h('h3', { class: 'section-t' }, 'Activités', h('span', { class: 'muted small' }, this.desktop ? ' — touches 1 à 5' : '')), grid);
+    // Les cartes ne portent plus leur description (une ligne chacune) : celle de l'activité en cours s'affiche dessous.
+    const desc = b.text(h('p', { class: 'muted small act-now' }), () => {
+      const a = s.life?.act;
+      return a ? `${ACT[a].icon} ${ACT[a].name} : ${ACT[a].desc}` : 'Touche une activité pour reprendre la vie.';
+    });
+    parts.push(h('h3', { class: 'section-t' }, 'Activités', h('span', { class: 'muted small' }, this.desktop ? ' — touches 1 à 5' : '')), grid, desc);
     if (notice && (this.desktop || noticeBelow)) parts.push(notice);
     this.elLife.replaceChildren(...parts);
   }
@@ -435,15 +444,16 @@ export class App {
     return regnalName(p, this.s.lineage.names);
   }
 
-    heroCard(hero: Hero, current: boolean) {
+  heroCard(hero: Hero, current: boolean, compact = false) {
     const s = this.s;
     const voc = hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : null;
-    return h('div', { class: 'card hero-card' },
+    return h('div', { class: `card hero-card ${compact ? 'hero-compact' : ''}` },
       h('div', { class: 'avatar' }, this.crestEl('avatar-shield'), h('span', { class: 'avatar-gen' }, roman(hero.gen))),
       h('div', { class: 'hero-info' },
         h('div', { class: 'hero-name' }, this.nm(hero), ' ', h('span', { class: 'muted' }, s.lineage.name)),
-        h('div', { class: 'hero-sub' }, current ? `Génération ${hero.gen} · vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
-        this.traitChips(hero.traits, false, hero, current ? heroWear(s, hero) : null),
+        h('div', { class: 'hero-sub' }, current ? `${compact ? '' : `Génération ${hero.gen} · `}vit ${Math.round(s.life?.dur ?? lifeDuration(s, hero))} s` : `Génération ${hero.gen}`, voc ? ' · ' : '', voc),
+        // Sur téléphone, traits en pastilles (un toucher donne le nom et l'effet) : la carte tient en trois lignes.
+        this.traitChips(hero.traits, compact, hero, current ? heroWear(s, hero) : null),
         spouseLine(hero, hero.spouse, true)));
   }
 

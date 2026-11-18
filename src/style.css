@@ -153,6 +153,26 @@ p { margin: 6px 0; }
 .hint-i { font-size: 20px; }
 .hint-x { background: rgba(179, 136, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 0.8rem; }
 
+/* Activités compactes (téléphone et ordinateur) : une liste de 5 lignes ; la description de l'activité en cours s'affiche dessous. */
+.panel-life .acts { grid-template-columns: 1fr; gap: 6px; }
+.panel-life .act { padding: 8px 10px; gap: 10px; }
+.panel-life .act-i { width: 40px; height: 40px; font-size: 22px; border-radius: 12px; }
+.panel-life .act-desc { display: none; }
+.panel-life .act:not(.locked) .act-body { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; align-items: baseline; }
+.panel-life .act:not(.locked) .act-head { display: contents; }
+.panel-life .act:not(.locked) .act-n { grid-column: 1; grid-row: 1; }
+.panel-life .act:not(.locked) .act-rate { grid-column: 2; grid-row: 1; text-align: right; font-size: 0.78rem; }
+.panel-life .act:not(.locked) .lvl { grid-column: 3; grid-row: 1; }
+.panel-life .act:not(.locked) .bar { grid-column: 1 / -1; grid-row: 2; }
+.panel-life .act.locked .act-i { font-size: 18px; }
+.panel-life .act.locked .act-body .muted { font-size: 0.75rem; }
+.act-now { margin: 0 2px; min-height: 2.6em; }
+.timer-head { align-items: flex-start; }
+.timer-left { margin-top: 1px; }
+.timer-btns { flex: none; gap: 6px; }
+.btn-pause { min-width: 44px; }
+.timer .rec { margin-top: 2px; }
+
 /* --- Chronomètre ---------------------------------------------------------- */
 .timer-v { font-family: var(--title); font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .bar { height: 12px; background: rgba(0, 0, 0, 0.35); border-radius: 999px; overflow: hidden; position: relative; margin: 8px 0; border: 1px solid rgba(255, 255, 255, 0.06); }
@@ -408,19 +428,6 @@ p { margin: 6px 0; }
   .tabbar-desktop .tab-i { font-size: 18px; }
   .act-key { display: block; }
   #toasts { top: auto; bottom: 24px; left: auto; right: 24px; transform: none; }
-  /* Activités compactes : une liste de 5 lignes, la description passe en infobulle. */
-  .panel-life .acts { grid-template-columns: 1fr; gap: 6px; }
-  .panel-life .act { padding: 8px 10px; gap: 10px; }
-  .panel-life .act-i { width: 40px; height: 40px; font-size: 22px; border-radius: 12px; }
-  .panel-life .act-desc { display: none; }
-  .panel-life .act:not(.locked) .act-body { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 10px; align-items: baseline; }
-  .panel-life .act:not(.locked) .act-head { display: contents; }
-  .panel-life .act:not(.locked) .act-n { grid-column: 1; grid-row: 1; }
-  .panel-life .act:not(.locked) .act-rate { grid-column: 2; grid-row: 1; text-align: right; font-size: 0.78rem; }
-  .panel-life .act:not(.locked) .lvl { grid-column: 3; grid-row: 1; }
-  .panel-life .act:not(.locked) .bar { grid-column: 1 / -1; grid-row: 2; }
-  .panel-life .act.locked .act-i { font-size: 18px; }
-  .panel-life .act.locked .act-body .muted { font-size: 0.75rem; }
   .panel-echoes .panel-head p { font-size: 0.85rem; }
   /* Astuce en bas de la colonne du héros, collée au bord : visible sans repousser le héros. */
   .panel-life > .hint, .panel-life > .install-card { position: sticky; bottom: 10px; z-index: 3; margin-top: auto; background-color: var(--bg2); box-shadow: 0 -8px 24px rgba(13, 10, 22, 0.85); }
@@ -509,3 +516,11 @@ p { margin: 6px 0; }
 @media (min-width: 900px) {
   .subtabs { top: 0; }
 }
+
+/* Carte du héros compacte (téléphone, onglet Vie) : la génération est déjà dans la barre du haut et sur l'écu. */
+.hero-compact { padding: 12px; }
+.hero-compact .avatar { width: 46px; height: 54px; }
+.hero-compact .hero-name { font-size: 1.08rem; }
+.hero-compact .hero-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.hero-compact .hero-name, .hero-compact .spouse-line { flex-basis: 100%; }
+.hero-compact .hero-sub { margin: 0; }

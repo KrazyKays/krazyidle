@@ -152,6 +152,21 @@ async function dailyGhost(page, name, withRecord) {
   await page.locator('button', { hasText: 'Abandonner' }).click();
 }
 
+/** UX-NAV 2 : sur téléphone, la Vie montre ses activités sans défiler (avant : sous le pli, à 616 px sur 664). */
+async function lifeAboveFold(page, name) {
+  await gotoTab(page, 'Vie');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await sleep(200);
+  const r = await page.evaluate(() => {
+    const act = document.querySelector('#panel-life .act');
+    const nav = document.querySelector('nav.tabbar');
+    const bottom = nav ? nav.getBoundingClientRect().top : innerHeight;
+    return { actBottom: act.getBoundingClientRect().bottom, bottom: Math.round(bottom), desc: document.querySelector('.act-now')?.textContent || '' };
+  });
+  log(`${name} : première activité entière au-dessus de la barre d'onglets`, r.actBottom <= r.bottom, `activité bas=${Math.round(r.actBottom)}, barre=${r.bottom}`);
+  log(`${name} : description de l'activité en cours sous la liste`, /:/.test(r.desc), r.desc);
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -162,6 +177,7 @@ async function dailyGhost(page, name, withRecord) {
     await ceremony(page);
     await toasts(page, name);
     await toGen2(page);
+    if (name === 'mobile') await lifeAboveFold(page, name);
     await lock(page, name);
     await legacyUnlock(page, name);
     await topLife(page, name, name === 'mobile');
