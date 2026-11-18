@@ -5,7 +5,7 @@ Idle game dynastique (PWA) en TypeScript + Vite, sans framework. Tout le contenu
 ## Architecture
 
 - `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `alliances.ts` ; `save.ts`.
-- `src/ui/` : DOM natif. `src/main.ts` : boucle (pas fixe de 0,1 s), sauvegarde, rattrapage du temps.
+- `src/ui/` : DOM natif ; `nav.ts` (onglets, sous-onglets, pastilles) est pur et testé. `src/main.ts` : boucle (pas fixe de 0,1 s), sauvegarde, rattrapage du temps.
 - `docs/GAME_DESIGN.md` : la spécification. La garder en accord avec le code (chiffres mesurés, pas supposés).
 - `tests/` : Vitest (unitaires + bot d'équilibrage) ; `tests/qa/` : invariants, déterminisme, sauvegarde, hors-ligne, codes, et **régressions de chaque correction** (`regressions.test.ts`) ; `tests/qa/e2e/` : parcours Playwright, lancés à la main.
 - `lab/` : outillage d'analyse (simulation, garde-fous, rapports). Voir `lab/PROTOCOLE.md`.
