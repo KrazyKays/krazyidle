@@ -52,7 +52,7 @@ function suitorCard(app: App, sp: Spouse, extra: (HTMLElement | null)[] = []): H
 }
 
 // ---------------------------------------------------------------------------
-// Onglet Lignée : section Alliances
+// Maison › Alliances
 export function alliancesSection(app: App): HTMLElement | null {
   const s = app.s, b = app.bTab;
   if (!alliancesUnlocked(s)) return null;
@@ -148,7 +148,7 @@ export function openPropose(app: App, re?: HouseRef) {
     area.value = code;
     content.replaceChildren(
       h('h2', null, `💌 La main de ${c.name}`),
-      h('p', { class: 'muted small' }, `Envoie ce message à un ami. En ouvrant le lien (ou en collant le code dans Lignée → Alliances), il pourra unir ${c.name} à son héros. Il te répondra peut-être avec l'un de ses cadets.`),
+      h('p', { class: 'muted small' }, `Envoie ce message à un ami. En ouvrant le lien (ou en collant le code dans Maison › Alliances), il pourra unir ${c.name} à son héros. Il te répondra peut-être avec l'un de ses cadets.`),
       area,
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-primary', onclick: async () => {
@@ -179,7 +179,7 @@ export function openAcceptProposal(app: App, initial = '') {
     const sp = r.suitor;
     const cost = dowry(s, 'joueur');
     let why = '';
-    if (!alliancesUnlocked(s)) why = 'Débloque d\'abord l\'amélioration 💍 Alliances (onglet Lignée). Garde ce code : il restera valable.';
+    if (!alliancesUnlocked(s)) why = 'Débloque d\'abord l\'amélioration 💍 Alliances (Améliorer › Héritage). Garde ce code : il restera valable.';
     else if (!s.life) why = 'Choisis d\'abord la relève : il faut un héros vivant pour célébrer l\'union.';
     else if (s.hero.spouse) why = `${s.hero.name} est déjà ${acc(s.hero, 'uni', 'unie')}. Garde ce code pour la prochaine génération.`;
     else if (s.res.or < cost) why = `Il faut une dot de ${fmt(cost, 0)} 🪙.`;

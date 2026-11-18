@@ -71,6 +71,13 @@ async function journey(browser, name, opts) {
     const label = (await tabs.nth(i).innerText()).replace(/\s+/g, ' ').trim();
     await page.screenshot({ path: path.join(OUT, `${name}-3-onglet-${i}.png`) });
     log(`${name} : onglet « ${label} » sans défilement horizontal`, await noHScroll(page));
+    const subs = page.locator('.subtab');
+    for (let j = 1; j < await subs.count(); j++) {
+      await subs.nth(j).click();
+      await sleep(200);
+      const sl = (await subs.nth(j).innerText()).replace(/\s+/g, ' ').trim();
+      log(`${name} : sous-onglet « ${label} › ${sl} » sans défilement horizontal`, await noHScroll(page));
+    }
   }
 
   // Export de sauvegarde
@@ -93,8 +100,10 @@ async function blessingDuringSuccession(browser) {
   await page.waitForFunction(() => !!window.krazy.state.succession);
   await page.keyboard.press('Escape');
   await st(page, '(s.eclats = 12, 1)');
-  // Le Bazar céleste est dans l'onglet Destin.
-  await page.locator('nav.tabbar .tab', { hasText: 'Destin' }).click();
+  // Le Bazar céleste est dans Améliorer › Bazar.
+  await page.locator('nav.tabbar .tab', { hasText: 'Améliorer' }).click();
+  await sleep(300);
+  await page.locator('.subtab', { hasText: 'Bazar' }).click();
   await sleep(300);
   const item = page.locator('.shop-item', { hasText: /Élu/ }).first();
   const visible = await item.count();

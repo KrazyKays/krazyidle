@@ -494,3 +494,18 @@ p { margin: 6px 0; }
 .epithet-reveal h3 { font-family: var(--title); color: var(--c); margin-top: 4px; }
 @media (min-width: 700px) { .codex { grid-template-columns: 1fr 1fr; } }
 .codex-lore { margin-top: 10px; }
+
+/* --- Sous-onglets (Domaine, Améliorer, Maison, Destin) ------------------------------------------------ */
+.subtabs { position: sticky; top: var(--top-h, 0px); z-index: 5; display: flex; gap: 4px; padding: 4px; margin: -4px 0 0; background: color-mix(in srgb, var(--bg2) 92%, transparent); border: 1px solid var(--line); border-radius: 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); overflow-x: auto; scrollbar-width: none; }
+.subtabs::-webkit-scrollbar { display: none; }
+.subtab { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 6px 10px; border-radius: 10px; color: var(--muted); font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: color 0.2s, background 0.2s; }
+.subtab.active { color: var(--gold); background: rgba(242, 196, 90, 0.12); }
+.sub-i { font-size: 1rem; line-height: 1; }
+.sub-n { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--bad); color: #fff; font-size: 0.7rem; line-height: 18px; text-align: center; }
+.intro-p { margin: 0 2px; }
+.plain-list { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.link-btn { color: var(--violet); text-decoration: underline; padding: 0; }
+.next-ev { --c: var(--gold); display: grid; grid-template-columns: 36px 1fr auto; gap: 10px; align-items: center; text-align: left; width: 100%; }
+@media (min-width: 900px) {
+  .subtabs { top: 0; }
+}

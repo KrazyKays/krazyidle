@@ -20,18 +20,9 @@ import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
+import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
-type Tab = 'vie' | 'echos' | 'domaine' | 'lignee' | 'destin';
-/** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
-type Layout = 'mobile' | 'two' | 'three';
-const ANCESTORS_SHOWN = 5;
-const TABS: { id: Tab; icon: string; name: string }[] = [
-  { id: 'vie', icon: '⏳', name: 'Vie' },
-  { id: 'echos', icon: '🌀', name: 'Échos' },
-  { id: 'domaine', icon: '🌳', name: 'Domaine' },
-  { id: 'lignee', icon: '👑', name: 'Lignée' },
-  { id: 'destin', icon: '🌠', name: 'Destin' },
-];
+const ANCESTORS_SHOWN = 12;
 
 const MEDALS = ['🥉', '🥈', '🥇'];
 const GAME_URL = 'https://krazykays.github.io/krazyidle/';
@@ -53,6 +44,9 @@ export class App {
   rt: Runtime;
   hooks: AppHooks;
   tab: Tab = 'vie';
+  /** Dernier sous-onglet choisi dans chaque onglet (mémoire de session). */
+  subs: Partial<Record<Tab, Sub>> = {};
+  seen = new SeenBadges();
   desktop = false;
   layout: Layout = 'mobile';
   bTop = new Binder();
@@ -73,6 +67,7 @@ export class App {
   elNav!: HTMLElement;
   ecoHist: { F: number; G: number; P: number }[] = [];
   lastHist = 0;
+  lastNav = 0;
   successionModal: ModalHandle | null = null;
   daily: DailyRun | null = null;
   dailyModal: ModalHandle | null = null;
@@ -86,6 +81,8 @@ export class App {
     this.rt = rt;
     this.hooks = hooks;
     setNotation(s.settings.notation);
+    // Les surnoms connus au lancement ne sont pas des nouveautés.
+    this.seen.primeOnce('codex', affordableKeys(s, 'codex'));
   }
 
   mount(root: HTMLElement) {
@@ -125,17 +122,26 @@ export class App {
     window.addEventListener('keydown', (e) => this.onKey(e));
   }
 
-  /** Onglets proposés : sur ordinateur la Vie est toujours visible, et les Échos aussi en 3 colonnes. */
+  /** Onglets proposés : sur ordinateur la Vie est toujours visible, en colonne. */
   tabsShown(): typeof TABS {
-    return TABS.filter((t) => !(this.desktop && t.id === 'vie') && !(this.layout === 'three' && t.id === 'echos'));
+    return tabsShown(this.layout);
   }
 
   normTab(t: Tab): Tab {
-    return this.tabsShown().some((x) => x.id === t) ? t : this.layout === 'three' ? 'domaine' : this.desktop ? 'echos' : t;
+    return normTab(t, this.layout);
   }
 
-  setTab(t: Tab) {
-    this.tab = this.normTab(t);
+  /** Sous-onglet affiché dans l'onglet courant (null : onglet sans sous-onglets). */
+  sub(): Sub | null {
+    const t = this.normTab(this.tab);
+    return normSub(this.s, t, this.layout, this.subs[t]);
+  }
+
+  /** Va à un onglet, ou directement à un sous-onglet (« Améliorer › Héritage »). */
+  setTab(t: Tab | Sub) {
+    const tab = (t in SUB_TAB ? SUB_TAB[t as Sub] : t) as Tab;
+    if (t !== tab) this.subs[tab] = t as Sub;
+    this.tab = this.normTab(tab);
     this.renderNav();
     this.applyTabVisibility();
     this.sigTab = '';
@@ -193,7 +199,14 @@ export class App {
     const tt = this.sigTabNow();
     if (tt !== this.sigTab && !this.elTab.hidden) { this.sigTab = tt; this.renderTabPanel(); }
     this.bTop.run();
-    this.bNav.run();
+    // Pastilles : recalculées quatre fois par seconde, inutile de le faire à chaque image.
+    if (now - this.lastNav > 250) {
+      this.lastNav = now;
+      if (!this.s.flags.bazar && bazarUnlocked(this.s)) this.s.flags.bazar = true;
+      const sub = this.elTab.hidden ? null : this.sub();
+      if (sub) this.markSeen(sub);
+      this.bNav.run();
+    }
     if (!this.elLife.hidden) this.bLife.run();
     if (!this.elTab.hidden) this.bTab.run();
     if (!this.elEcho.hidden) {
@@ -215,16 +228,16 @@ export class App {
     b.reset();
     const crest = this.crestEl('crest');
     const genEl = b.text(h('span'), () => `Génération ${s.hero.gen}`);
-    const brand = h('button', { class: 'brand', onclick: () => this.setTab('lignee'), 'aria-label': 'Lignée' }, crest, h('div', null, h('div', { class: 'brand-name' }, `Maison ${s.lineage.name}`), h('div', { class: 'brand-sub' }, genEl)));
+    const brand = h('button', { class: 'brand', onclick: () => this.setTab('lignee'), 'aria-label': 'Maison' }, crest, h('div', null, h('div', { class: 'brand-name' }, `Maison ${s.lineage.name}`), h('div', { class: 'brand-sub' }, genEl)));
     const chips = RES.filter((r) => s.totalEver[r] > 0 || r === 'vivres').map((r) => {
       const v = b.text(h('span', { class: 'chip-v' }), () => fmt(s.res[r]));
       const rate = b.text(h('span', { class: 'chip-r' }), () => { const n = this.rt.net[r]; return Math.abs(n) < 0.005 ? '' : (n > 0 ? '+' : '') + fmt(n) + '/s'; });
       b.cls(rate, 'neg', () => this.rt.net[r] < -0.005);
       return h('div', { class: 'chip', title: RES_INFO[r].name, style: { '--c': RES_INFO[r].color } }, h('span', { class: 'chip-i' }, RES_INFO[r].icon), h('div', { class: 'chip-txt' }, v, rate));
     });
-    const legacy = h('button', { class: 'chip chip-meta', title: 'Héritage', onclick: () => this.setTab('lignee') }, h('span', { class: 'chip-i' }, '⚜️'), b.text(h('span', { class: 'chip-v' }), () => fmt(s.legacy, 0)));
-    const eclats = h('button', { class: 'chip chip-meta', title: 'Éclats célestes', onclick: () => this.setTab('destin') }, h('span', { class: 'chip-i' }, '✦'), b.text(h('span', { class: 'chip-v' }), () => fmt(s.eclats, 0)));
-    const evPill = h('button', { class: 'event-pill', onclick: () => this.setTab('destin') });
+    const legacy = h('button', { class: 'chip chip-meta', title: 'Héritage', onclick: () => this.setTab('heritage') }, h('span', { class: 'chip-i' }, '⚜️'), b.text(h('span', { class: 'chip-v' }), () => fmt(s.legacy, 0)));
+    const eclats = h('button', { class: 'chip chip-meta', title: 'Éclats célestes', onclick: () => this.setTab(bazarUnlocked(s) ? 'bazar' : 'jour') }, h('span', { class: 'chip-i' }, '✦'), b.text(h('span', { class: 'chip-v' }), () => fmt(s.eclats, 0)));
+    const evPill = h('button', { class: 'event-pill', onclick: () => this.setTab('jour') });
     b.add(() => {
       const ev = this.rt.event;
       evPill.hidden = !ev;
@@ -280,26 +293,55 @@ export class App {
       ...tabs.map((t) => {
         const dot = h('span', { class: 'dot' });
         b.cls(dot, 'on', () => this.badge(t.id));
-        return h('button', { class: `tab ${this.tab === t.id ? 'active' : ''}`, onclick: () => this.setTab(t.id), 'aria-current': this.tab === t.id ? 'page' : undefined },
+        return h('button', { class: `tab ${this.tab === t.id ? 'active' : ''}`, 'data-tab': t.id, onclick: () => this.setTab(t.id), 'aria-current': this.tab === t.id ? 'page' : undefined },
           h('span', { class: 'tab-i' }, t.icon, dot), h('span', { class: 'tab-n' }, t.name));
       }),
     );
     this.elNav.classList.toggle('tabbar-desktop', this.desktop);
   }
 
-  badge(t: Tab): boolean {
+  /** Barre des sous-onglets de l'onglet courant (masquée s'il n'y en a qu'un). */
+  subBar(tab: Tab, cur: Sub | null): HTMLElement | null {
+    const list = subsShown(this.s, tab, this.layout);
+    if (list.length < 2) return null;
+    const b = this.bTab;
+    return h('div', { class: 'subtabs', role: 'tablist' }, list.map((x) => {
+      const n = h('span', { class: 'sub-n' });
+      b.add(() => {
+        const v = this.subBadge(x.id);
+        const txt = typeof v === 'number' ? (v > 0 ? String(v) : '') : v ? '•' : '';
+        if (n.textContent !== txt) n.textContent = txt;
+        n.hidden = !txt;
+      });
+      return h('button', { class: `subtab ${x.id === cur ? 'active' : ''}`, role: 'tab', 'aria-selected': x.id === cur ? 'true' : 'false', 'data-sub': x.id, onclick: () => this.setTab(x.id) },
+        h('span', { class: 'sub-i' }, x.icon), h('span', null, x.name), n);
+    }));
+  }
+
+  /** Clés des achats possibles d'un sous-onglet (pastilles « nouveau »). */
+  subKeys(sub: Sub): string[] {
+    return affordableKeys(this.s, sub, (id) => this.buildingVisible(id));
+  }
+
+  /** Pastille d'un sous-onglet : un nombre (nouveautés) ou un simple signal. */
+  subBadge(sub: Sub): number | boolean {
     const s = this.s;
-    switch (t) {
-      case 'vie': return isPaused(s) || !!s.succession;
-      case 'echos': return false;
-      case 'domaine': return BUILDINGS.some((b) => this.buildingVisible(b.id) && !(b.max !== undefined && (s.buildings[b.id] ?? 0) >= b.max) && canAfford(s, buildingCost(b.id, s.buildings[b.id] ?? 0)));
-      case 'lignee': return LEGACY.some((l) => !(l.max !== undefined && (s.upgrades[l.id] ?? 0) >= l.max) && s.legacy >= legacyCost(l, s.upgrades[l.id] ?? 0));
-      case 'destin': {
+    switch (sub) {
+      case 'batiments': case 'heritage': case 'codex': return this.seen.fresh(sub, this.subKeys(sub));
+      case 'nature': return ecoHealth(s.eco) < 0.55;
+      case 'jour': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
         return evOpen || !this.dailyRec(utcDateStr(Date.now()));
       }
+      default: return false;
     }
+  }
+
+  badge(t: Tab): boolean {
+    const s = this.s;
+    if (t === 'vie') return isPaused(s) || !!s.succession;
+    return subsShown(s, t, this.layout).some((x) => !!this.subBadge(x.id));
   }
 
   // =========================================================================
@@ -317,9 +359,9 @@ export class App {
       ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} cultive déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
       ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire et le Domaine se repose. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
-      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (onglet Échos). Chaque génération ajoute une boucle !` : ''],
-      ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs dans le Domaine : ils boostent la vie en cours ET les Échos.'],
-      ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans l\'onglet Lignée pour des bonus permanents.'],
+      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Domaine › Échos). Chaque génération ajoute une boucle !` : ''],
+      ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
+      ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
       ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, cultiver ou réduire la chasse le rétablit.'],
       ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
@@ -568,16 +610,23 @@ export class App {
   // Panneaux d'onglet
   sigTabNow(): string {
     const s = this.s;
-    switch (this.tab) {
-      case 'vie':
-      case 'echos': return 'E' + s.echoes.map((e) => e.id + (e.pinned ? 'p' : '')).join() + '|' + echoSlots(s);
-      case 'domaine': return 'D' + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
-      case 'lignee': return 'L' + JSON.stringify(s.upgrades) + s.ancestors.length + this.lineageSig() + '|' + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life
-        + '|' + s.cadets.length + JSON.stringify(s.alliances) + Object.keys(s.epithets).length + '|' + weekIndex(Date.now());
-      case 'destin': {
+    const tab = this.normTab(this.tab), sub = this.sub();
+    const head = tab + '/' + sub + '/' + subsShown(s, tab, this.layout).map((x) => x.id).join() + '|';
+    switch (sub) {
+      case 'echos': return head + this.sigEchoNow();
+      case 'nature': return head;
+      case 'batiments': return head + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
+      case 'heritage': return head + JSON.stringify(s.upgrades);
+      case 'bazar': return head + s.blessings.join() + s.partitions.join() + this.lineageSig() + !!s.life + s.life?.extended;
+      case 'lignee': return head + s.ancestors.length + this.lineageSig() + '|' + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life;
+      case 'alliances': return head + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life + '|' + s.cadets.length + JSON.stringify(s.alliances) + '|' + weekIndex(Date.now()) + this.lineageSig();
+      case 'codex': return head + Object.keys(s.epithets).length;
+      case 'jour': {
         const ev = this.rt.event;
-        return 'X' + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(this.dailyRec(utcDateStr(Date.now())) ?? null) + s.blessings.join() + s.partitions.join() + this.lineageSig() + Math.floor(Date.now() / 60000);
+        return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(this.dailyRec(utcDateStr(Date.now())) ?? null) + Math.floor(Date.now() / 60000);
       }
+      case 'calendrier': return head + (this.rt.event?.key ?? '') + Math.floor(Date.now() / 60000);
+      default: return head;
     }
   }
 
@@ -589,15 +638,32 @@ export class App {
   renderTabPanel() {
     this.bTab.reset();
     const t = this.normTab(this.tab);
-    let el: HTMLElement;
-    switch (t) {
+    const sub = this.sub();
+    let el: HTMLElement | null = null;
+    switch (sub) {
       case 'echos': el = this.panelEchoes(this.bTab); break;
-      case 'domaine': el = this.panelDomaine(); break;
-      case 'lignee': el = this.panelLignee(); break;
-      case 'destin': el = this.panelDestin(); break;
-      default: el = h('div');
+      case 'nature': el = this.panelNature(); break;
+      case 'batiments': el = this.panelBatiments(); break;
+      case 'heritage': el = this.panelHeritage(); break;
+      case 'bazar': el = this.panelBazar(); break;
+      case 'lignee': el = this.panelMaison(); break;
+      case 'alliances': el = alliancesSection(this); break;
+      case 'codex': el = codexSection(this); break;
+      case 'jour': el = this.panelJour(); break;
+      case 'calendrier': el = this.panelCalendrier(); break;
     }
-    this.elTab.replaceChildren(el);
+    // Les sous-onglets et le contenu sont frères : l'espacement du panneau s'applique à tous.
+    const root = h('div', { 'data-sub': sub ?? '' });
+    const bar = this.subBar(t, sub);
+    if (bar) root.append(bar);
+    if (el) root.append(...Array.from(el.childNodes));
+    if (sub) this.markSeen(sub);
+    this.elTab.replaceChildren(root);
+  }
+
+  /** Ce qui est affiché est vu : les pastilles « nouveau » de ce sous-onglet s'éteignent. */
+  markSeen(sub: Sub) {
+    if (sub === 'batiments' || sub === 'heritage' || sub === 'codex') this.seen.mark(sub, this.subKeys(sub));
   }
 
   // --- Échos ----------------------------------------------------------------
@@ -652,7 +718,7 @@ export class App {
     return Object.keys(d.cost).every((r) => this.s.totalEver[r as ResId] > 0) || (this.s.buildings[id] ?? 0) > 0;
   }
 
-  panelDomaine() {
+  panelNature() {
     const s = this.s, b = this.bTab;
     const pops: [keyof typeof ECO_EQ, string, string, string][] = [
       ['F', 'Flore', '🌳', '#7cb342'], ['G', 'Gibier', '🦌', '#ff8a65'], ['P', 'Prédateurs', '🐺', '#90a4ae'],
@@ -693,6 +759,12 @@ export class App {
       h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
       h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`),
       canvas);
+    return h('div', null, harmCard);
+  }
+
+  // --- Améliorer : Bâtiments, Héritage, Bazar ----------------------------------
+  panelBatiments() {
+    const s = this.s, b = this.bTab;
     const builds = h('div', { class: 'grid-cards' }, BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((d) => {
       const lvl = s.buildings[d.id] ?? 0;
       const maxed = d.max !== undefined && lvl >= d.max;
@@ -709,25 +781,21 @@ export class App {
         h('div', { class: 'small accent' }, lvl > 0 ? d.effect(lvl) : '—'),
         h('div', { class: 'row-between' }, costEl, btn));
     }));
-    return h('div', null, harmCard, h('h3', { class: 'section-t' }, 'Bâtiments'), builds.children.length ? builds : h('p', { class: 'muted card' }, 'Récolte des ressources pour découvrir les bâtiments.'));
+    return h('div', null,
+      h('p', { class: 'muted small intro-p' }, 'Payés en ressources, les bâtiments renforcent la vie en cours et tous tes Échos.'),
+      builds.children.length ? builds : h('p', { class: 'muted card' }, 'Récolte des ressources pour découvrir les bâtiments.'));
   }
 
-  // --- Lignée -----------------------------------------------------------------
-  panelLignee() {
+  panelHeritage() {
     const s = this.s, b = this.bTab;
     const head = h('div', { class: 'card panel-head' },
-      h('div', { class: 'row' }, this.crestEl('crest crest-lg'),
-        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`))),
-      h('div', { class: 'row-wrap' },
-        h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
-        h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason')),
-      h('div', { class: 'stats' }, stat('Héritage disponible', b.text(h('span', { class: 'accent' }), () => `${fmt(s.legacy, 0)} ⚜️`))),
+      h('div', { class: 'stats' }, stat('Héritage disponible', b.text(h('span', { class: 'accent' }), () => `${fmt(s.legacy, 0)} ⚜️`)), stat('Accumulé', `${fmtInt(s.legacyTotal)} ⚜️`)),
       h('p', { class: 'muted small' }, 'L\'Héritage est gagné à chaque mort selon la valeur produite par chaque vie. Il améliore définitivement ta lignée.'));
     const ups = h('div', { class: 'grid-cards' }, LEGACY.map((d) => {
       const lvl = s.upgrades[d.id] ?? 0;
       const maxed = d.max !== undefined && lvl >= d.max;
       const c = legacyCost(d, lvl);
-      const btn = h('button', { class: 'btn btn-primary btn-sm', disabled: maxed || undefined, onclick: () => { if (buyLegacy(s, d.id)) { this.sigTab = ''; toast(`${d.icon} ${d.name} niv. ${lvl + 1}`, 'good'); } } }, maxed ? 'Max' : `${fmt(c, 0)} ⚜️`);
+      const btn = h('button', { class: 'btn btn-primary btn-sm', disabled: maxed || undefined, onclick: () => { if (buyLegacy(s, d.id)) { this.sigTab = ''; toast(this.legacyToast(d.id, lvl + 1), 'good', 4500); } } }, maxed ? 'Max' : `${fmt(c, 0)} ⚜️`);
       if (!maxed) b.add(() => { (btn as HTMLButtonElement).disabled = s.legacy < c; });
       // Déblocage d'une mécanique (Alliances, Chroniques) : une étiquette suffit à signaler qu'il ne s'agit pas
       // d'une amélioration chiffrée (GD-01, R12). Le prix est sur le bouton et l'Héritage en tête : pas de jauge.
@@ -739,14 +807,31 @@ export class App {
         h('div', { class: 'build-head' }, h('span', { class: 'build-i' }, d.icon), h('div', null, h('div', { class: 'build-n' }, d.name, ' ', tag), h('div', { class: 'muted small' }, d.desc))),
         h('div', { class: 'row-end' }, btn));
     }));
+    return h('div', null, head, ups);
+  }
+
+  /** Annonce d'un achat d'Héritage : un déblocage dit où trouver la nouvelle mécanique. */
+  legacyToast(id: string, lvl: number): string {
+    const d = LEGACY.find((x) => x.id === id)!;
+    const where = id === 'alliances' ? ' · nouveau : Maison › Alliances' : id === 'chroniques' ? ' · nouveau : Maison › Codex' : '';
+    return `${d.icon} ${d.name} niv. ${lvl}${where}`;
+  }
+
+  // --- Maison : Lignée (blason, généalogie), Alliances, Codex ------------------
+  panelMaison() {
+    const s = this.s;
+    const head = h('div', { class: 'card panel-head' },
+      h('div', { class: 'row' }, this.crestEl('crest crest-lg'),
+        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`))),
+      h('div', { class: 'row-wrap' },
+        h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
+        h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason et partitions')));
     const anc = [...s.ancestors].reverse();
     const tree = this.ancestorTree(anc.slice(0, ANCESTORS_SHOWN));
     const more = anc.length > ANCESTORS_SHOWN
       ? h('button', { class: 'btn btn-sm btn-ghost tree-more', onclick: () => this.openGenealogy() }, `📜 Voir toute la généalogie (${anc.length} ancêtres)`)
       : null;
-    return h('div', null, head, h('h3', { class: 'section-t' }, 'Arbre de Lignée'), ups,
-      alliancesSection(this),
-      codexSection(this),
+    return h('div', null, head,
       h('h3', { class: 'section-t' }, 'Généalogie'),
       anc.length ? h('div', null, tree, more) : h('p', { class: 'card muted' }, 'Les ancêtres apparaîtront ici.'));
   }
@@ -771,34 +856,11 @@ export class App {
         spouseLine(a, a.spouse, true)))));
   }
 
-  // --- Destin (événements, défi du jour, bazar) -----------------------------
-  panelDestin() {
+  // --- Destin : Aujourd'hui (Commande du jour, événement), Calendrier ----------
+  panelJour() {
     const s = this.s, b = this.bTab;
     const now = Date.now();
     const parts: HTMLElement[] = [];
-    const ev = this.rt.event;
-    if (ev) {
-      const ep = s.events[ev.key];
-      const fill = b.width(h('div', { class: 'bar-fill', style: { background: ev.def.color } }), () => (ep ? ep.progress / (ep.target * EVENT_TIERS[2]) : 0));
-      const marks = EVENT_TIERS.map((t, i) => h('div', { class: 'tier-mark', style: { left: (t / EVENT_TIERS[2] * 100) + '%' } }, h('span', null, ['🥉', '🥈', '🥇'][i])));
-      parts.push(h('div', { class: 'card event-card', style: { '--c': ev.def.color } },
-        h('div', { class: 'label' }, 'Événement en cours'),
-        h('h2', null, `${ev.def.icon} ${ev.def.name}`),
-        h('p', null, ev.def.desc),
-        b.text(h('p', { class: 'muted' }), () => `Se termine dans ${fmtDur((ev.end - Date.now()) / 1000)} · Toute ta production compte, ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name} ×${ep?.v === 2 ? EVENT_GOAL_WEIGHT : 1}`),
-        h('div', { class: 'bar bar-tiers' }, fill, marks),
-        b.text(h('p', { class: 'small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}${ep.v === 2 ? ' (équivalent)' : ''} · Récompenses : ${EVENT_REWARDS.join(' / ')} ✦` : '')));
-    }
-    const ups = upcomingEvents(now, 7).filter((w) => w.key !== ev?.key).slice(0, 6);
-    parts.push(h('div', { class: 'card' },
-      h('h2', null, '📅 Calendrier des événements'),
-      h('p', { class: 'muted small' }, 'Toutes les 4 heures, un événement de 45 min frappe le monde entier au même moment. Sois présent pour décrocher des Éclats célestes ✦.'),
-      h('ul', { class: 'ev-list' }, ups.map((w) => h('li', null,
-        h('span', { class: 'ev-i', style: { '--c': w.def.color } }, w.def.icon),
-        h('div', null, h('strong', null, w.def.name), h('div', { class: 'muted small' }, w.def.desc)),
-        h('div', { class: 'right small' }, h('div', null, `${fmtDay(w.start)} ${fmtClock(w.start)}`), h('div', { class: 'muted' }, `dans ${fmtDur((w.start - now) / 1000)}`))))),
-      h('button', { class: 'btn btn-sm', onclick: () => { download('echos-de-lignee-evenements.ics', buildIcs(), 'text/calendar'); toast('📅 Calendrier téléchargé : ouvre-le pour l\'ajouter à ton agenda.', 'good'); } }, '📅 Ajouter à mon agenda')));
-
     // Défi du jour
     const date = utcDateStr(now);
     const setup = dailySetup(date);
@@ -821,6 +883,49 @@ export class App {
         rec ? h('button', { class: 'btn', onclick: () => this.shareDaily(date, rec.best, rec.code) }, '📤 Partager') : null,
         h('button', { class: 'btn btn-ghost', onclick: () => this.openVerify() }, '🔎 Vérifier un code'))));
 
+    const ev = this.rt.event;
+    if (ev) {
+      const ep = s.events[ev.key];
+      const fill = b.width(h('div', { class: 'bar-fill', style: { background: ev.def.color } }), () => (ep ? ep.progress / (ep.target * EVENT_TIERS[2]) : 0));
+      const marks = EVENT_TIERS.map((t, i) => h('div', { class: 'tier-mark', style: { left: (t / EVENT_TIERS[2] * 100) + '%' } }, h('span', null, ['🥉', '🥈', '🥇'][i])));
+      parts.push(h('div', { class: 'card event-card', style: { '--c': ev.def.color } },
+        h('div', { class: 'label' }, 'Événement en cours'),
+        h('h2', null, `${ev.def.icon} ${ev.def.name}`),
+        h('p', null, ev.def.desc),
+        b.text(h('p', { class: 'muted' }), () => `Se termine dans ${fmtDur((ev.end - Date.now()) / 1000)} · Toute ta production compte, ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name} ×${ep?.v === 2 ? EVENT_GOAL_WEIGHT : 1}`),
+        h('div', { class: 'bar bar-tiers' }, fill, marks),
+        b.text(h('p', { class: 'small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}${ep.v === 2 ? ' (équivalent)' : ''} · Récompenses : ${EVENT_REWARDS.join(' / ')} ✦` : '')));
+    }
+    if (!ev) {
+      const next = upcomingEvents(now, 7)[0];
+      if (next) parts.push(h('button', { class: 'card next-ev', style: { '--c': next.def.color }, onclick: () => this.setTab('calendrier') },
+        h('span', { class: 'ev-i' }, next.def.icon),
+        h('div', null, h('div', { class: 'label' }, 'Prochain événement'), h('strong', null, next.def.name)),
+        b.text(h('span', { class: 'muted small right' }), () => `dans ${fmtDur((next.start - Date.now()) / 1000)} ›`)));
+    }
+    return h('div', null, parts);
+  }
+
+  panelCalendrier() {
+    const now = Date.now();
+    const ev = this.rt.event;
+    const parts: HTMLElement[] = [];
+    const ups = upcomingEvents(now, 7).filter((w) => w.key !== ev?.key).slice(0, 12);
+    parts.push(h('div', { class: 'card' },
+      h('h2', null, '📅 Calendrier des événements'),
+      h('p', { class: 'muted small' }, 'Toutes les 4 heures, un événement de 45 min frappe le monde entier au même moment. Sois présent pour décrocher des Éclats célestes ✦.'),
+      h('ul', { class: 'ev-list' }, ups.map((w) => h('li', null,
+        h('span', { class: 'ev-i', style: { '--c': w.def.color } }, w.def.icon),
+        h('div', null, h('strong', null, w.def.name), h('div', { class: 'muted small' }, w.def.desc)),
+        h('div', { class: 'right small' }, h('div', null, `${fmtDay(w.start)} ${fmtClock(w.start)}`), h('div', { class: 'muted' }, `dans ${fmtDur((w.start - now) / 1000)}`))))),
+      h('button', { class: 'btn btn-sm', onclick: () => { download('echos-de-lignee-evenements.ics', buildIcs(), 'text/calendar'); toast('📅 Calendrier téléchargé : ouvre-le pour l\'ajouter à ton agenda.', 'good'); } }, '📅 Ajouter à mon agenda')));
+
+    return h('div', null, parts);
+  }
+
+  panelBazar() {
+    const s = this.s, b = this.bTab;
+    const parts: HTMLElement[] = [];
     // Bazar céleste
     const bless = TRAITS.filter((t) => !t.neg && t.rarity >= 1 && BLESSING_COST[t.rarity]);
     parts.push(h('div', { class: 'card' },
@@ -833,21 +938,13 @@ export class App {
           h('span', { class: 'shop-i' }, t.icon), h('span', { class: 'shop-n' }, traitName(t)), h('span', { class: 'muted small' }, t.desc), h('span', { class: 'shop-c' }, `${c} ✦`));
         b.cls(btn, 'off', () => s.eclats < c || s.blessings.includes(t.id) || s.blessings.length >= 2);
         return btn;
-      })),
-      h('h3', { class: 'section-t' }, 'Héraldique'),
-      h('p', { class: 'muted small' }, `Divise l'écu de ta maison : ${SHOP.partition.cost} ✦ la partition, puis libre de changer quand tu veux.`),
-      h('div', { class: 'shop shop-parts' }, PARTITIONS.filter((p) => p.id !== 'plein').map((p) => {
-        const owned = s.partitions.includes(p.id);
-        const art = h('span', { class: 'shop-shield', style: { '--c': s.lineage.color } });
-        art.innerHTML = shieldSvg(s.lineage.crest, p.id, { border: false });
-        const btn = h('button', { class: `shop-item ${owned ? 'owned' : ''}`, onclick: () => {
-          if (owned) { s.lineage.partition = p.id; this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; toast(`🛡️ Écu ${p.name.toLowerCase()}`, 'good'); return; }
-          if (buyPartition(s, p.id)) { toast(`🛡️ Partition « ${p.name} » débloquée et appliquée`, 'good'); this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; }
-          else toast(`Éclats insuffisants (${SHOP.partition.cost} ✦)`, 'bad');
-        } }, art, h('span', { class: 'shop-n' }, p.name), h('span', { class: 'shop-c' }, owned ? (s.lineage.partition === p.id ? '✔ portée' : 'Porter') : `${SHOP.partition.cost} ✦`));
-        if (!owned) b.cls(btn, 'off', () => s.eclats < SHOP.partition.cost);
-        return btn;
-      }))));
+      }))),
+      h('div', { class: 'card' },
+        h('h2', null, '✦ Autres usages des Éclats'),
+        h('ul', { class: 'plain-list small' },
+          h('li', null, `⌛ +30 s de vie (${SHOP.temps.cost} ✦), une fois par vie : bouton sous le sablier, dans la Vie.`),
+          h('li', null, `🛡️ Partitions de l'écu (${SHOP.partition.cost} ✦ chacune) et changement d'emblème : `,
+            h('button', { class: 'link-btn', onclick: () => this.openCrest() }, 'ouvrir le blason'), '.'))));
     return h('div', null, parts);
   }
 
@@ -1132,7 +1229,7 @@ export class App {
       const partRow = h('div', { class: 'pick-row' }, PARTITIONS.map((p) => {
         const owned = s.partitions.includes(p.id);
         const el = h('button', {
-          class: `pick pick-part ${p.id === partition ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? p.name : `${p.name} — ${SHOP.partition.cost} ✦ au Bazar céleste`,
+          class: `pick pick-part ${p.id === partition ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? p.name : `${p.name} — ${SHOP.partition.cost} ✦`,
           'aria-label': `Partition : ${p.name}`,
           onclick: async () => {
             if (owned) { partition = p.id; render(); return; }

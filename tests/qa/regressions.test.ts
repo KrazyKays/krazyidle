@@ -433,3 +433,61 @@ describe('GD-SURNOMS C — un surnom commun déjà connu ne déploie plus la gra
     expect(epithetRevealKind('venerable', false)).toBe('carte');
   });
 });
+
+describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
+  test('cinq onglets ; tous les achats sous Améliorer, les Échos sous Domaine', async () => {
+    const { TABS, SUBS, SUB_TAB } = await import('../../src/ui/nav');
+    expect(TABS.map((t) => t.id)).toEqual(['vie', 'domaine', 'ameliorer', 'maison', 'destin']);
+    expect(SUBS.ameliorer.map((x) => x.id)).toEqual(['batiments', 'heritage', 'bazar']);
+    expect(SUB_TAB.echos).toBe('domaine');
+    expect(SUB_TAB.alliances).toBe('maison');
+    expect(SUB_TAB.jour).toBe('destin');
+  });
+  test('un sous-onglet n\'apparaît qu\'une fois sa mécanique débloquée', async () => {
+    const { subsShown } = await import('../../src/ui/nav');
+    const s = newGame(0, 1);
+    const ids = (t: Parameters<typeof subsShown>[1], l: Parameters<typeof subsShown>[2] = 'mobile') => subsShown(s, t, l).map((x) => x.id);
+    expect(ids('maison')).toEqual(['lignee']);
+    expect(ids('ameliorer')).toEqual(['batiments', 'heritage']);
+    s.upgrades.alliances = 1; s.upgrades.chroniques = 1;
+    expect(ids('maison')).toEqual(['lignee', 'alliances', 'codex']);
+    s.eclats = 1;
+    expect(ids('ameliorer')).toEqual(['batiments', 'heritage', 'bazar']);
+    // Le Bazar reste une fois découvert, même à 0 Éclat (drapeau posé par l'interface).
+    s.eclats = 0; s.flags.bazar = true;
+    expect(ids('ameliorer')).toContain('bazar');
+  });
+  test('sur ordinateur, la Vie n\'est pas un onglet ; en 3 colonnes les Échos quittent le Domaine', async () => {
+    const { normSub, normTab, subsShown, tabsShown } = await import('../../src/ui/nav');
+    const s = newGame(0, 1);
+    expect(tabsShown('two').map((t) => t.id)).not.toContain('vie');
+    expect(normTab('vie', 'two')).toBe('domaine');
+    expect(normTab('vie', 'mobile')).toBe('vie');
+    expect(subsShown(s, 'domaine', 'three').map((x) => x.id)).toEqual(['nature']);
+    expect(normSub(s, 'domaine', 'three', 'echos')).toBe('nature');
+    expect(normSub(s, 'domaine', 'two', 'echos')).toBe('echos');
+    // Un sous-onglet verrouillé n'est jamais affiché, même s'il était le dernier choisi.
+    expect(normSub(s, 'maison', 'mobile', 'alliances')).toBe('lignee');
+    expect(normSub(s, 'vie', 'mobile', undefined)).toBeNull();
+  });
+  test('pastilles « nouveau » : un achat se signale une fois, jusqu\'à la visite ; le niveau suivant est nouveau', async () => {
+    const { SeenBadges, affordableKeys } = await import('../../src/ui/nav');
+    const s = newGame(0, 1);
+    s.legacy = 1e9;
+    const seen = new SeenBadges();
+    const keys = affordableKeys(s, 'heritage');
+    expect(keys.length).toBeGreaterThan(0);
+    expect(seen.fresh('heritage', keys)).toBe(keys.length);
+    seen.mark('heritage', keys);
+    expect(seen.fresh('heritage', affordableKeys(s, 'heritage'))).toBe(0);
+    const id = keys[0].split(':')[1];
+    s.upgrades[id] = (s.upgrades[id] ?? 0) + 1;
+    expect(seen.fresh('heritage', affordableKeys(s, 'heritage'))).toBe(1);
+    // Codex : les surnoms connus au lancement ne sont pas nouveaux, une découverte l'est.
+    s.epithets = { laboureur: 1 };
+    seen.primeOnce('codex', affordableKeys(s, 'codex'));
+    expect(seen.fresh('codex', affordableKeys(s, 'codex'))).toBe(0);
+    s.epithets.juste = 1;
+    expect(seen.fresh('codex', affordableKeys(s, 'codex'))).toBe(1);
+  });
+});

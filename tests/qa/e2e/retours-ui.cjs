@@ -56,13 +56,17 @@ async function toGen2(page) {
   await page.waitForFunction(() => window.krazy.state.hero.gen === 2 && !!window.krazy.state.life, null, { timeout: 3000 });
 }
 
-async function gotoTab(page, label) {
+/** Va à un onglet, puis à un sous-onglet s'il est affiché (en 3 colonnes, les Échos n'en sont pas un). */
+async function gotoTab(page, label, sub) {
   const tab = page.locator('nav.tabbar .tab', { hasText: label });
   if (await tab.count()) { await tab.click(); await sleep(250); }
+  if (!sub) return;
+  const st = page.locator('.subtab', { hasText: sub });
+  if (await st.count()) { await st.click(); await sleep(250); }
 }
 
 async function lock(page, name) {
-  await gotoTab(page, 'Échos');
+  await gotoTab(page, 'Domaine', 'Échos');
   const card = page.locator('.echo-card').first();
   const btn = card.locator('.lock-btn');
   const off = await btn.evaluate((el) => ({ txt: el.textContent, op: getComputedStyle(el).opacity, bg: getComputedStyle(el).backgroundImage }));
@@ -79,7 +83,7 @@ async function lock(page, name) {
 }
 
 async function legacyUnlock(page, name) {
-  await gotoTab(page, 'Lignée');
+  await gotoTab(page, 'Améliorer', 'Héritage');
   const cards = page.locator('.card.build', { has: page.locator('.badge-new') });
   const n = await cards.count();
   const txt = n ? await cards.first().innerText() : '';
@@ -89,7 +93,7 @@ async function legacyUnlock(page, name) {
 }
 
 async function topLife(page, name, mobile) {
-  await gotoTab(page, mobile ? 'Domaine' : 'Lignée');
+  await gotoTab(page, mobile ? 'Domaine' : 'Maison');
   await sleep(300);
   const strip = page.locator('.top-life');
   if (!mobile) { log(`${name} : pas de frise dans la barre (la Vie est déjà en colonne)`, !(await strip.isVisible())); return; }
@@ -114,7 +118,7 @@ async function dailyGhost(page, name, withRecord) {
     if (withRecord) s.daily[date] = { best: 100, code: btoa(`EL2|${date}|00|100`).replace(/=+$/, ''), rewarded: 0, v: 2 };
     else delete s.daily[date];
   }, withRecord);
-  await gotoTab(page, 'Destin');
+  await gotoTab(page, 'Destin', 'Aujourd');
   const card = await page.locator('.daily-card').innerText();
   log(`${name} : carte du Destin = Commande du comté, paliers en âges`, /Commande du comté/.test(card) && /🥇 \d+ ans/.test(card.replace(/\n/g, ' ')), card.split('\n').slice(0, 3).join(' · '));
   await page.locator('button', { hasText: /Jouer|Rejouer/ }).first().click();
