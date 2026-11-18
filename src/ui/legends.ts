@@ -66,6 +66,7 @@ export function alliancesSection(app: App): HTMLElement | null {
       ? `${hero.name} peut s'unir à une autre maison : ses enfants hériteront aussi des dons de leur autre parent. Une union par vie.`
       : 'La prochaine génération pourra se marier.');
   const head = h('div', { class: 'card' },
+    h('h2', null, '💍 Alliances'),
     h('p', { class: 'muted small' }, 'Marie tes héros aux maisons du comté, ou à la lignée d\'un ami par un simple code. Les enfants que tu ne choisis pas deviennent des cadets, prêts à fonder d\'autres alliances.'),
     status,
     h('div', { class: 'row-wrap' },
@@ -75,7 +76,7 @@ export function alliancesSection(app: App): HTMLElement | null {
   // Maisons du comté
   const houses = countyHouses(now).filter((ch) => ch.house.name !== s.lineage.name);
   const cost = dowry(s, 'pnj');
-  const county = h('div', { class: 'grid-cards' }, houses.map((ch) => {
+  const county = h('div', { class: 'grid-cards county' }, houses.map((ch) => {
     const sp = suitorFor(s, ch, now);
     // Risque si l'on s'unit encore à cette maison (une union de plus que celles déjà conclues).
     const risk = Math.min(0.6, 0.15 * (s.alliances[ch.house.id]?.count ?? 0));
@@ -107,7 +108,7 @@ export function alliancesSection(app: App): HTMLElement | null {
     : h('p', { class: 'muted small' }, 'Aucune alliance pour l\'instant.');
 
   return h('div', null,
-    h('h3', { class: 'section-t' }, '💍 Alliances'), head,
+    head,
     h('div', { class: 'row-between sub-t' }, h('strong', null, 'Maisons du comté'), b.text(h('span', { class: 'muted small' }), () => `nouvelles maisons dans ${fmtDur((weekEnd(Date.now()) - Date.now()) / 1000)}`)),
     h('p', { class: 'muted small' }, 'Les mêmes pour tous les joueurs cette semaine. Chacune offre son don à ses prétendants.'),
     county,
@@ -211,25 +212,49 @@ export function openAcceptProposal(app: App, initial = '') {
 }
 
 // ---------------------------------------------------------------------------
-// Codex des surnoms
+// Codex des surnoms : grille d'icônes, fiche au toucher, filtre. En liste, 34 entrées faisaient plus de 4 écrans.
+type CodexFilter = 'tous' | 'connus' | 'inconnus';
+let codexFilter: CodexFilter = 'tous';
+let codexPick: string | null = null;
+
 export function codexSection(app: App): HTMLElement | null {
   const s = app.s;
   if (!chroniclesUnlocked(s)) return null;
   const found = EPITHETS.filter((e) => s.epithets[e.id]).length;
-  const list = h('div', { class: 'codex' }, [3, 2, 1, 0].flatMap((r) => EPITHETS.filter((e) => e.rarity === r).map((e) => {
+  const detail = h('div', { class: 'codex-detail' });
+  const show = (id: string | null) => {
+    codexPick = id;
+    const e = id ? EPITHET[id] : undefined;
+    grid.querySelectorAll('.codex-tile').forEach((el) => el.classList.toggle('on', (el as HTMLElement).dataset.id === id));
+    if (!e) { detail.replaceChildren(h('p', { class: 'muted small' }, 'Touche un surnom pour lire sa fiche.')); return; }
     const n = s.epithets[e.id] ?? 0;
     const col = EPITHET_RARITY[e.rarity].color;
-    if (!n) return h('div', { class: 'codex-item locked', style: { '--c': col } }, h('span', { class: 'codex-i' }, '❔'),
-      h('div', null, h('div', { class: 'strong' }, '???'), h('div', { class: 'muted small italic' }, e.hint)));
-    return h('div', { class: 'codex-item', style: { '--c': col } }, h('span', { class: 'codex-i' }, e.icon),
-      h('div', null, h('div', { class: 'strong' }, epithetLabel(e.id, null), h('span', { class: 'muted small' }, ` · ×${n}`)),
-        h('div', { class: 'muted small' }, epithetEffect(e, actName)), h('div', { class: 'muted small italic' }, e.hint)));
-  })));
+    detail.replaceChildren(h('div', { class: `codex-item ${n ? '' : 'locked'}`, style: { '--c': col } },
+      h('span', { class: 'codex-i' }, n ? e.icon : '❔'),
+      h('div', null,
+        h('div', { class: 'strong' }, n ? epithetLabel(e.id, null) : '???', h('span', { class: 'muted small' }, ` · ${EPITHET_RARITY[e.rarity].name}${n ? ` · ×${n}` : ''}`)),
+        n ? h('div', { class: 'muted small' }, epithetEffect(e, actName)) : null,
+        h('div', { class: 'muted small italic' }, e.hint))));
+  };
+  const list = [3, 2, 1, 0].flatMap((r) => EPITHETS.filter((e) => e.rarity === r))
+    .filter((e) => codexFilter === 'tous' || (codexFilter === 'connus') === !!s.epithets[e.id]);
+  const grid = h('div', { class: 'codex-grid' }, list.map((e) => {
+    const n = s.epithets[e.id] ?? 0;
+    return h('button', {
+      class: `codex-tile ${n ? '' : 'locked'}`, 'data-id': e.id, style: { '--c': EPITHET_RARITY[e.rarity].color },
+      'aria-label': n ? epithetLabel(e.id, null) : 'Surnom à découvrir', title: n ? epithetLabel(e.id, null) : e.hint, onclick: () => show(e.id),
+    }, h('span', { class: 'codex-i' }, n ? e.icon : '❔'), n > 1 ? h('span', { class: 'codex-n' }, `×${n}`) : null);
+  }));
+  const filters = h('div', { class: 'row-wrap codex-filters' }, ([['tous', 'Tous'], ['connus', `Découverts (${found})`], ['inconnus', `À découvrir (${EPITHETS.length - found})`]] as [CodexFilter, string][])
+    .map(([f, label]) => h('button', { class: `btn btn-sm ${codexFilter === f ? 'btn-primary' : 'btn-ghost'}`, onclick: () => { codexFilter = f; app.sigTab = ''; } }, label)));
+  show(codexPick && list.some((e) => e.id === codexPick) ? codexPick : null);
   return h('div', null,
-    h('h3', { class: 'section-t' }, `📜 Codex des surnoms (${found}/${EPITHETS.length})`),
     h('div', { class: 'card' },
+      h('div', { class: 'row-between' }, h('h2', null, '📖 Codex des surnoms'), h('span', { class: 'accent strong' }, `${found} / ${EPITHETS.length}`)),
       h('p', { class: 'muted small' }, 'À sa mort, une vie marquante reçoit un surnom : il suit son Écho pour toujours et le renforce. Le plus rare l\'emporte. Chaque première découverte offre des Éclats ✦.'),
-      list,
+      filters,
+      detail,
+      grid,
       // Allusion au budget génétique, dont le chiffre n'est affiché nulle part.
       h('div', { class: 'codex-item codex-lore', style: { '--c': '#ab47bc' } }, h('span', { class: 'codex-i' }, '🧬'),
         h('div', null, h('div', { class: 'strong' }, 'Dicton des anciens'),

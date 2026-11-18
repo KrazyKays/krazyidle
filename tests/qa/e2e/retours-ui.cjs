@@ -167,6 +167,20 @@ async function lifeAboveFold(page, name) {
   log(`${name} : description de l'activité en cours sous la liste`, /:/.test(r.desc), r.desc);
 }
 
+/** UX-NAV 3 : Alliances et Codex, une fois débloqués, ont leur sous-onglet ; ni l'un ni l'autre n'élargit l'écran. */
+async function maisonSubs(page, name) {
+  await page.evaluate(() => { const s = window.krazy.state; s.upgrades.alliances = 1; s.upgrades.chroniques = 1; s.epithets.laboureur = 2; });
+  await gotoTab(page, 'Maison', 'Alliances');
+  await sleep(300);
+  const wide = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
+  log(`${name} : Maison › Alliances sans défilement horizontal (carrousel du comté contenu)`, wide);
+  await gotoTab(page, 'Maison', 'Codex');
+  const tiles = await page.locator('.codex-tile').count();
+  await page.locator('.codex-tile:not(.locked)').first().click();
+  const fiche = await page.locator('.codex-detail').innerText();
+  log(`${name} : Codex en grille, fiche au toucher`, tiles >= 30 && /Laboureur|Laboureuse/.test(fiche), `${tiles} tuiles · ${fiche.split('\n')[0]}`);
+}
+
 (async () => {
   const browser = await chromium.launch();
   for (const [name, opts] of [['mobile', devices['Pixel 7']], ['ordinateur', { viewport: { width: 1440, height: 900 } }]]) {
@@ -180,6 +194,7 @@ async function lifeAboveFold(page, name) {
     if (name === 'mobile') await lifeAboveFold(page, name);
     await lock(page, name);
     await legacyUnlock(page, name);
+    await maisonSubs(page, name);
     await topLife(page, name, name === 'mobile');
     await dailyGhost(page, name, name === 'mobile');
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));

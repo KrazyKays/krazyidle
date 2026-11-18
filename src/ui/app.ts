@@ -758,7 +758,7 @@ export class App {
     const regen = ecoRegenRate(s);
     const harmCard = h('div', { class: 'card' },
       h('h2', null, '🌳 Écosystème du Domaine'),
-      h('p', { class: 'muted' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre. Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
+      h('p', { class: 'muted small' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre.'),
       h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
       bars,
       h('div', { class: 'stats' },
@@ -766,9 +766,12 @@ export class App {
         stat('Trophées', trophy),
         stat('Affût', b.text(h('span'), () => s.hunt.on ? `🎯 en cours · ${fmt(s.hunt.affut * TROPHY_OR)} 🪙` : s.hunt.affut * TROPHY_OR >= 1 ? `🏆 ${fmt(s.hunt.affut * TROPHY_OR)} 🪙 à rapporter` : 'chasse ouverte')),
         regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
-      h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
-      h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`),
-      canvas);
+      canvas,
+      // Les règles détaillées sont repliées : elles faisaient la moitié de l'écran à chaque visite.
+      h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
+        h('p', { class: 'muted small' }, 'Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
+        h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
+        h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`)));
     return h('div', null, harmCard);
   }
 
@@ -801,11 +804,12 @@ export class App {
     const head = h('div', { class: 'card panel-head' },
       h('div', { class: 'stats' }, stat('Héritage disponible', b.text(h('span', { class: 'accent' }), () => `${fmt(s.legacy, 0)} ⚜️`)), stat('Accumulé', `${fmtInt(s.legacyTotal)} ⚜️`)),
       h('p', { class: 'muted small' }, 'L\'Héritage est gagné à chaque mort selon la valeur produite par chaque vie. Il améliore définitivement ta lignée.'));
-    const ups = h('div', { class: 'grid-cards' }, LEGACY.map((d) => {
+    // Lignes compactes ; les améliorations terminées sont repliées en bas (elles ne demandent plus rien).
+    const row = (d: (typeof LEGACY)[number]) => {
       const lvl = s.upgrades[d.id] ?? 0;
       const maxed = d.max !== undefined && lvl >= d.max;
       const c = legacyCost(d, lvl);
-      const btn = h('button', { class: 'btn btn-primary btn-sm', disabled: maxed || undefined, onclick: () => { if (buyLegacy(s, d.id)) { this.sigTab = ''; toast(this.legacyToast(d.id, lvl + 1), 'good', 4500); } } }, maxed ? 'Max' : `${fmt(c, 0)} ⚜️`);
+      const btn = maxed ? h('span', { class: 'lvl' }, '✔') : h('button', { class: 'btn btn-primary btn-sm', onclick: () => { if (buyLegacy(s, d.id)) { this.sigTab = ''; toast(this.legacyToast(d.id, lvl + 1), 'good', 4500); } } }, `${fmt(c, 0)} ⚜️`);
       if (!maxed) b.add(() => { (btn as HTMLButtonElement).disabled = s.legacy < c; });
       // Déblocage d'une mécanique (Alliances, Chroniques) : une étiquette suffit à signaler qu'il ne s'agit pas
       // d'une amélioration chiffrée (GD-01, R12). Le prix est sur le bouton et l'Héritage en tête : pas de jauge.
@@ -813,11 +817,16 @@ export class App {
       const tag = unlock
         ? h('span', { class: 'badge badge-new' }, '✨ Nouvelle fonctionnalité')
         : h('span', { class: 'lvl' }, `niv. ${lvl}${d.max ? '/' + d.max : ''}`);
-      return h('div', { class: `card build ${unlock ? 'build-new' : ''}` },
-        h('div', { class: 'build-head' }, h('span', { class: 'build-i' }, d.icon), h('div', null, h('div', { class: 'build-n' }, d.name, ' ', tag), h('div', { class: 'muted small' }, d.desc))),
-        h('div', { class: 'row-end' }, btn));
-    }));
-    return h('div', null, head, ups);
+      return h('div', { class: `card build legacy-row ${unlock ? 'build-new' : ''}` },
+        h('span', { class: 'build-i' }, d.icon),
+        h('div', { class: 'legacy-body' }, h('div', { class: 'build-n' }, d.name, ' ', tag), h('div', { class: 'muted small' }, d.desc)),
+        btn);
+    };
+    const isMax = (d: (typeof LEGACY)[number]) => d.max !== undefined && (s.upgrades[d.id] ?? 0) >= d.max;
+    const open = LEGACY.filter((d) => !isMax(d)), done = LEGACY.filter(isMax);
+    const ups = h('div', { class: 'legacy-list' }, open.map(row));
+    const doneEl = done.length ? h('details', { class: 'howto done-list' }, h('summary', null, `Terminées (${done.length})`), h('div', { class: 'legacy-list' }, done.map(row))) : null;
+    return h('div', null, head, ups, doneEl);
   }
 
   /** Annonce d'un achat d'Héritage : un déblocage dit où trouver la nouvelle mécanique. */
