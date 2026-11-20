@@ -3,7 +3,7 @@ import {
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun, medalsOf, resultAge, traceFromCode, verifyCode } from '../engine/daily';
-import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
+import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   BLESSING_COST, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
@@ -750,10 +750,10 @@ export class App {
       ['F', 'Flore', '🌳', '#7cb342'], ['G', 'Gibier', '🦌', '#ff8a65'], ['P', 'Prédateurs', '🐺', '#90a4ae'],
     ];
     const bars = pops.map(([k, name, icon, color]) => {
-      const fill = b.width(h('div', { class: 'bar-fill', style: { background: color } }), () => s.eco[k] / 140);
+      const fill = b.width(h('div', { class: 'bar-fill', style: { background: color } }), () => ecoGauge(s.eco, k));
       return h('div', { class: 'eco-row' },
         h('span', { class: 'eco-n' }, `${icon} ${name}`),
-        h('div', { class: 'bar eco-bar' }, fill, h('div', { class: 'eq-mark', style: { left: ((ECO_EQ[k] / 140) * 100).toFixed(1) + '%' }, title: 'Équilibre' })),
+        h('div', { class: 'bar eco-bar' }, fill, h('div', { class: 'eq-mark', style: { left: '50%' }, title: 'Équilibre' })),
         b.text(h('span', { class: 'eco-v' }), () => fmt(s.eco[k])));
     });
     const canvas = h('canvas', { class: 'spark', width: 600, height: 120 }) as HTMLCanvasElement;
@@ -786,7 +786,8 @@ export class App {
       // Les règles détaillées sont repliées : elles faisaient la moitié de l'écran à chaque visite.
       h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
         h('p', { class: 'muted small' }, 'Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
-        h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. S\'ils pullulent, chasser rapporte aussi des trophées en Or.'),
+        h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.'),
+        h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. Ils suivent le Gibier et dépassent rarement leur équilibre : les trophées d\'Or viennent surtout de l\'Affût.'),
         h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`)));
     return h('div', null, harmCard);
   }
@@ -1627,14 +1628,22 @@ function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number; P: number
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, hgt);
   if (hist.length < 2) return;
-  const max = 140;
+  // Comme les jauges : chaque courbe est rapportée à deux fois son équilibre, qui passe au milieu (ECO-1).
+  ctx.strokeStyle = 'rgba(255, 202, 40, 0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, hgt / 2);
+  ctx.lineTo(w, hgt / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
   for (const [k, color] of series) {
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     hist.forEach((p, i) => {
       const x = (i / Math.max(1, hist.length - 1)) * w;
-      const y = hgt - ((p as any)[k] / max) * (hgt - 6) - 3;
+      const y = hgt - ecoGauge(p, k as keyof typeof p) * (hgt - 6) - 3;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();

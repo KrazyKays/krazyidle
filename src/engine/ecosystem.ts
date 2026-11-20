@@ -14,6 +14,16 @@ const rF = 0.15, K = 100, aFG = 0.002;
 const bG = 0.1 / 60, mG = 0.05, cGP = 0.005;
 const rP = 0.05, kP = ECO_EQ.P / ECO_EQ.G;
 
+/**
+ * Remplissage des jauges du Domaine (0 à 1) : chaque barre va de 0 à deux fois l'équilibre, qui tombe donc
+ * au milieu pour les trois populations. « L'optimum n'est pas le maximum » se lit d'un coup d'œil : on vise
+ * le centre, pas le plein. Les anciennes barres allaient de 0 à 140 : les Prédateurs (équilibre 11,2, et
+ * ils ne le dépassent presque jamais) n'en remplissaient que 8 % (ECO-1).
+ */
+export function ecoGauge(e: Eco, k: keyof Eco): number {
+  return Math.max(0, Math.min(1, e[k] / (2 * ECO_EQ[k])));
+}
+
 export function newEco(): Eco {
   return { ...ECO_EQ };
 }

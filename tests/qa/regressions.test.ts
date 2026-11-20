@@ -508,3 +508,16 @@ describe('UX-NAV 4 — sous-onglets en bas sur téléphone, à portée du pouce'
     expect(rule('.dock')).toMatch(/position: fixed; bottom: 0/);
   });
 });
+
+describe('ECO-1 — jauges du Domaine centrées sur l\'équilibre', () => {
+  test('les trois populations ont leur équilibre au milieu de la jauge, et la jauge reste bornée', async () => {
+    const { ECO_EQ, ecoGauge } = await import('../../src/engine/ecosystem');
+    for (const k of ['F', 'G', 'P'] as const) {
+      expect(ecoGauge(ECO_EQ, k)).toBeCloseTo(0.5, 9);
+      expect(ecoGauge({ ...ECO_EQ, [k]: 1000 }, k)).toBe(1);
+      expect(ecoGauge({ ...ECO_EQ, [k]: 0 }, k)).toBe(0);
+    }
+    // Avant : 0 à 140 pour tous, les Prédateurs à l'équilibre ne remplissaient que 8 % de leur barre.
+    expect(ecoGauge(ECO_EQ, 'P')).toBeGreaterThan(ECO_EQ.P / 140 * 5);
+  });
+});
