@@ -70,8 +70,24 @@ Profils mono-activité : valeur à ±5 %, générations à ±1 %.
 
 ## 5. Pas réel du jeu (dt 0,1)
 
-Voir § 6 (rempli après la campagne `EVO-lot-dt01` contre `EVO-ref-dt01`).
+`EVO-ref-dt01` → `EVO-lot-dt01` (experimente, debutant, optimiseur, mono-cultiver, mono-chasser ; 100 graines ; 6 h) :
+valeur expérimenté −8,9 %, optimiseur −0,9 %, débutant −2,7 % (VERT) ; seul ROUGE : optimiseur +10 % de générations,
+le même qu'à dt 0,5. Le lot se comporte de la même façon au pas réel du jeu.
 
-## 6. Hauts faits (campagne de 48 h)
+## 6. Hauts faits
 
-Voir § 7 (rempli après `EVO-lot-48h`).
+Critère : ≤ 60 % des parties à 6 h (non trivial) et ≥ 10 % à 48 h pour au moins un profil (atteignable), sauf
+objectifs liés au calendrier (événements, maisons de la semaine).
+
+| Haut fait | 6 h (FEAT-6h / FEAT2-6h / FEAT3-6h) | 48 h (EVO-lot-48h / FEAT2-48h / FEAT3-48h) | Verdict |
+|---|---|---|---|
+| Sang pur, 10 puis 30 générations sans négatif | 88–98 % | 100 % | ❌ trivial pour les profils : **remplacé** par Sang neuf |
+| Paix du Domaine, santé moy. ≥ 98 % (puis min ≥ 97 %) | 12–100 % | 5–100 % | ❌ trivial : **remplacé** par Chasse raisonnée |
+| Chasse raisonnée (moitié de vie à chasser, santé ≥ 95 %, 7 Échos) | 0 % | 100 % | ✅ |
+| Transcendance | 7–50 % | 10–90 % | ✅ |
+| Embrasement (Étoile filante, 5 Échos) | 0 % | 0–30 % | ✅ |
+| Millénaire | 0 % | 100 % (opt., mono-chasser) | ✅ |
+| Mémoire des Chroniques, 20 puis 15 surnoms | 0 % | 0 % puis 70 % (événementiel) | ✅ à 15 |
+| Les cinq métiers (rang V puis III) | 0 % | 0 % | ⚠️ les profils se spécialisent : objectif humain, à suivre |
+| Sang neuf (4 maisons) | 0 % | 0 % | ⚠️ 3 maisons du comté par semaine : demande deux semaines ou des alliances entre joueurs |
+| L'Almanach complet | 0 % | 0 % | ⚠️ six types d'événement à l'Or : calendrier |

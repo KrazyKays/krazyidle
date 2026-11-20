@@ -1,0 +1,19 @@
+{
+ "id": "FEAT3-6h",
+ "commit": "inconnu",
+ "srcDirty": false,
+ "date": "2026-11-20T13:48:30.716Z",
+ "profiles": [
+  "evenementiel",
+  "mono-chasser",
+  "experimente"
+ ],
+ "seeds": "1-30",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 90,
+ "wallMs": 17311,
+ "command": "npm run sim -- --profiles=evenementiel,mono-chasser,experimente --seeds=1-30 --hours=6 --events --id=FEAT3-6h"
+}
