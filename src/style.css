@@ -567,3 +567,5 @@ p { margin: 6px 0; }
   .county::-webkit-scrollbar { display: none; }
   .county > .house-card { scroll-snap-align: start; }
 }
+.ornaments { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; font-size: 1.1rem; }
+.feat-list { display: flex; flex-direction: column; gap: 6px; }

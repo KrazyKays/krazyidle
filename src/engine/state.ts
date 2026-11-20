@@ -140,6 +140,8 @@ export interface Succession {
   noEcho?: boolean;
   /** dons mûrs du défunt : trait → forme supérieure qu'il a pu transmettre (0.3) */
   ripe?: Record<string, string>;
+  /** hauts faits obtenus à cette mort (0.3) */
+  feats?: string[];
   legacyGain: number;
   vocationEarned: Vocation | null;
   ancestor: Ancestor;
@@ -205,6 +207,8 @@ export interface GameState {
   usedCodes: string[];
   /** Almanach (0.3) : types d'événement dont le palier Or a été atteint au moins une fois */
   almanach?: string[];
+  /** Hauts faits (0.3) : identifiant → date d'obtention (ms) */
+  feats?: Record<string, number>;
   stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; /** Bénédictions légendaires ou mythiques achetées (0.3) */ blessHigh?: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 

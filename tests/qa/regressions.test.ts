@@ -650,3 +650,14 @@ describe('ECLATS — palier Or à 5 ✦, Almanach, Bénédictions légendaires r
   });
 });
 
+describe('FEATS — hauts faits de fin de partie (0.3)', () => {
+  test('un haut fait s\'obtient une fois, avec ses Éclats', async () => {
+    const { checkFeats, FEAT } = await import('../../src/engine/feats');
+    const s = newGame(0, 14);
+    s.hero.gen = FEAT.millenaire;
+    expect(checkFeats(s, 5)).toEqual(['millenaire']);
+    expect(s.eclats).toBe(5);
+    expect(checkFeats(s, 6)).toEqual([]);
+    expect(s.feats).toEqual({ millenaire: 5 });
+  });
+});

@@ -20,6 +20,7 @@ import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { evolutionsOf } from '../engine/evolution';
+import { FEATS, FEAT_DEF } from '../engine/feats';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
@@ -860,7 +861,9 @@ export class App {
     const s = this.s;
     const head = h('div', { class: 'card panel-head' },
       h('div', { class: 'row' }, this.crestEl('crest crest-lg'),
-        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`))),
+        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`),
+          // Ornements : un par haut fait obtenu (cosmétique, 0.3).
+          FEATS.some((d) => s.feats?.[d.id]) ? h('div', { class: 'ornaments', 'aria-label': 'Hauts faits' }, FEATS.filter((d) => s.feats?.[d.id]).map((d) => h('span', { title: d.name }, d.icon))) : null)),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
         h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason et partitions')));
@@ -1047,7 +1050,9 @@ export class App {
       }));
       const ok = h('button', { class: 'btn btn-primary btn-lg', onclick: () => {
         if (sel.size > slots) return;
+        const featsBefore = new Set(Object.keys(s.feats ?? {}));
         if (confirmSuccession(s, chosen, [...sel])) {
+          for (const id of Object.keys(s.feats ?? {})) if (!featsBefore.has(id)) toast(`🏆 Haut fait : ${FEAT_DEF[id].icon} ${FEAT_DEF[id].name} ! +${FEAT_DEF[id].eclats} ✦`, 'good');
           this.echoSel = null;
           this.successionModal?.close();
           this.successionModal = null;
@@ -1064,6 +1069,7 @@ export class App {
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
         this.epithetReveal(),
         this.evolutionReveal(),
+        sc.feats?.length ? h('div', { class: 'card evo-card' }, h('strong', null, '🏆 Haut fait accompli'), h('ul', { class: 'plain-list small' }, sc.feats.map((id) => h('li', null, `${FEAT_DEF[id].icon} ${FEAT_DEF[id].name} : +${FEAT_DEF[id].eclats} ✦`)))) : null,
         sc.noEcho ? h('div', { class: 'card nova-card' }, h('strong', null, '💫 Une Étoile filante s\'est éteinte'), h('p', { class: 'muted small' }, 'Sa vie a embrasé la Crypte, mais elle ne laisse pas d\'Écho : seuls tes Échos actuels continuent de boucler.')) : null,
         h('div', { class: 'stats' },
           stat('Héritage gagné', `+${sc.legacyGain} ⚜️`),

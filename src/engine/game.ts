@@ -5,6 +5,7 @@ import {
   EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights,
 } from './data';
 import { ripeTraits } from './evolution';
+import { FEAT_DEF, checkFeats } from './feats';
 import { addCadets, inbreedingRisk } from './alliances';
 import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
@@ -332,6 +333,7 @@ function checkEventTiers(s: GameState, rt: Runtime, w: EventWindow) {
         alm.push(w.def.id);
         s.eclats += ALMANACH_ECLATS;
         rt.notices.push({ kind: 'event', text: `📖 Nouvelle page de l'Almanach : ${EVENT_DEF[w.def.id].icon} ${EVENT_DEF[w.def.id].name} ! +${ALMANACH_ECLATS} ✦` });
+        for (const id of checkFeats(s, s.lastTick)) rt.notices.push({ kind: 'event', text: `🏆 Haut fait : ${FEAT_DEF[id].icon} ${FEAT_DEF[id].name} ! +${FEAT_DEF[id].eclats} ✦` });
       }
     }
     if (s.life) lifeStats(s.life).ev = Math.max(lifeStats(s.life).ev, ep.tier);
@@ -438,6 +440,8 @@ export function endLife(s: GameState, now: number) {
   s.seed = rng.s;
   s.succession = { heirs, newEcho: echo, legacyGain, vocationEarned: voc, ancestor, epithet: epInfo };
   if (noEcho) s.succession.noEcho = true;
+  const feats = checkFeats(s, now, facts);
+  if (feats.length) s.succession.feats = feats;
   if (Object.keys(ripe).length) s.succession.ripe = ripe;
   s.life = null;
 }
@@ -603,6 +607,7 @@ export function confirmSuccession(s: GameState, heirIdx: number, keepEchoIds: nu
   addCadets(s, sc.heirs.filter((_, i) => i !== idx));
   s.blessings = [];
   s.succession = null;
+  checkFeats(s, s.lastTick);
   startLife(s);
   return true;
 }

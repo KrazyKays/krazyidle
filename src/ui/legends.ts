@@ -1,5 +1,6 @@
 // Interface des Surnoms (Codex) et des Alliances (mariages entre maisons).
 import { ACT, EVENTS, acc, vocationName, type Named } from '../engine/data';
+import { FEATS } from '../engine/feats';
 import {
   CADETS_MAX, acceptProposal, alliancesUnlocked, canMarry, countyHouses, dowry, isSealed, marry, proposeCadet, readProposal, suitorFor, weekEnd,
 } from '../engine/alliances';
@@ -259,7 +260,23 @@ export function codexSection(app: App): HTMLElement | null {
       h('div', { class: 'codex-item codex-lore', style: { '--c': '#ab47bc' } }, h('span', { class: 'codex-i' }, '🧬'),
         h('div', null, h('div', { class: 'strong' }, 'Dicton des anciens'),
           h('div', { class: 'muted small italic' }, '« Un sang ne porte qu\'un fardeau de dons : deux couronnes y tiennent, jamais trois, et les plus humbles s\'y glissent toujours. »')))),
+    featsCard(app),
     almanachCard(app));
+}
+
+/** Hauts faits (0.3), dans le Codex : des objectifs lisibles pour la fin de partie. */
+export function featsCard(app: App): HTMLElement {
+  const s = app.s;
+  const got = s.feats ?? {};
+  const n = FEATS.filter((d) => got[d.id]).length;
+  return h('div', { class: 'card' },
+    h('div', { class: 'row-between' }, h('h2', null, '🏆 Hauts faits'), h('span', { class: 'accent strong' }, `${n} / ${FEATS.length}`)),
+    h('p', { class: 'muted small' }, 'Des exploits de fin de partie, qui demandent de jouer autrement plutôt que plus longtemps. Chacun offre des Éclats ✦ une fois et orne le blason de la maison.'),
+    h('div', { class: 'feat-list' }, FEATS.map((d) => h('div', { class: `codex-item ${got[d.id] ? '' : 'locked'}`, style: { '--c': got[d.id] ? '#ffa726' : '#607d8b' } },
+      h('span', { class: 'codex-i' }, got[d.id] ? d.icon : '🔒'),
+      h('div', null,
+        h('div', { class: 'strong' }, d.name, h('span', { class: 'muted small' }, got[d.id] ? ` · obtenu le ${new Date(got[d.id]).toLocaleDateString('fr-FR')}` : ` · ${d.eclats} ✦`)),
+        h('div', { class: 'muted small' }, d.desc))))));
 }
 
 /** Almanach (0.3) : une page par type d'événement, gagnée au premier palier Or. */
