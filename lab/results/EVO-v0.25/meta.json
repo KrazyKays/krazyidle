@@ -1,0 +1,18 @@
+{
+ "id": "EVO-v0.25",
+ "commit": "5b2df5f",
+ "srcDirty": true,
+ "date": "2026-11-20T13:13:33.649Z",
+ "profiles": [
+  "experimente",
+  "optimiseur"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 43956,
+ "command": "npm run sim -- --profiles=experimente,optimiseur --seeds=1-200 --hours=6 --id=EVO-v0.25"
+}

@@ -4,7 +4,7 @@ Idle game dynastique (PWA) en TypeScript + Vite, sans framework. Tout le contenu
 
 ## Architecture
 
-- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `alliances.ts` ; `save.ts`.
+- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `evolution.ts` (dons qui mûrissent) ; `feats.ts` (Hauts faits) ; `alliances.ts` ; `save.ts`.
 - `src/ui/` : DOM natif ; `nav.ts` (onglets, sous-onglets, pastilles) est pur et testé. `src/main.ts` : boucle (pas fixe de 0,1 s), sauvegarde, rattrapage du temps.
 - `docs/GAME_DESIGN.md` : la spécification. La garder en accord avec le code (chiffres mesurés, pas supposés).
 - `tests/` : Vitest (unitaires + bot d'équilibrage) ; `tests/qa/` : invariants, déterminisme, sauvegarde, hors-ligne, codes, et **régressions de chaque correction** (`regressions.test.ts`) ; `tests/qa/e2e/` : parcours Playwright, lancés à la main.
@@ -50,10 +50,11 @@ Cinq agents dans `.claude/agents/` : `qa-engineer`, `game-designer`, `game-balan
 
 Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.claude/hooks/audit-lock.mjs` interdit alors toute écriture sur `src/`, `public/`, configs et GDD), lancer les agents en parallèle sur un dossier `audits/<date>/`, confronter les divergences, synthétiser, puis supprimer le verrou après validation du propriétaire.
 
-## Références de simulation actuelles (0.2.2 + prénoms + surnoms, 2026-11-17)
+## Références de simulation actuelles (0.3 « la lignée qui mûrit », 2026-11-20)
 
-- Sans événements : `C092-reference-v4-sans-evenements` (9 profils × 200 graines × 6 h, dt 0,5).
-- Avec événements : `C093-reference-v4-avec-evenements` (4 profils dont `evenementiel`).
-- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`. C090/C091 (0.2.2) ne correspondent plus au jeu depuis NOM-1 (prénoms) et GD-SURNOMS A.
+- Sans événements : `EVO-lot-sans` (9 profils × 200 graines × 6 h, dt 0,5).
+- Avec événements : `EVO-lot-avec` (4 profils dont `evenementiel`).
+- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`. C092/C093 ne correspondent plus au jeu depuis le lot 0.3 (traits, Étoile filante, Éclats, hauts faits).
+- Indicateurs de rareté des traits : `node lab/balance/evo/kpi.mjs <runs.jsonl>` ; résultats du lot : `lab/balance/evo/RESULTATS.md`.
 
 Points ouverts (fin de l'audit du 2026-11-14) : `audits/2026-11-14/SYNTHESE.md`, § 10.

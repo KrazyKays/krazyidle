@@ -1,0 +1,25 @@
+{
+ "id": "EVO-lot-sans",
+ "commit": "lot 0.3 complet (copie sans .git de 19f4f72 + hauts faits, = commit des hauts faits)",
+ "srcDirty": false,
+ "date": "2026-11-20T13:30:08.853Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1800,
+ "wallMs": 211085,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=EVO-lot-sans"
+}
