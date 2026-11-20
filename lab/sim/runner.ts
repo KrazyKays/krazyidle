@@ -1,5 +1,5 @@
 // Exécute une partie complète avec un profil et collecte les indicateurs (voir lab/metrics/KPIS.md).
-import { ACTS, RES, RES_INFO } from '../../src/engine/data';
+import { ACTS, RES, RES_INFO, TRAIT } from '../../src/engine/data';
 import { newRuntime, offlineCapSec, setActivity, startLife, tick } from '../../src/engine/game';
 import { ecoHealth } from '../../src/engine/ecosystem';
 import { Rng } from '../../src/engine/rng';
@@ -50,6 +50,13 @@ export interface RunResult {
   eventTiers: number[];
   married: number;
   vocationTierMax: number;
+  /**
+   * Raretés aux successions (0.3) : nombre de successions, dont celles qui proposent au moins un héritier
+   * légendaire / épique (hors Bénédictions) ; héros choisis légendaires ; évolutions ; Étoiles filantes
+   * proposées et vécues ; légendaires obtenus par évolution ; hauts faits obtenus.
+   */
+  traits?: { succ: number; offerLeg: number; offerEpic: number; offerEpicMut: number; offerLegMut: number; heroLeg: number; evo: number; evoLeg: number; novaOffered: number; novaLived: number };
+  feats?: string[];
   /** points de contrôle horaires */
   hourly: { h: number; log10Value: number; gen: number; legacyTotal: number; valueRate: number }[];
   /** anomalies détectées (NaN, négatifs, Infinity) */
@@ -88,6 +95,26 @@ export function runGame(o: RunOpts): RunResult {
   const actTime: Record<string, number> = Object.fromEntries(ACTS.map((a) => [a, 0]));
   let paused = 0, live = 0, hSum = 0, hN = 0, hMin = 1, echoV = 0, allV = 0, married = 0, vocMax = 0;
   let nextDecide = 0, nextBuy = 0, succAt = -1;
+  const tr = { succ: 0, offerLeg: 0, offerEpic: 0, offerEpicMut: 0, offerLegMut: 0, heroLeg: 0, evo: 0, evoLeg: 0, novaOffered: 0, novaLived: 0 };
+  let seenSucc: unknown = null;
+  const rarOf = (id: string) => (TRAIT[id] && !TRAIT[id].neg ? TRAIT[id].rarity : -1);
+  const observe = () => {
+    const sc = s.succession!;
+    if (sc === seenSucc) return;
+    seenSucc = sc;
+    tr.succ++;
+    const own = (h: { traits: string[] }) => h.traits.filter((t) => !s.blessings.includes(t));
+    if (sc.heirs.some((h) => own(h).some((t) => rarOf(t) === 3))) tr.offerLeg++;
+    if (sc.heirs.some((h) => own(h).some((t) => rarOf(t) === 2))) tr.offerEpic++;
+    // « D'un coup » : un épique ou légendaire qui ne vient ni des parents, ni d'une évolution (mutation).
+    const fromKin = new Set([...s.hero.traits, ...(s.hero.spouse?.traits ?? [])]);
+    const mut = (h: { traits: string[]; evolved?: string[] }, r: number) => own(h).some((t) => rarOf(t) === r && !fromKin.has(t) && !(h.evolved ?? []).includes(t));
+    if (sc.heirs.some((h) => mut(h, 2))) tr.offerEpicMut++;
+    if (sc.heirs.some((h) => mut(h, 3) && !h.traits.some((t) => TRAIT[t]?.nova && rarOf(t) === 3 && own(h).filter((x) => rarOf(x) === 3).length === 1))) tr.offerLegMut++;
+    if (sc.heirs.some((h) => h.traits.some((t) => TRAIT[t]?.nova))) tr.novaOffered++;
+    if (sc.noEcho) tr.novaLived++;
+    for (const h of sc.heirs) for (const t of h.evolved ?? []) { tr.evo++; if (rarOf(t) === 3) tr.evoLeg++; }
+  };
   const anomalies: string[] = [];
   const hourly: RunResult['hourly'] = [];
   let lastHourV = 0;
@@ -151,8 +178,13 @@ export function runGame(o: RunOpts): RunResult {
     c.t += dt;
     account(dt);
     if (s.succession) {
+      observe();
       if (succAt < 0) succAt = c.t + prof.successionDelay;
-      if (c.t >= succAt) { prof.succession(s, c); succAt = -1; if (s.hero.vocation) vocMax = Math.max(vocMax, s.hero.vocation.tier); }
+      if (c.t >= succAt) {
+        prof.succession(s, c); succAt = -1;
+        if (s.hero.vocation) vocMax = Math.max(vocMax, s.hero.vocation.tier);
+        if (s.hero.traits.some((t) => rarOf(t) === 3)) tr.heroLeg++;
+      }
     }
     if (c.t >= nextBuy) { prof.buy(s, c); nextBuy = c.t + prof.buyEvery; }
     if (!hadSpouse && s.hero.spouse) married++;
@@ -184,6 +216,7 @@ export function runGame(o: RunOpts): RunResult {
     traitCombos60: combos.size, traitFreq60: freq,
     epithetsFound: Object.keys(s.epithets).length, epithetLives: s.ancestors.filter((a) => a.epithet).length,
     eclatsEnd: s.eclats, eventsDone: s.stats.eventsDone, eventTiers: Object.keys(s.events).sort().map((k) => s.events[k].tier), married, vocationTierMax: vocMax,
+    traits: tr, feats: Object.keys((s as { feats?: Record<string, number> }).feats ?? {}),
     hourly, anomalies, ms: Math.round(performance.now() - t0),
   };
 }
