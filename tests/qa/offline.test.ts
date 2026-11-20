@@ -57,7 +57,7 @@ describe('hors ligne vs en ligne', () => {
     }
     const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
     expect(Math.abs(mean)).toBeLessThan(0.05);
-  });
+  }, 30_000); // 24 graines : ~4 s seul, davantage sur une machine chargée
 });
 
 describe('sensibilité au pas (même partie, mêmes actions)', () => {
