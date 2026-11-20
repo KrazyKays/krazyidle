@@ -134,8 +134,8 @@ describe('GDD 2.5 — le monde partagé', () => {
 });
 
 describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
-  test('34 surnoms en 4 raretés, 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
-    expect(EPITHETS).toHaveLength(34);
+  test('35 surnoms en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
+    expect(EPITHETS).toHaveLength(35);
     expect(new Set(EPITHETS.map((e) => e.rarity)).size).toBe(4);
     expect(Math.min(...EPITHET_ECLATS)).toBe(1);
     expect(Math.max(...EPITHET_ECLATS)).toBe(5);

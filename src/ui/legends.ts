@@ -260,3 +260,4 @@ export function codexSection(app: App): HTMLElement | null {
         h('div', null, h('div', { class: 'strong' }, 'Dicton des anciens'),
           h('div', { class: 'muted small italic' }, '« Un sang ne porte qu\'un fardeau de dons : deux couronnes y tiennent, jamais trois, et les plus humbles s\'y glissent toujours. »')))));
 }
+

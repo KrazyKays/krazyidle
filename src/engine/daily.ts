@@ -60,8 +60,8 @@ export const ORDER_TARGET: [number, number] = [56, 66];
 function baseSetup(date: string): Omit<DailySetup, 'order'> {
   const rng = new Rng(hashStr('daily:' + date));
   const name = rng.pick(DAILY_NAMES);
-  const pos = TRAITS.filter((t) => !t.neg && !t.shop && t.rarity <= 1 && !t.mods.heirs && !t.mods.echo && !t.mods.life);
-  const neg = TRAITS.filter((t) => t.neg && !t.mods.echo && !t.mods.life);
+  const pos = TRAITS.filter((t) => !t.since && !t.neg && !t.shop && t.rarity <= 1 && !t.mods.heirs && !t.mods.echo && !t.mods.life);
+  const neg = TRAITS.filter((t) => !t.since && t.neg && !t.mods.echo && !t.mods.life);
   const traits: string[] = [];
   while (traits.length < 2) {
     const t = rng.pick(pos).id;

@@ -22,6 +22,8 @@ export interface Hero {
   spouse?: Spouse;
   /** usure du sang : générations successives de transmission de chaque trait (absent : déduit des ancêtres) */
   wear?: Record<string, number>;
+  /** dons reçus sous leur forme mûrie à la naissance (évolution, 0.3) */
+  evolved?: string[];
 }
 
 /** Maison alliée : maison du comté (PNJ) ou lignée d'un autre joueur. */
@@ -132,7 +134,12 @@ export interface Ancestor {
 
 export interface Succession {
   heirs: Hero[];
+  /** Écho de la vie qui s'achève. Ignoré si `noEcho` (Étoile filante) : il n'est ni proposé ni gardé. */
   newEcho: Echo;
+  /** la vie était une Étoile filante : elle ne laisse pas d'Écho (0.3) */
+  noEcho?: boolean;
+  /** dons mûrs du défunt : trait → forme supérieure qu'il a pu transmettre (0.3) */
+  ripe?: Record<string, string>;
   legacyGain: number;
   vocationEarned: Vocation | null;
   ancestor: Ancestor;

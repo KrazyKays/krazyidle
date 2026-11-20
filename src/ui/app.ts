@@ -6,7 +6,7 @@ import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  BLESSING_COST, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
+  BLESSING_COST, blessable, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
   VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -19,6 +19,7 @@ import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './hera
 import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName } from '../engine/epithets';
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
+import { evolutionsOf } from '../engine/evolution';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
@@ -478,10 +479,10 @@ export class App {
       if (!t) return null;
       const name = traitName(t, who);
       const w = wear?.[id] ?? 0;
-      const wearTxt = w >= 1 ? ` Transmis depuis ${w} génération${w > 1 ? 's' : ''} : chance de passer aux enfants ×${wearMult(w).toFixed(2).replace('.', ',')}.` : '';
+      const wearTxt = (w >= 1 ? ` Transmis depuis ${w} génération${w > 1 ? 's' : ''} : chance de passer aux enfants ×${wearMult(w).toFixed(2).replace('.', ',')}.` : '') + evolutionHint(id);
       return h('button', {
         class: `trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color }, title: `${name} — ${t.desc}${wearTxt}`,
-        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${name} (${RARITY[t.rarity].name}) : ${t.desc}${wearTxt}`, t.neg ? 'bad' : 'info'); },
+        onclick: (e: Event) => { e.stopPropagation(); toast(`${t.icon} ${name} (${RARITY[t.rarity].name}) : ${t.desc}.${wearTxt}`, t.neg ? 'bad' : 'info'); },
       }, t.icon, small ? null : h('span', null, name), w >= 2 ? h('span', { class: 'wear' }, `🩸${w}`) : null);
     }));
   }
@@ -698,6 +699,7 @@ export class App {
     const head = h('div', { class: 'card panel-head' },
       h('h2', null, '🌀 Échos ancestraux'),
       h('p', { class: 'muted' }, 'Chaque ancêtre rejoue sa vie en boucle. Leur production profite de tous tes bonus actuels.'),
+      cryptBoost(s) > 1 ? h('p', { class: 'small accent' }, `💫 ${this.nm(s.hero)} est une Étoile filante : la Crypte s'embrase, tous les Échos ×${cryptBoost(s)} jusqu'à sa mort (et elle ne laissera pas d'Écho).`) : null,
       h('div', { class: 'stats' },
         stat('Emplacements', `${s.echoes.length} / ${echoSlots(s)}`),
         stat('Puissance de base', b.text(h('span'), () => `×${echoPowerMult(s, this.rt).toFixed(2)}`)),
@@ -959,14 +961,27 @@ export class App {
     return h('div', null, parts);
   }
 
+  /** Dons mûris à la succession : lesquels se sont transcendés, et chez combien d'enfants. */
+  evolutionReveal(): HTMLElement | null {
+    const sc = this.s.succession;
+    if (!sc?.ripe) return null;
+    const lines = Object.entries(sc.ripe).map(([from, to]) => {
+      const a = TRAIT[from], b = TRAIT[to];
+      const n = sc.heirs.filter((x) => x.evolved?.includes(to)).length;
+      return h('li', null, `${a.icon} ${traitName(a)} → ${b.icon} ${traitName(b)} (${RARITY[b.rarity].name}) : `,
+        n ? h('strong', null, `chez ${n} enfant${n > 1 ? 's' : ''}`) : h('span', { class: 'muted' }, 'mûr, mais il ne s\'est pas transcendé cette fois'));
+    });
+    return h('div', { class: 'card evo-card' }, h('strong', null, '🌱 Des dons ont mûri'), h('ul', { class: 'plain-list small' }, lines));
+  }
+
   panelBazar() {
     const s = this.s, b = this.bTab;
     const parts: HTMLElement[] = [];
     // Bazar céleste
-    const bless = TRAITS.filter((t) => !t.neg && t.rarity >= 1 && BLESSING_COST[t.rarity]);
+    const bless = TRAITS.filter((t) => blessable(t.id));
     parts.push(h('div', { class: 'card' },
       h('h2', null, '✦ Bazar céleste'),
-      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les enfants de la prochaine succession (max 2).`),
+      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les enfants de la prochaine succession (max 2). Les dons mûris et l'Étoile filante ne s'achètent pas.`),
       s.blessings.length ? h('p', { class: 'small accent' }, 'Bénédictions en attente : ', this.traitChips(s.blessings, true)) : null,
       h('div', { class: 'shop' }, bless.map((t) => {
         const c = BLESSING_COST[t.rarity];
@@ -990,7 +1005,8 @@ export class App {
     const s = this.s;
     const sc = s.succession;
     if (!sc || this.successionModal) return;
-    const all = [...s.echoes, sc.newEcho];
+    // Une Étoile filante ne laisse pas d'Écho : il n'y a que la Crypte actuelle à trier.
+    const all = sc.noEcho ? [...s.echoes] : [...s.echoes, sc.newEcho];
     const slots = echoSlots(s);
     if (!this.echoSel) {
       const ranked = [...all].sort((a, b) => (b.pinned ? 1e18 : 0) + echoExpectedRate(s, this.rt, b) - ((a.pinned ? 1e18 : 0) + echoExpectedRate(s, this.rt, a)));
@@ -1013,7 +1029,8 @@ export class App {
           hero.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[hero.vocation.act].color } }, `${ACT[hero.vocation.act].icon} ${vocationName(hero.vocation, hero, roman)}`) : h('span', { class: 'muted small' }, 'Sans vocation'),
           h('div', { class: 'heir-traits' }, hero.traits.map((id) => {
             const t = TRAIT[id], w = hero.wear?.[id] ?? 0;
-            return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, h('span', { class: 'muted small' }, ` — ${t.desc}`),
+            const ev = hero.evolved?.includes(id);
+            return h('div', { class: `heir-trait ${t.neg ? 'neg' : ''} ${ev ? 'evolved' : ''}`, style: { '--c': RARITY[t.rarity].color } }, `${t.icon} ${traitName(t, hero)}`, ev ? h('span', { class: 'evo-tag', title: 'Ce don a mûri en passant du parent à l\'enfant' }, ' ✨ a mûri') : null, h('span', { class: 'muted small' }, ` — ${t.desc}`),
               w >= 2 ? h('span', { class: 'wear', title: `Don transmis depuis ${w} générations : il passera à ses enfants avec une chance ×${wearMult(w).toFixed(2).replace('.', ',')}. Une alliance apporte du sang neuf.` }, ` 🩸 ${w} gén.`) : null);
           })),
           h('div', { class: 'muted small' }, `Vie : ${Math.round(lifeDuration(s, hero))} s · Meilleure aptitude : ${ACT[best].icon} ×${Math.max(...m).toFixed(2)}`));
@@ -1046,6 +1063,8 @@ export class App {
           h('h2', null, `${this.nm(a)} rejoint les ancêtres`),
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
         this.epithetReveal(),
+        this.evolutionReveal(),
+        sc.noEcho ? h('div', { class: 'card nova-card' }, h('strong', null, '💫 Une Étoile filante s\'est éteinte'), h('p', { class: 'muted small' }, 'Sa vie a embrasé la Crypte, mais elle ne laisse pas d\'Écho : seuls tes Échos actuels continuent de boucler.')) : null,
         h('div', { class: 'stats' },
           stat('Héritage gagné', `+${sc.legacyGain} ⚜️`),
           stat('Vocation', sc.vocationEarned ? `${ACT[sc.vocationEarned.act].icon} ${vocationName(sc.vocationEarned, a, roman)}` : 'Aucune'),
@@ -1617,6 +1636,11 @@ function fmtAge(tick: number): string {
 function fmtDailyResult(result: number): string {
   const age = resultAge(result);
   return age !== null ? `livrée à ${fmtAge(age * 10)}` : `remplie à ${Math.max(0, Math.floor(result / 10))} %`;
+}
+
+/** Ce qu'il faut accomplir pour qu'un don mûrisse (fiche du trait). */
+function evolutionHint(id: string): string {
+  return evolutionsOf(id).map((e) => ` Peut mûrir en ${TRAIT[e.to].icon} ${traitName(TRAIT[e.to])} chez ses enfants : ${e.cond.charAt(0).toLowerCase()}${e.cond.slice(1)}.`).join('');
 }
 
 function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number; P: number }[], series: [string, string][]) {

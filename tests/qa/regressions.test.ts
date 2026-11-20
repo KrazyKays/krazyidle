@@ -521,3 +521,106 @@ describe('ECO-1 — jauges du Domaine centrées sur l\'équilibre', () => {
     expect(ecoGauge(ECO_EQ, 'P')).toBeGreaterThan(ECO_EQ.P / 140 * 5);
   });
 });
+
+describe('TRAIT-EVO — mutations plafonnées, dons qui mûrissent (0.3)', () => {
+  test('une mutation ne donne jamais de légendaire ni de forme mûrie, quelle que soit Bonne étoile', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { TRAIT, mutationWeights } = await import('../../src/engine/data');
+    const { Rng } = await import('../../src/engine/rng');
+    for (let luck = 0; luck <= 5; luck++) expect(mutationWeights(luck)[3]).toBe(0);
+    const s = newGame(0, 7);
+    s.upgrades.etoile = 5;
+    const rng = new Rng(42);
+    for (let k = 0; k < 400; k++) {
+      for (const h of genHeirs(s, { ...s.hero, traits: [] }, rng)) {
+        for (const t of h.traits) {
+          expect(TRAIT[t].matured ?? false).toBe(false);
+          if (TRAIT[t].rarity === 3) expect(TRAIT[t].nova).toBe(true); // seule l'Étoile filante, par son propre tirage
+        }
+      }
+    }
+  });
+
+  test('un don mûr passe parfois sous sa forme supérieure, sans usure ; un don non mûr jamais', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const s = newGame(0, 8);
+    const parent = { ...s.hero, traits: ['main_verte'], wear: { main_verte: 6 } };
+    const rng = new Rng(1);
+    let evolved = 0, kept = 0, wrong = 0;
+    for (let k = 0; k < 300; k++) {
+      for (const h of genHeirs(s, parent, rng, { main_verte: 'seve' })) {
+        if (h.traits.includes('seve')) { evolved++; expect(h.evolved).toContain('seve'); expect(h.wear?.seve).toBeUndefined(); }
+        if (h.traits.includes('main_verte')) kept++;
+      }
+      for (const h of genHeirs(s, parent, rng)) if (h.traits.includes('seve')) wrong++;
+    }
+    expect(evolved).toBeGreaterThan(50);
+    expect(kept).toBeGreaterThan(evolved); // 25 % de chance seulement : le don reste le plus souvent tel quel
+    expect(wrong).toBe(0);
+  });
+
+  test('la vie doit mériter l\'évolution : cultiver la moitié de sa vie fait mûrir Main verte, pas moins', async () => {
+    const { ripeTraits } = await import('../../src/engine/evolution');
+    const facts = (cultiver: number) => ({
+      share: { cultiver, chasser: 1 - cultiver, commercer: 0, etudier: 0, mediter: 0 }, used: 2, switches: 3, harmonyAvg: 0.9, harmonyMin: 0.8,
+      value: 100, parentValue: 90, bestBefore: 100, gen: 5, traits: ['main_verte', 'genie'], negTraits: 0, vocTier: 2, prevVocTier: 1,
+      durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29, predators: 11,
+    });
+    expect(ripeTraits(['main_verte', 'genie'], facts(0.6))).toEqual({ main_verte: 'seve' });
+    expect(ripeTraits(['main_verte', 'genie'], facts(0.4))).toEqual({});
+    // Génie → Élu : une vie une fois et demie meilleure que la meilleure de la lignée, et une vocation de rang 6.
+    expect(ripeTraits(['genie'], { ...facts(0.6), value: 160, vocTier: 6 })).toEqual({ genie: 'elu' });
+    expect(ripeTraits(['genie'], { ...facts(0.6), value: 140, vocTier: 6 })).toEqual({});
+  });
+
+  test('les traits de la 0.3 restent hors du Destin du jour et des maisons de la semaine (codes EL2 inchangés)', async () => {
+    const { dailySetup } = await import('../../src/engine/daily');
+    const { countyHouses } = await import('../../src/engine/alliances');
+    const { TRAIT } = await import('../../src/engine/data');
+    for (let d = 0; d < 120; d++) {
+      const date = new Date(Date.UTC(2026, 0, 1) + d * 86400_000).toISOString().slice(0, 10);
+      for (const t of dailySetup(date).traits) expect(TRAIT[t].since).toBeUndefined();
+      for (const ch of countyHouses(Date.UTC(2026, 0, 1) + d * 7 * 86400_000)) expect(TRAIT[ch.gift].since).toBeUndefined();
+    }
+  });
+
+  test('le Bazar ne vend ni formes mûries ni Étoile filante', async () => {
+    const { buyBlessing } = await import('../../src/engine/game');
+    const s = newGame(0, 9);
+    s.eclats = 100;
+    expect(buyBlessing(s, 'seve')).toBe(false);
+    expect(buyBlessing(s, 'etoile_filante')).toBe(false);
+    expect(buyBlessing(s, 'genie')).toBe(true);
+  });
+});
+
+describe('NOVA — l\'Étoile filante (0.3)', () => {
+  test('elle embrase la Crypte pendant sa vie, ne se transmet pas et ne laisse pas d\'Écho', async () => {
+    const { confirmSuccession, cryptBoost, endLife, genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const s = newGame(0, 10);
+    s.hero.traits = ['etoile_filante'];
+    startLife(s);
+    expect(cryptBoost(s)).toBe(2);
+    const rng = new Rng(3);
+    let carried = 0, n = 0;
+    for (let k = 0; k < 300; k++) for (const h of genHeirs(s, s.hero, rng)) { n++; if (h.traits.includes('etoile_filante')) carried++; }
+    expect(carried / n).toBeLessThan(0.01); // seulement le tirage propre (≈ 0,2 % par succession), jamais l'héritage
+    s.life!.t = s.life!.dur;
+    endLife(s, 1000);
+    const sc = s.succession!;
+    expect(sc.noEcho).toBe(true);
+    expect(confirmSuccession(s, 0, [sc.newEcho.id])).toBe(true);
+    expect(s.echoes).toHaveLength(0);
+    expect(cryptBoost(s)).toBe(1);
+  });
+
+  test('un code d\'alliance ne peut pas apporter d\'Étoile filante', async () => {
+    const { suitorFromCode } = await import('../../src/engine/alliances');
+    const s = newGame(0, 11);
+    const sp = suitorFromCode(s, { house: { id: 'x', name: 'X', crest: '🦁', color: '#c62828' }, name: 'Aude', sex: 'f', gen: 3, traits: ['etoile_filante', 'genie'], vocation: null, nonce: 1 } as never);
+    expect(sp.traits).toEqual(['genie']);
+  });
+});
+

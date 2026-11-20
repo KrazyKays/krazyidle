@@ -104,6 +104,8 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'inconstant', name: 'l\'Inconstant', nameF: 'l\'Inconstante', icon: '🎭', rarity: 0, hint: 'Changer d\'avis plus souvent que de chemise.', test: (f) => f.switches >= 25, mods: {} },
   { id: 'bref', name: 'le Bref', nameF: 'la Brève', icon: '🥀', rarity: 0, hint: 'Une vie trop courte pour qu\'on s\'en souvienne… ou presque.', test: (f) => f.durRatio <= 0.85, mods: {} },
   { id: 'faineant', name: 'le Fainéant', nameF: 'la Fainéante', icon: '💤', rarity: 0, hint: 'Faire bien moins que son père ou sa mère.', test: (f) => f.parentValue > 0 && f.value < 0.2 * f.parentValue, mods: {} },
+  // 0.3, en fin de liste (les codes d'alliance désignent les surnoms par leur rang). Sans effet : l'Étoile filante ne laisse pas d'Écho.
+  { id: 'comete', name: 'la Comète', icon: '☄️', rarity: 3, hint: 'Brûler si fort qu\'on ne laisse aucune trace… sauf dans les mémoires.', test: (f) => f.traits.includes('etoile_filante'), mods: {} },
 ];
 
 export const EPITHET: Record<string, EpithetDef> = Object.fromEntries(EPITHETS.map((e) => [e.id, e]));

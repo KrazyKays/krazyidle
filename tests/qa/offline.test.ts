@@ -39,11 +39,14 @@ describe('hors ligne vs en ligne', () => {
     });
   }
 
-  // Une graine seule varie de ±4 % (é.-t. mesuré sur 20 graines, lab/balance/r10/offline-hunt.ts) : le test
-  // porte sur la moyenne de 8 graines. Biais connu : la chasse perd ~3 % au pas de 1 s (QA, confrontation B4).
-  test('lignée de chasseurs (Affût) : écart moyen hors ligne / en ligne borné à ±5 % (8 graines)', () => {
+  // Une graine seule variait de ±4 % (é.-t. mesuré sur 20 graines, lab/balance/r10/offline-hunt.ts). Biais connu :
+  // la chasse perd ~3 % au pas de 1 s (QA, confrontation B4). Depuis la 0.3 (dons mûris, Pas de loup +90 %), quand
+  // le héros meurt au début de la fenêtre et que des Échos chasseurs puissants chassent seuls, une graine peut perdre
+  // jusqu'à 21 % (moyenne de ce cas −3,7 %, contre −1,8 % avant ; ensemble −2,6 % sur 50 graines) : le test porte
+  // désormais sur 24 graines consécutives au lieu de 8, seuil inchangé (dette consignée dans CHANGELOG-EQUILIBRAGE).
+  test('lignée de chasseurs (Affût) : écart moyen hors ligne / en ligne borné à ±5 % (24 graines)', () => {
     const gaps: number[] = [];
-    for (const seed of [11, 12, 13, 14, 15, 16, 17, 18]) {
+    for (let seed = 11; seed <= 34; seed++) {
       const base = midGame(seed);
       for (const e of base.echoes) { e.acts = e.acts.map(() => 1); }
       const on = runFor(clone(base), 1200, 0.1, 'chasser');

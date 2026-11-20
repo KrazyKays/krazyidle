@@ -2,7 +2,9 @@
 import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
+  EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights,
 } from './data';
+import { ripeTraits } from './evolution';
 import { addCadets, inbreedingRisk } from './alliances';
 import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
@@ -57,6 +59,14 @@ export function echoPowerMult(s: GameState, rt: Runtime): number {
 
 export function echoPower(s: GameState, rt: Runtime, e: Echo): number {
   return echoPowerMult(s, rt) * Math.max(0.2, 1 + e.strength) * (1 + (EPITHET[e.epithet ?? '']?.mods.pow ?? 0));
+}
+
+/**
+ * Étoile filante : tant qu'elle vit, la Crypte s'embrase et tous les Échos rejouent plus fort. Ce bonus ne
+ * dépend que du héros vivant ; comme celui d'un événement, il n'entre pas dans la valeur d'un Écho.
+ */
+export function cryptBoost(s: GameState): number {
+  return s.life ? 1 + sumMods(s.hero.traits).crypt : 1;
 }
 
 /** Bonus de surnom d'un Écho pour une activité. */
@@ -207,9 +217,10 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
 
   // Échos
   let echoGross = 0;
+  const crypt = cryptBoost(s);
   for (const e of s.echoes) {
     if (!e.acts.length) continue;
-    const p = echoPower(s, rt, e);
+    const p = echoPower(s, rt, e) * crypt;
     const ecoS = echoEcoStrength(e);
     let left = dt;
     while (left > 1e-9) {
@@ -384,7 +395,11 @@ export function endLife(s: GameState, now: number) {
   const normalDur = lifeDuration(s, { ...hero, traits: [] }) + (life.extended ? 30 : 0);
   const legacyGain = legacyFor(life.value, life.dur / normalDur);
   const m = sumMods(hero.traits);
-  const ep = chroniclesUnlocked(s) ? pickEpithet(lifeFacts(s, life, voc)) : null;
+  const facts = lifeFacts(s, life, voc);
+  const ep = chroniclesUnlocked(s) ? pickEpithet(facts) : null;
+  // Évolution (0.3) : les dons que cette vie a mérités peuvent passer à l'enfant sous leur forme supérieure.
+  const ripe = ripeTraits(hero.traits, facts);
+  const noEcho = hero.traits.some((t) => TRAIT[t]?.nova);
   const echo: Echo = {
     id: s.nextId++, heroId: hero.id, name: hero.name, sex: sexOf(hero), ord: hero.ord, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
     acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
@@ -407,9 +422,11 @@ export function endLife(s: GameState, now: number) {
   const decayed = hero.vocation && hero.vocation.tier > 1 ? { act: hero.vocation.act, tier: hero.vocation.tier - 1 } : null;
   const heroForHeirs: Hero = { ...hero, vocation: voc ?? decayed };
   const rng = new Rng(s.seed);
-  const heirs = genHeirs(s, heroForHeirs, rng);
+  const heirs = genHeirs(s, heroForHeirs, rng, ripe);
   s.seed = rng.s;
   s.succession = { heirs, newEcho: echo, legacyGain, vocationEarned: voc, ancestor, epithet: epInfo };
+  if (noEcho) s.succession.noEcho = true;
+  if (Object.keys(ripe).length) s.succession.ripe = ripe;
   s.life = null;
 }
 
@@ -434,7 +451,7 @@ export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): 
   };
 }
 
-export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
+export function genHeirs(s: GameState, parent: Hero, rng: Rng, ripe: Record<string, string> = {}): Hero[] {
   const pm = sumMods(parent.traits);
   const n = Math.min(6, 3 + up(s, 'sang') + pm.heirs);
   const inherit = 0.5 + 0.08 * up(s, 'transmission') + pm.inherit;
@@ -451,21 +468,29 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
   const pw = heroWear(s, parent);
   // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux.
   const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + 1;
+  const nova = rng.chance(NOVA_CHANCE + NOVA_LUCK * luck) ? rng.int(n) : -1;
   for (let i = 0; i < n; i++) {
     const wear: Record<string, number> = {};
     const cand: string[] = [];
     const add = (t: string, w: number) => { if (!cand.includes(t)) cand.push(t); wear[t] = Math.min(wear[t] ?? w, w); };
+    const evolved: string[] = [];
     for (const t of parent.traits) {
       const def = TRAIT[t];
-      if (!def) continue;
+      if (!def || def.nova) continue; // l'Étoile filante ne se transmet pas
       const p = def.neg ? 0.3 : Math.min(0.95, inherit) * wearMult(pw[t] ?? 0);
-      if (rng.chance(p)) add(t, def.neg ? 0 : carry(t));
+      if (!rng.chance(p)) continue;
+      // Un don mûr se transcende parfois : la forme supérieure repart sans usure (sang neuf).
+      const up2 = ripe[t];
+      if (up2 && TRAIT[up2] && rng.chance(Math.min(0.95, EVO_CHANCE + EVO_LUCK * luck) * (TRAIT[up2].rarity >= 3 ? EVO_LEGENDARY : 1))) {
+        add(up2, 0);
+        evolved.push(up2);
+      } else add(t, def.neg ? 0 : carry(t));
     }
     // Le conjoint transmet aussi ses traits, un peu moins souvent (jamais ceux du Bazar) : sang neuf, sans usure.
     if (spouse) {
       for (const t of spouse.traits) {
         const def = TRAIT[t];
-        if (!def || def.shop) continue;
+        if (!def || def.shop || def.nova) continue;
         const p = (def.neg ? 0.3 : Math.min(0.95, inherit)) * 0.8;
         if (rng.chance(p)) add(t, 0);
       }
@@ -477,12 +502,14 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     }
     const muts = (rng.chance(0.85) ? 1 : 0) + (rng.chance(0.25 + 0.04 * luck) ? 1 : 0);
     for (let k = 0; k < muts; k++) {
-      const rar = rng.weighted([60 - 6 * luck, 28 + 2 * luck, 10 + 3 * luck, 2 + 1 * luck]);
+      const rar = rng.weighted(mutationWeights(luck));
       const negChance = rar === 0 ? Math.max(0.05, 0.3 - 0.05 * luck) : rar === 1 ? 0.12 : 0;
       const wantNeg = rng.chance(negChance);
-      const pool = TRAITS.filter((t) => !t.shop && t.rarity === rar && !!t.neg === wantNeg && !cand.includes(t.id));
+      const pool = TRAITS.filter((t) => !t.shop && !t.nova && !t.matured && t.rarity === rar && !!t.neg === wantNeg && !cand.includes(t.id));
       if (pool.length) add(rng.pick(pool).id, 0);
     }
+    // Étoile filante : un tirage à part par succession (un seul enfant au plus), qui ne doit rien aux parents.
+    if (i === nova) add('etoile_filante', 0);
     const traits = expressGenome(cand, rng);
     for (const b of s.blessings) if (!traits.includes(b)) { traits.push(b); wear[b] = 0; }
     const kept: Record<string, number> = {};
@@ -500,7 +527,10 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng): Hero[] {
     for (let k = 0; k < 5 && used.has(name); k++) name = names.pick(FIRST_NAMES);
     if (i === jojoAt) name = jojo!;
     used.add(name);
-    out.push({ id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id, wear: kept });
+    const heir: Hero = { id: s.nextId++, name, sex: sexFor(name), gen: parent.gen + 1, traits, vocation, parentId: parent.id, wear: kept };
+    const shown = evolved.filter((t) => traits.includes(t));
+    if (shown.length) heir.evolved = shown;
+    out.push(heir);
   }
   return out;
 }
@@ -545,7 +575,7 @@ export function heroWear(s: GameState, hero: Hero): Record<string, number> {
 export function confirmSuccession(s: GameState, heirIdx: number, keepEchoIds: number[]): boolean {
   const sc: Succession | null = s.succession;
   if (!sc) return false;
-  const all = [...s.echoes, sc.newEcho];
+  const all = sc.noEcho ? [...s.echoes] : [...s.echoes, sc.newEcho];
   const keep = all.filter((e) => keepEchoIds.includes(e.id));
   if (keep.length > echoSlots(s)) return false;
   s.echoes = keep;
@@ -620,9 +650,15 @@ export function buyPartition(s: GameState, id: string): boolean {
 }
 export const BLESSING_COST = [0, 3, 6, 12, 15];
 
+/** Le Bazar ne vend ni l'Étoile filante, ni les formes mûries des dons (elles se méritent). */
+export function blessable(traitId: string): boolean {
+  const t = TRAIT[traitId];
+  return !!t && !t.neg && !t.nova && !t.matured && t.rarity >= 1 && !!BLESSING_COST[t.rarity];
+}
+
 export function buyBlessing(s: GameState, traitId: string): boolean {
   const t = TRAIT[traitId];
-  if (!t || t.neg || s.blessings.includes(traitId) || s.blessings.length >= 2) return false;
+  if (!t || !blessable(traitId) || s.blessings.includes(traitId) || s.blessings.length >= 2) return false;
   const c = BLESSING_COST[t.rarity];
   if (!c || s.eclats < c) return false;
   s.eclats -= c;

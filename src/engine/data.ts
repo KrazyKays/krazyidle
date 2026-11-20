@@ -77,6 +77,8 @@ export interface Mods {
   start?: number; // niveaux de départ
   heirs?: number;
   inherit?: number;
+  /** pendant la vie du héros, puissance de tous les Échos ×(1 + crypt) (Étoile filante) */
+  crypt?: number;
 }
 
 export interface TraitDef {
@@ -88,6 +90,19 @@ export interface TraitDef {
   rarity: 0 | 1 | 2 | 3 | 4; // commun, rare, épique, légendaire, mythique
   neg?: boolean;
   shop?: boolean; // obtenable uniquement au Bazar céleste
+  /**
+   * Étoile filante : n'apparaît que par mutation, ne se transmet pas (ni aux enfants, ni par une union),
+   * ne s'achète pas, et la vie qui la porte ne laisse pas d'Écho.
+   */
+  nova?: boolean;
+  /**
+   * Version d'apparition. Les traits ajoutés après la 0.2.2 sont tenus à l'écart du Destin du jour et des
+   * maisons du comté, tirés de la même façon pour tous : sans ça, ajouter un trait changerait la partie du
+   * jour (codes EL2 déjà partagés) et les maisons de la semaine d'un joueur à l'autre.
+   */
+  since?: string;
+  /** forme mûrie d'un don : n'apparaît que par évolution, jamais par mutation */
+  matured?: boolean;
   desc: string;
   mods: Mods;
 }
@@ -121,10 +136,18 @@ export const TRAITS: TraitDef[] = [
   { id: 'genie', name: 'Génie', icon: '🧠', rarity: 2, desc: 'Expérience +60%', mods: { xp: 0.6 } },
   { id: 'memoire', name: 'Mémoire ancestrale', icon: '🌀', rarity: 2, desc: 'Puissance de son Écho +80%', mods: { echo: 0.8 } },
   { id: 'centenaire', name: 'Centenaire', icon: '⏳', rarity: 2, desc: 'Durée de vie +30 s', mods: { life: 30 } },
-  { id: 'sang_dore', name: 'Sang doré', icon: '🩸', rarity: 2, desc: 'Production +35%, transmission +10%', mods: { all: 0.35, inherit: 0.1 } },
-  { id: 'elu', name: 'Élu', nameF: 'Élue', icon: '👑', rarity: 3, desc: 'Production +60%, expérience +40%', mods: { all: 0.6, xp: 0.4 } },
+  { id: 'sang_dore', name: 'Sang doré', icon: '🩸', rarity: 2, desc: 'Production +60%, transmission +10%', mods: { all: 0.6, inherit: 0.1 } },
+  { id: 'elu', name: 'Élu', nameF: 'Élue', icon: '👑', rarity: 3, desc: 'Production +80%, expérience +40%', mods: { all: 0.8, xp: 0.4 } },
   { id: 'eternel', name: 'Éternel', nameF: 'Éternelle', icon: '♾️', rarity: 3, desc: 'Vie +45 s, Écho +50%', mods: { life: 45, echo: 0.5 } },
   { id: 'astres', name: 'Béni des astres', nameF: 'Bénie des astres', icon: '🌠', rarity: 4, shop: true, desc: 'Production +50%, Écho +50%, transmission +20%', mods: { all: 0.5, echo: 0.5, inherit: 0.2 } },
+  // --- 0.3 : à la fin du tableau, car les codes d'alliance désignent les traits par leur rang. ---
+  // Formes mûries des dons d'activité (voir evolution.ts) : elles ne naissent pas par mutation.
+  { id: 'seve', name: 'Sève de la terre', icon: '🌱', rarity: 1, since: '0.3', matured: true, desc: 'Cultiver +90%', mods: { act: { cultiver: 0.9 } } },
+  { id: 'pas_loup', name: 'Pas de loup', icon: '🐾', rarity: 1, since: '0.3', matured: true, desc: 'Chasser +90%', mods: { act: { chasser: 0.9 } } },
+  { id: 'langue_or', name: 'Langue d\'or', icon: '🪙', rarity: 1, since: '0.3', matured: true, desc: 'Commercer +90%', mods: { act: { commercer: 0.9 } } },
+  { id: 'encyclopedique', name: 'Esprit encyclopédique', icon: '📚', rarity: 1, since: '0.3', matured: true, desc: 'Étudier +90%', mods: { act: { etudier: 0.9 } } },
+  { id: 'troisieme_oeil', name: 'Troisième œil', icon: '👁️', rarity: 1, since: '0.3', matured: true, desc: 'Méditer +90%', mods: { act: { mediter: 0.9 } } },
+  { id: 'etoile_filante', name: 'Étoile filante', icon: '💫', rarity: 3, nova: true, since: '0.3', desc: 'Tous les Échos ×2 pendant sa vie. Ne se transmet pas, ne laisse pas d\'Écho', mods: { crypt: 1 } },
 ];
 export const TRAIT: Record<string, TraitDef> = Object.fromEntries(TRAITS.map((t) => [t.id, t]));
 
@@ -146,6 +169,30 @@ export const WEAR_FLOOR = 0.3;
 export function wearMult(w: number): number {
   return Math.max(WEAR_FLOOR, 1 - WEAR_STEP * Math.max(0, w));
 }
+
+// --- Mutations et évolution (0.3) -------------------------------------------
+/**
+ * Poids des raretés d'une mutation (Commun, Rare, Épique, Légendaire) selon Bonne étoile. Depuis la 0.3, une
+ * mutation ne donne plus de légendaire, et l'épique se fait rare : les grands dons se méritent par l'évolution
+ * (avant : 60/28/10/2, +3 épique et +1 légendaire par niveau ; une succession de fin de partie montrait un
+ * légendaire environ 4 fois sur 10).
+ */
+export function mutationWeights(luck: number): number[] {
+  return [64 - 4 * luck, 30 + 3 * luck, 6 + 1 * luck, 0];
+}
+/**
+ * Chance qu'un don mûr passe à l'enfant sous sa forme supérieure, puis bonus par niveau de Bonne étoile.
+ * Retenue en mémoire parmi 0,25 / 0,4 / 0,6 et six variantes (lab/balance/evo/RESULTATS.md). En compensation
+ * de la rareté du légendaire (Élu était porté par 82 à 86 % des héros des profils avancés), Sang doré passe
+ * de +35 % à +60 % de production et Élu de +60 % à +80 %.
+ */
+export const EVO_CHANCE = 0.25;
+export const EVO_LUCK = 0.08;
+/** Vers le légendaire, la chance est multipliée par ce facteur : le sommet doit rester un événement. */
+export const EVO_LEGENDARY = 0.5;
+/** Chance qu'une succession compte une Étoile filante parmi les enfants, puis bonus par niveau de Bonne étoile. */
+export const NOVA_CHANCE = 0.002;
+export const NOVA_LUCK = 0.0004;
 
 export const VOCATION_BONUS = 0.2; // par rang
 export const VOCATION_MAX = 10;
@@ -202,7 +249,7 @@ export const LEGACY: LegacyDef[] = [
   { id: 'eveil', name: 'Éveil précoce', icon: '🌅', desc: 'Toutes compétences niv. +1 au départ', base: 10, growth: 2.2, max: 6 },
   { id: 'transmission', name: 'Transmission', icon: '🧬', desc: 'Chance d\'hériter des traits +8%', base: 6, growth: 1.9, max: 5 },
   { id: 'sang', name: 'Sang fécond', icon: '👪', desc: '+1 enfant proposé', base: 9, growth: 2.8, max: 3 },
-  { id: 'etoile', name: 'Bonne étoile', icon: '🍀', desc: 'Mutations plus rares et positives', base: 8, growth: 2.1, max: 5 },
+  { id: 'etoile', name: 'Bonne étoile', icon: '🍀', desc: 'Mutations plus rares et positives, dons qui mûrissent plus souvent', base: 8, growth: 2.1, max: 5 },
   { id: 'patience', name: 'Patience', icon: '🌙', desc: 'Temps hors-ligne max +2 h', base: 5, growth: 1.8, max: 9 },
   { id: 'alliances', name: 'Alliances', icon: '💍', desc: 'Débloque les mariages avec les maisons du comté et les lignées d\'autres joueurs', base: 45, growth: 1, max: 1 },
   { id: 'chroniques', name: 'Chroniques', icon: '📜', desc: 'Débloque les Surnoms : chaque vie marquante entre dans la légende et renforce son Écho', base: 90, growth: 1, max: 1 },

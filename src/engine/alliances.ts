@@ -59,7 +59,8 @@ export function countyHouses(now: number): CountyHouse[] {
   const rng = new Rng(hashStr('maisons:' + w));
   const names = [...HOUSE_NAMES];
   const acts = [...ACTS];
-  const gifts = TRAITS.filter((t) => !t.neg && !t.shop && t.rarity >= 1 && t.rarity <= 3);
+  // Les traits de la 0.3 (`since`) n'entrent pas ici : les maisons de la semaine restent les mêmes d'une version à l'autre.
+  const gifts = TRAITS.filter((t) => !t.since && !t.neg && !t.shop && t.rarity >= 1 && t.rarity <= 3);
   const out: CountyHouse[] = [];
   for (let i = 0; i < 3; i++) {
     const name = names.splice(rng.int(names.length), 1)[0];
@@ -82,7 +83,7 @@ export function suitorFor(s: GameState, ch: CountyHouse, now: number): Spouse {
   const name = rng.pick(FIRST_NAMES);
   const traits = [ch.gift];
   const rar = Math.min(3, rng.weighted([60, 30 + gen / 4, 8 + gen / 8, 1 + gen / 30]));
-  const pool = TRAITS.filter((t) => !t.neg && !t.shop && t.rarity === rar && !traits.includes(t.id));
+  const pool = TRAITS.filter((t) => !t.neg && !t.shop && !t.nova && t.rarity === rar && !traits.includes(t.id));
   if (pool.length) traits.push(rng.pick(pool).id);
   if (rng.chance(0.2)) {
     const neg = TRAITS.filter((t) => t.neg && t.rarity === 0);
@@ -217,7 +218,7 @@ export function suitorFromCode(s: GameState, p: Payload): Spouse {
   const traits: string[] = [];
   for (const id of p.traits) {
     const t = TRAIT[id];
-    if (!t || t.shop) continue;
+    if (!t || t.shop || t.nova) continue;
     if (t.rarity >= 3 && legendary++ >= 1) continue;
     if (traits.length < 4) traits.push(id);
   }
