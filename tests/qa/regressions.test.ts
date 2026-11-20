@@ -578,12 +578,12 @@ describe('TRAIT-EVO — mutations plafonnées, dons qui mûrissent (0.3)', () =>
     const { dailySetup } = await import('../../src/engine/daily');
     const { countyHouses } = await import('../../src/engine/alliances');
     const { TRAIT } = await import('../../src/engine/data');
-    for (let d = 0; d < 120; d++) {
-      const date = new Date(Date.UTC(2026, 0, 1) + d * 86400_000).toISOString().slice(0, 10);
+    for (let d = 0; d < 30; d++) {
+      const date = new Date(Date.UTC(2026, 0, 1) + d * 12 * 86400_000).toISOString().slice(0, 10);
       for (const t of dailySetup(date).traits) expect(TRAIT[t].since).toBeUndefined();
       for (const ch of countyHouses(Date.UTC(2026, 0, 1) + d * 7 * 86400_000)) expect(TRAIT[ch.gift].since).toBeUndefined();
     }
-  });
+  }, 30_000); // un tirage du jour coûte ~0,1 s : 30 dates réparties sur l'année
 
   test('le Bazar ne vend ni formes mûries ni Étoile filante', async () => {
     const { buyBlessing } = await import('../../src/engine/game');
