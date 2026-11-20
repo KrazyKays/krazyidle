@@ -1,10 +1,10 @@
 // Interface des Surnoms (Codex) et des Alliances (mariages entre maisons).
-import { ACT, acc, vocationName, type Named } from '../engine/data';
+import { ACT, EVENTS, acc, vocationName, type Named } from '../engine/data';
 import {
   CADETS_MAX, acceptProposal, alliancesUnlocked, canMarry, countyHouses, dowry, isSealed, marry, proposeCadet, readProposal, suitorFor, weekEnd,
 } from '../engine/alliances';
 import { EPITHET, EPITHETS, EPITHET_RARITY, epithetEffect, epithetLabel, fullName } from '../engine/epithets';
-import { chroniclesUnlocked } from '../engine/game';
+import { ALMANACH_ECLATS, chroniclesUnlocked } from '../engine/game';
 import type { HouseRef, Spouse } from '../engine/state';
 import type { App } from './app';
 import { roman } from './app';
@@ -258,6 +258,18 @@ export function codexSection(app: App): HTMLElement | null {
       // Allusion au budget génétique, dont le chiffre n'est affiché nulle part.
       h('div', { class: 'codex-item codex-lore', style: { '--c': '#ab47bc' } }, h('span', { class: 'codex-i' }, '🧬'),
         h('div', null, h('div', { class: 'strong' }, 'Dicton des anciens'),
-          h('div', { class: 'muted small italic' }, '« Un sang ne porte qu\'un fardeau de dons : deux couronnes y tiennent, jamais trois, et les plus humbles s\'y glissent toujours. »')))));
+          h('div', { class: 'muted small italic' }, '« Un sang ne porte qu\'un fardeau de dons : deux couronnes y tiennent, jamais trois, et les plus humbles s\'y glissent toujours. »')))),
+    almanachCard(app));
 }
 
+/** Almanach (0.3) : une page par type d'événement, gagnée au premier palier Or. */
+export function almanachCard(app: App): HTMLElement {
+  const alm = app.s.almanach ?? [];
+  return h('div', { class: 'card' },
+    h('div', { class: 'row-between' }, h('h2', null, '📖 Almanach du monde'), h('span', { class: 'accent strong' }, `${alm.length} / ${EVENTS.length}`)),
+    h('p', { class: 'muted small' }, `Le premier palier Or de chaque événement en offre la page (+${ALMANACH_ECLATS} ✦). Les six pages complètent un haut fait.`),
+    h('div', { class: 'codex-grid' }, EVENTS.map((e) => {
+      const on = alm.includes(e.id);
+      return h('div', { class: `codex-tile ${on ? '' : 'locked'}`, style: { '--c': e.color }, title: on ? `${e.name} — ${e.desc}` : `${e.name} : atteins le palier Or pour en gagner la page` }, h('span', { class: 'codex-i' }, on ? e.icon : '❔'));
+    })));
+}

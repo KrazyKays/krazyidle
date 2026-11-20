@@ -624,3 +624,29 @@ describe('NOVA — l\'Étoile filante (0.3)', () => {
   });
 });
 
+describe('ECLATS — palier Or à 5 ✦, Almanach, Bénédictions légendaires renchéries (0.3)', () => {
+  test('le premier Or d\'un événement offre sa page d\'Almanach une seule fois', async () => {
+    const { tick, EVENT_REWARDS, ALMANACH_ECLATS } = await import('../../src/engine/game');
+    const { upcomingEvents } = await import('../../src/engine/events');
+    expect(EVENT_REWARDS).toEqual([1, 2, 5]);
+    const w = upcomingEvents(Date.UTC(2026, 10, 16), 50)[0];
+    const s = newGame(0, 12);
+    startLife(s);
+    const rt = newRuntime();
+    s.events[w.key] = { target: 10, progress: 1000, tier: 0, v: 2 };
+    tick(s, rt, 0.1, w.start + 1000);
+    expect(s.almanach).toEqual([w.def.id]);
+    expect(s.eclats).toBe(1 + 2 + 5 + ALMANACH_ECLATS);
+  });
+
+  test('chaque Bénédiction légendaire renchérit les suivantes de 50 %, ×3 au plus', async () => {
+    const { blessingCost, buyBlessing } = await import('../../src/engine/game');
+    const s = newGame(0, 13);
+    s.eclats = 1000;
+    const costs: number[] = [];
+    for (let k = 0; k < 6; k++) { costs.push(blessingCost(s, 'elu')); buyBlessing(s, 'elu'); s.blessings = []; }
+    expect(costs).toEqual([12, 18, 24, 30, 36, 36]);
+    expect(blessingCost(s, 'genie')).toBe(6); // les épiques ne bougent pas
+  });
+});
+

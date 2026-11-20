@@ -203,7 +203,9 @@ export interface GameState {
   cadets: Hero[];
   /** empreintes des codes d'alliance déjà acceptés */
   usedCodes: string[];
-  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
+  /** Almanach (0.3) : types d'événement dont le palier Or a été atteint au moins une fois */
+  almanach?: string[];
+  stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; /** Bénédictions légendaires ou mythiques achetées (0.3) */ blessHigh?: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 
 export const SAVE_VERSION = 2;

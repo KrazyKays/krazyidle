@@ -312,7 +312,11 @@ function ensureEventProgress(s: GameState, rt: Runtime, w: EventWindow) {
 export const EVENT_GOAL_WEIGHT = 3;
 export const EVENT_BASE_SEC = 1200;
 export const EVENT_TIERS = [1, 3, 8];
-export const EVENT_REWARDS = [1, 2, 3];
+/** Éclats par palier (Bronze, Argent, Or). L'Or rapporte 5 ✦ depuis la 0.3 (3 avant) : c'est le palier qui
+ *  demande de jouer l'activité dopée, et il payait mal face au Destin du jour. */
+export const EVENT_REWARDS = [1, 2, 5];
+/** Almanach (0.3) : le premier Or obtenu à chaque type d'événement en offre la page, et ces Éclats en plus. */
+export const ALMANACH_ECLATS = 2;
 const TIER_NAMES = ['Bronze', 'Argent', 'Or'];
 
 function checkEventTiers(s: GameState, rt: Runtime, w: EventWindow) {
@@ -321,7 +325,15 @@ function checkEventTiers(s: GameState, rt: Runtime, w: EventWindow) {
     s.eclats += EVENT_REWARDS[ep.tier];
     rt.notices.push({ kind: 'event', text: `${EVENT_DEF[w.def.id].icon} Palier ${TIER_NAMES[ep.tier]} atteint ! +${EVENT_REWARDS[ep.tier]} ✦` });
     ep.tier++;
-    if (ep.tier === 3) s.stats.eventsDone++;
+    if (ep.tier === 3) {
+      s.stats.eventsDone++;
+      const alm = (s.almanach ??= []);
+      if (!alm.includes(w.def.id)) {
+        alm.push(w.def.id);
+        s.eclats += ALMANACH_ECLATS;
+        rt.notices.push({ kind: 'event', text: `📖 Nouvelle page de l'Almanach : ${EVENT_DEF[w.def.id].icon} ${EVENT_DEF[w.def.id].name} ! +${ALMANACH_ECLATS} ✦` });
+      }
+    }
     if (s.life) lifeStats(s.life).ev = Math.max(lifeStats(s.life).ev, ep.tier);
   }
 }
@@ -649,6 +661,10 @@ export function buyPartition(s: GameState, id: string): boolean {
   return true;
 }
 export const BLESSING_COST = [0, 3, 6, 12, 15];
+/** Chaque Bénédiction légendaire ou mythique achetée renchérit les suivantes de 50 % (×3 au plus) : avec plus
+ *  d'Éclats en circulation (0.3), le Bazar ne doit pas devenir le robinet à légendaires que les mutations ne sont plus. */
+export const BLESSING_HIGH_STEP = 0.5;
+export const BLESSING_HIGH_MAX = 4;
 
 /** Le Bazar ne vend ni l'Étoile filante, ni les formes mûries des dons (elles se méritent). */
 export function blessable(traitId: string): boolean {
@@ -656,12 +672,20 @@ export function blessable(traitId: string): boolean {
   return !!t && !t.neg && !t.nova && !t.matured && t.rarity >= 1 && !!BLESSING_COST[t.rarity];
 }
 
+export function blessingCost(s: GameState, traitId: string): number {
+  const t = TRAIT[traitId];
+  if (!t) return 0;
+  const base = BLESSING_COST[t.rarity];
+  return t.rarity >= 3 ? Math.ceil(base * (1 + BLESSING_HIGH_STEP * Math.min(BLESSING_HIGH_MAX, s.stats.blessHigh ?? 0))) : base;
+}
+
 export function buyBlessing(s: GameState, traitId: string): boolean {
   const t = TRAIT[traitId];
   if (!t || !blessable(traitId) || s.blessings.includes(traitId) || s.blessings.length >= 2) return false;
-  const c = BLESSING_COST[t.rarity];
+  const c = blessingCost(s, traitId);
   if (!c || s.eclats < c) return false;
   s.eclats -= c;
+  if (t.rarity >= 3) s.stats.blessHigh = (s.stats.blessHigh ?? 0) + 1;
   s.blessings.push(traitId);
   // Succession en attente : les héritiers sont déjà tirés. La Bénédiction s'applique à eux tous,
   // hors budget et sans usure, comme si elle avait été achetée avant la mort (QA-01).

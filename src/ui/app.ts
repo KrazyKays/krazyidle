@@ -6,7 +6,7 @@ import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  BLESSING_COST, blessable, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
+  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
   VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -981,10 +981,10 @@ export class App {
     const bless = TRAITS.filter((t) => blessable(t.id));
     parts.push(h('div', { class: 'card' },
       h('h2', null, '✦ Bazar céleste'),
-      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les enfants de la prochaine succession (max 2). Les dons mûris et l'Étoile filante ne s'achètent pas.`),
+      h('p', { class: 'muted small' }, `Éclats disponibles : ${fmt(s.eclats, 0)} ✦. Les Bénédictions sont offertes à tous les enfants de la prochaine succession (max 2). Chaque Bénédiction légendaire ou mythique renchérit les suivantes de moitié. Les dons mûris et l'Étoile filante ne s'achètent pas.`),
       s.blessings.length ? h('p', { class: 'small accent' }, 'Bénédictions en attente : ', this.traitChips(s.blessings, true)) : null,
       h('div', { class: 'shop' }, bless.map((t) => {
-        const c = BLESSING_COST[t.rarity];
+        const c = blessingCost(s, t.id);
         const btn = h('button', { class: 'shop-item', style: { '--c': RARITY[t.rarity].color }, onclick: () => { if (buyBlessing(s, t.id)) { toast(`${t.icon} Bénédiction « ${traitName(t)} » réservée`, 'good'); this.sigTab = ''; } else toast('Impossible : Éclats insuffisants, déjà choisie ou 2 bénédictions max.', 'bad'); } },
           h('span', { class: 'shop-i' }, t.icon), h('span', { class: 'shop-n' }, traitName(t)), h('span', { class: 'muted small' }, t.desc), h('span', { class: 'shop-c' }, `${c} ✦`));
         b.cls(btn, 'off', () => s.eclats < c || s.blessings.includes(t.id) || s.blessings.length >= 2);
