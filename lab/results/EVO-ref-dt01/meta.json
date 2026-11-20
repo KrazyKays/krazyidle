@@ -1,0 +1,21 @@
+{
+ "id": "EVO-ref-dt01",
+ "commit": "f910153",
+ "srcDirty": false,
+ "date": "2026-11-20T13:39:44.019Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 500,
+ "wallMs": 201374,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver,mono-chasser --seeds=1-100 --hours=6 --dt=0.1 --id=EVO-ref-dt01"
+}

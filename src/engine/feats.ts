@@ -8,12 +8,13 @@ import type { GameState } from './state';
 
 /** Seuils (calibrage : lab/design/EVO-0.3-criteres.md, campagne longue). */
 export const FEAT = {
-  metierTier: 5,
-  sangPur: 10,
+  metierTier: 3,
+  sangPur: 30,
   paixHarmony: 0.98,
+  paixMin: 0.97,
   paixSlots: 5,
   millenaire: 1000,
-  chroniqueur: 20,
+  chroniqueur: 15,
 };
 
 export interface FeatDef {
@@ -36,8 +37,8 @@ export const FEATS: FeatDef[] = [
     desc: `${FEAT.sangPur} générations de suite sans aucun trait négatif.`,
     test: (s) => s.ancestors.length >= FEAT.sangPur && s.ancestors.slice(-FEAT.sangPur).every((a) => !a.traits.some((t) => TRAIT[t]?.neg)) },
   { id: 'paix', name: 'Paix du Domaine', icon: '🕊️', eclats: 4,
-    desc: `Une vie entière avec une santé moyenne du Domaine d'au moins ${Math.round(FEAT.paixHarmony * 100)} %, avec au moins ${FEAT.paixSlots} Échos dans la Crypte.`,
-    test: (s, f) => !!f && f.harmonyAvg >= FEAT.paixHarmony && cryptFull(s, FEAT.paixSlots) },
+    desc: `Une vie entière sans que la santé du Domaine passe sous ${Math.round(FEAT.paixMin * 100)} %, avec au moins ${FEAT.paixSlots} Échos dans la Crypte.`,
+    test: (s, f) => !!f && f.harmonyAvg >= FEAT.paixHarmony && f.harmonyMin >= FEAT.paixMin && cryptFull(s, FEAT.paixSlots) },
   { id: 'transcendance', name: 'Transcendance', icon: '🌱', eclats: 5,
     desc: 'Mettre à la tête de la lignée un héritier dont un don est devenu légendaire en mûrissant.',
     test: (s, f) => !f && (s.hero.evolved ?? []).some((t) => TRAIT[t]?.rarity === 3) },
