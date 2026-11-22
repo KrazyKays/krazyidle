@@ -6,7 +6,7 @@ import {
   type Runtime,
 } from '../../src/engine/game';
 import { canMarry, countyHouses, dowry, marry, suitorFor } from '../../src/engine/alliances';
-import { ECO_EQ, ecoFactor } from '../../src/engine/ecosystem';
+import { ecoFactor } from '../../src/engine/ecosystem';
 import { lifePower, sumMods } from '../../src/engine/sim';
 import type { GameState, Hero } from '../../src/engine/state';
 import type { Rng } from '../../src/engine/rng';
@@ -205,33 +205,6 @@ PROFILES.evenementiel = {
     const boosted = ev?.act ? (Object.keys(ev.act) as ActId[]).find((a) => has(s, a)) : undefined;
     return boosted ? feasible(s, boosted) : legacyBotActivity(s);
   },
-};
-
-/**
- * Consignes de Récolter (0.4) : la rotation retenue au calibrage (lab/balance/terre/) — Battue dès que le Gibier
- * atteint 80 % de l'équilibre, retour en Équilibre sous 50 %. La consigne ne compte que pour le héros vivant.
- */
-function rotatePosture(s: GameState) {
-  const g = s.eco.G / ECO_EQ.G;
-  if (s.posture === 'battue') { if (g < 0.5) s.posture = 'equilibre'; } else if (g >= 0.8) s.posture = 'battue';
-}
-PROFILES.consignes = {
-  ...PROFILES.experimente, id: 'consignes',
-  desc: 'Joueur expérimenté qui pilote la consigne de Récolter : Battue quand le Gibier dépasse 80 % de l\'équilibre, Équilibre sous 50 %.',
-  activity: (s) => { rotatePosture(s); return legacyBotActivity(s); },
-};
-PROFILES['mono-battue'] = {
-  id: 'mono-battue',
-  desc: 'Récolte en Battue en permanence après les 30 premières minutes (consigne « oubliée »).',
-  decideEvery: 1, buyEvery: 5, successionDelay: 0,
-  activity: (s, c) => { if (c.t >= 1800) s.posture = 'battue'; return c.t < 1800 ? legacyBotActivity(s) : 'cultiver'; },
-  succession: (s) => successionBest(s, heirScoreBot, 'rate'),
-  buy: (s) => buyAllGreedy(s),
-};
-PROFILES['mono-consignes'] = {
-  ...PROFILES['mono-battue'], id: 'mono-consignes',
-  desc: 'Récolte seulement après 30 min, en pilotant la consigne (Battue ≥ 80 % du Gibier d\'équilibre, Équilibre sous 50 %).',
-  activity: (s, c) => { if (c.t >= 1800) rotatePosture(s); return c.t < 1800 ? legacyBotActivity(s) : 'cultiver'; },
 };
 
 // Profils mono-activité : toujours la même activité (avec repli si intrants manquants).

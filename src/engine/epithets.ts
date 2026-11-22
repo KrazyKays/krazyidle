@@ -36,9 +36,6 @@ export interface LifeFacts {
   builds: number;
   /** Gibier à la mort */
   game: number;
-  /** parts de la vie passées à Récolter en Semer et en Battue (0.4 ; absentes = 0) */
-  semer?: number;
-  battue?: number;
 }
 
 /** Effet sur l'Écho : puissance globale, puissance par activité, impact sur le Domaine (+0.5 = +50 %). */
@@ -83,7 +80,6 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'bien_aime', name: 'le Bien-Aimé', nameF: 'la Bien-Aimée', icon: '💞', rarity: 1, hint: 'Épouser quelqu\'un venu d\'une lignée lointaine, au-delà du comté.', test: (f) => f.spouse === 'joueur', mods: { pow: 0.1 } },
   { id: 'juste', name: 'le Juste', nameF: 'la Juste', icon: '🕊️', rarity: 1, hint: 'Vivre de la terre et des bois sans jamais en troubler l\'équilibre.', test: (f) => worksLand(f) && f.harmonyAvg >= 0.97 && f.harmonyMin >= 0.9, mods: { eco: -0.4 } },
   { id: 'devastateur', name: 'le Dévastateur', nameF: 'la Dévastatrice', icon: '🔥', rarity: 1, hint: 'Laisser derrière soi un Domaine à l\'agonie.', test: (f) => f.harmonyMin <= 0.3, mods: { pow: 0.15, eco: 0.5 } },
-  { id: 'boucher', name: 'le Boucher', nameF: 'la Bouchère', icon: '🪓', rarity: 1, hint: 'Mener la battue jusqu\'à ce que les hardes ne soient plus qu\'un souvenir.', test: (f) => (f.battue ?? 0) >= 0.25 && f.game <= 5, mods: { act: { cultiver: 0.15 }, eco: 0.3 } },
   { id: 'jardinier', name: 'le Jardinier', nameF: 'la Jardinière', icon: '🌷', rarity: 1, hint: 'Récolter beaucoup, sans jamais épuiser la terre.', test: (f) => f.share.cultiver >= 0.5 && f.harmonyAvg >= 0.9, mods: { act: { cultiver: 0.15 }, eco: -0.2 } },
   { id: 'alchimiste', name: 'l\'Alchimiste', icon: '⚗️', rarity: 1, hint: 'Partager sa vie entre les livres et la méditation.', test: (f) => f.share.etudier >= 0.35 && f.share.mediter >= 0.35, mods: { act: { etudier: 0.1, mediter: 0.1 } } },
   { id: 'maraicher', name: 'le Maraîcher', nameF: 'la Maraîchère', icon: '🥕', rarity: 1, hint: 'Récolter, puis porter sa récolte au marché.', test: (f) => f.share.cultiver >= 0.35 && f.share.commercer >= 0.35, mods: { act: { cultiver: 0.1, commercer: 0.1 } } },
@@ -92,9 +88,6 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'ancien', name: 'l\'Ancien', nameF: 'l\'Ancienne', icon: '🧓', rarity: 1, hint: 'Voir passer bien plus de saisons que les autres.', test: (f) => f.durRatio >= 1.4, mods: { pow: 0.08 } },
   { id: 'infortune', name: 'l\'Infortuné', nameF: 'l\'Infortunée', icon: '🌧️', rarity: 1, hint: 'Naître avec plus d\'un mauvais présage dans le sang.', test: (f) => f.negTraits >= 2, mods: { pow: 0.1 } },
   // --- Communs (« le Constant » : la vie par défaut d'un jeu inactif, il ne vaut ni rareté ni bonus — GD-SURNOMS)
-  // 0.4 : les consignes de Récolter (de nouveaux identifiants : « veneur » est effacé des sauvegardes 0.3).
-  { id: 'semeur', name: 'le Semeur', nameF: 'la Semeuse', icon: '🌱', rarity: 0, hint: 'Semer bien plus qu\'on ne moissonne.', test: (f) => (f.semer ?? 0) >= 0.4, mods: { act: { cultiver: 0.1 }, eco: -0.1 } },
-  { id: 'grand_veneur', name: 'le Grand Veneur', nameF: 'la Grande Veneuse', icon: '🏹', rarity: 0, hint: 'Mener la battue une bonne part de sa vie.', test: (f) => (f.battue ?? 0) >= 0.3, mods: { act: { cultiver: 0.1 } } },
   { id: 'laboureur', name: 'le Laboureur', nameF: 'la Laboureuse', icon: '🌾', rarity: 0, hint: 'Ne vivre que pour la terre.', test: (f) => f.share.cultiver >= 0.75, mods: { act: { cultiver: 0.1 } } },
   { id: 'negociant', name: 'le Négociant', nameF: 'la Négociante', icon: '⚖️', rarity: 0, hint: 'Ne vivre que pour le marché.', test: (f) => f.share.commercer >= 0.75, mods: { act: { commercer: 0.1 } } },
   { id: 'savant', name: 'le Savant', nameF: 'la Savante', icon: '📖', rarity: 0, hint: 'Ne vivre que pour les livres.', test: (f) => f.share.etudier >= 0.75, mods: { act: { etudier: 0.1 } } },

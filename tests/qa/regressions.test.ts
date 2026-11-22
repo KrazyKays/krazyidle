@@ -776,75 +776,33 @@ describe('TERRE-4 — Cultiver et Chasser fusionnés en Récolter (0.4)', () => 
   });
 });
 
-describe('TERRE-5 — consignes de Récolter : Semer, Équilibre, Battue (0.4)', () => {
-  const ctxOf = async (posture: 'semer' | 'equilibre' | 'battue') => {
-    const { newEco } = await import('../../src/engine/ecosystem');
-    const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
-    const eco = newEco();
-    return { res, eco, prodMult: () => 1, ecoImpactMult: 1, posture };
-  };
-  test('Battue : 3× plus de Vivres sur le Gibier, qui fond ; Semer : peu de Vivres, la Flore pousse', async () => {
-    const { runActivity } = await import('../../src/engine/sim');
-    const eq = await ctxOf('equilibre'), bat = await ctxOf('battue'), sem = await ctxOf('semer');
-    for (const c of [eq, bat, sem]) runActivity(c, 'cultiver', 1, 1, 1, true);
-    expect(bat.res.vivres).toBeCloseTo(eq.res.vivres * 3, 6); // à l'équilibre, Équilibre rend ×1
-    expect(bat.eco.G).toBeLessThan(eq.eco.G - 2);
-    expect(sem.res.vivres).toBeCloseTo(eq.res.vivres * 0.7, 6);
-    expect(sem.eco.F).toBeGreaterThan(eq.eco.F);
+describe('SIMPLIF-1 — plus de consignes de Récolter (0.5)', () => {
+  test('la sauvegarde 0.4 perd sa consigne, son compteur de Battue et les surnoms des consignes', async () => {
+    const { deserialize, serialize } = await import('../../src/engine/save');
+    const s: any = newGame(0, 41);
+    s.posture = 'battue';
+    s.life = { ...s.life, post: { semer: 3, battue: 9 } };
+    s.echoes = [{ id: 1, heroId: 1, name: 'Jehan', gen: 1, traits: [], vocation: null, acts: [0], pow: [1], strength: 0, pos: 0, loops: 0, epithet: 'boucher' }];
+    s.ancestors = [{ id: 1, name: 'Jehan', gen: 1, traits: [], epithet: 'grand_veneur' }];
+    s.epithets = { semeur: 1, laboureur: 2 };
+    const t: any = deserialize(serialize(s))!;
+    expect(t.posture).toBeUndefined();
+    expect(t.life?.post).toBeUndefined();
+    expect(t.echoes[0].epithet).toBeUndefined();
+    expect(t.ancestors[0].epithet).toBeUndefined();
+    expect(t.epithets).toEqual({ laboureur: 2 });
   });
-  test('les Échos (fromLife = false) récoltent toujours en Équilibre, même si le héros bat la campagne', async () => {
-    const { runActivity } = await import('../../src/engine/sim');
-    const eq = await ctxOf('equilibre'), bat = await ctxOf('battue');
-    runActivity(eq, 'cultiver', 1, 0.6, 1, false);
-    runActivity(bat, 'cultiver', 1, 0.6, 1, false);
-    expect(bat.res.vivres).toBe(eq.res.vivres);
-    expect(bat.eco).toEqual(eq.eco);
-  });
-  test('hors ligne, le héros repasse en Équilibre ; en ligne, sa consigne s\'applique et se compte', async () => {
-    const { makeCtx, newRuntime, setPosture, startLife, tick } = await import('../../src/engine/game');
-    const s = newGame(0, 40);
-    startLife(s);
-    setPosture(s, 'battue');
-    const rt = newRuntime();
-    expect(makeCtx(s, rt).posture).toBe('battue');
-    rt.online = false; // sans événements (simulateur) : la consigne reste
-    expect(makeCtx(s, rt).posture).toBe('battue');
-    rt.offline = true; // rattrapage hors ligne
-    expect(makeCtx(s, rt).posture).toBe('equilibre');
-    rt.offline = false;
-    rt.online = true;
-    for (let i = 0; i < 50; i++) tick(s, rt, 0.1, 1000 + i * 100);
-    expect(s.life!.post!.battue).toBeCloseTo(5, 6);
-  });
-  test('Destin du jour : Semer et Battue s\'écrivent dans le code (choix 4 et 5) et se rejouent', async () => {
-    const { DailyRun, dailySetup, decodeRun, encodeRun, replay, traceFromCode, dailyStrip } = await import('../../src/engine/daily');
+  test('Destin du jour : quatre choix, codes EL4 ; un code EL3 (consignes) n\'est plus lu', async () => {
+    const { DAILY_CHOICES, DailyRun, dailySetup, decodeRun, encodeRun } = await import('../../src/engine/daily');
+    expect(DAILY_CHOICES).toEqual(['cultiver', 'commercer', 'etudier', 'mediter']);
     const date = '2026-11-22';
     const run = new DailyRun(dailySetup(date));
-    run.setAct('cultiver', 'battue');
-    for (let i = 0; i < 100; i++) run.step();
-    run.setAct('cultiver', 'semer');
-    for (let i = 0; i < 60; i++) run.step();
+    run.setAct('cultiver');
+    for (let i = 0; i < 50; i++) run.step();
     run.setAct('commercer');
-    for (let i = 0; i < 60; i++) run.step();
-    expect(run.actions.map((a) => a[1])).toEqual([5, 4, 1]);
     const code = encodeRun(date, run.actions, run.score());
-    const d = decodeRun(code)!;
-    expect(d.actions).toEqual(run.actions);
-    const full = new DailyRun(dailySetup(date));
-    for (const [t, a] of run.actions) { while (full.tickN < t) full.step(); full.setChoice(a); }
-    while (!full.done) full.step();
-    expect(replay(date, run.actions)).toBe(full.score());
-    expect(dailyStrip(traceFromCode(code)!.rec).slice(0, 4)).toBe('🟥🟥🟫🟨'.slice(0, 4));
-  });
-  test('surnoms : le Semeur et le Grand Veneur ; le Boucher demande une Battue qui vide les hardes', async () => {
-    const { pickEpithet } = await import('../../src/engine/epithets');
-    const base = {
-      share: { cultiver: 0.9, commercer: 0.1, etudier: 0, mediter: 0 }, used: 1, switches: 5, harmonyAvg: 0.8, harmonyMin: 0.6,
-      value: 100, parentValue: 100, bestBefore: 1000, gen: 5, traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false,
-      spouse: null, eventTier: 0, builds: 0, game: 20,
-    };
-    expect(pickEpithet({ ...base, semer: 0.45 })?.id).toBe('semeur');
-    expect(pickEpithet({ ...base, battue: 0.35 })?.id).toBe('grand_veneur');
-    expect(pickEpithet({ ...base, battue: 0.35, game: 3 })?.id).toBe('boucher');
+    expect(atob(code.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((code.length + 3) % 4)).startsWith('EL4|')).toBe(true);
+    expect(decodeRun(code)!.actions).toEqual([[0, 0], [50, 1]]);
+    expect(decodeRun(btoa(`EL3|${date}|05|1000`).replace(/=+$/, ''))).toBeNull();
   });
 });

@@ -3,10 +3,10 @@ import {
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
-import { ECO_EQ, POSTURES, ecoFactor, ecoGauge, ecoHealth, harmonyMult, huntShare, type Eco, type Posture } from '../engine/ecosystem';
+import { ECO_EQ, ecoFactor, ecoGauge, ecoHealth, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  blessable, blessingCost, cryptBoost, setPosture, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
+  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
   VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -376,7 +376,6 @@ export class App {
       ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire et le Domaine se repose. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Domaine › Échos). Chaque génération ajoute une boucle !` : ''],
-      ['consigne', s.hero.gen >= 2 && s.life?.act === 'cultiver' && s.eco.G >= ECO_EQ.G * 0.8 && !s.posture, `Le Gibier abonde : sous Récolter, passe en 🏹 Battue pour tripler la récolte, puis reviens en ⚖️ Équilibre (ou 🌱 Semer) avant que les hardes ne s'épuisent. Tes Échos, eux, restent en Équilibre.`],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
@@ -598,12 +597,7 @@ export class App {
         rate,
         h('div', { class: 'act-desc' }, def.desc)));
     b.cls(btn, 'active', () => s.life?.act === a);
-    if (a !== 'cultiver') return btn;
-    // Consigne de Récolter (0.4) : choisir une consigne lance aussi la récolte.
-    return h('div', { class: 'act-wrap' }, btn, postureRow(b, () => s.posture ?? 'equilibre', () => s.eco, (p) => {
-      setPosture(s, p);
-      if (s.life && s.life.act !== 'cultiver') setActivity(s, 'cultiver');
-    }));
+    return btn;
   }
 
   actPreview(a: ActId): string {
@@ -611,7 +605,7 @@ export class App {
     if (!life) return '';
     const def = ACT[a];
     const p = lifePower(life, s.hero, a);
-    const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco, s.posture) * p;
+    const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
     for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
@@ -1474,7 +1468,7 @@ export class App {
           const out: string[] = [];
           const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
           if (lack.length) out.push(`⚠️ Manque de ${lack.map((r) => RES_INFO[r].icon).join('')}`);
-          if (a === 'cultiver') out.push(`🌳🦌 Domaine ×${ecoFactor(a, run.eco, run.posture).toFixed(2)}`);
+          if (a === 'cultiver') out.push(`🌳🦌 Domaine ×${ecoFactor(a, run.eco).toFixed(2)}`);
           const md = setup.mods.find((x) => x.act?.[a]);
           if (md) out.push(`${md.icon} ×${md.act![a]}`);
           return out.join(' · ');
@@ -1484,8 +1478,7 @@ export class App {
           h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(i + 1))),
           h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), h('div', { class: 'bar bar-thin' }, xp), rateEl, note));
         b.cls(btn, 'active', () => run.life.act === a);
-        if (a !== 'cultiver') return btn;
-        return h('div', { class: 'act-wrap' }, btn, postureRow(b, () => run.posture, () => run.eco, (p) => run.setAct('cultiver', p)));
+        return btn;
       }));
 
       content.replaceChildren(
@@ -1575,29 +1568,6 @@ function stat(label: string, value: string | HTMLElement) {
 }
 
 export { roman };
-
-const POSTURE_UI: Record<Posture, { icon: string; name: string; tip: string }> = {
-  semer: { icon: '🌱', name: 'Semer', tip: 'Tout aux champs : peu de Vivres tout de suite, la Flore pousse trois fois plus vite, et le Gibier suit.' },
-  equilibre: { icon: '⚖️', name: 'Équilibre', tip: 'On chasse le surplus de Gibier et on cultive le reste. C\'est ce que font tes Échos, et ton héros hors ligne.' },
-  battue: { icon: '🏹', name: 'Battue', tip: 'Tout à la chasse : trois fois plus de Vivres, mais les hardes fondent. À lancer quand le Gibier abonde, à arrêter avant qu\'il ne s\'épuise.' },
-};
-
-/** Sélecteur de consigne de Récolter, avec la part de chasse d'Équilibre. */
-function postureRow(b: Binder, cur: () => Posture, eco: () => Eco, set: (p: Posture) => void): HTMLElement {
-  const chips = POSTURES.map((p) => {
-    const c = h('button', { class: 'posture-chip', title: POSTURE_UI[p].tip, 'aria-label': `Consigne : ${POSTURE_UI[p].name}`, onclick: () => set(p) }, `${POSTURE_UI[p].icon} ${POSTURE_UI[p].name}`);
-    b.cls(c, 'active', () => cur() === p);
-    return c;
-  });
-  const hint = b.text(h('span', { class: 'muted small posture-hint' }), () => {
-    const p = cur(), e = eco();
-    const g = Math.round((e.G / ECO_EQ.G) * 100);
-    if (p === 'battue') return g < 55 ? `🦌 ${g} % : les hardes s'épuisent` : `🦌 ${g} % de l'équilibre`;
-    if (p === 'semer') return `🌳 ${Math.round((e.F / ECO_EQ.F) * 100)} % · 🦌 ${g} %`;
-    return `🏹 ${Math.round(huntShare(e) * 100)} % chasse · 🦌 ${g} %`;
-  });
-  return h('div', { class: 'posture-row', role: 'group', 'aria-label': 'Consigne de Récolter' }, chips, hint);
-}
 
 /** Dégradé CSS représentant une suite d'activités (1 entrée = 1 seconde). */
 export function stripGradient(rec: number[], dur: number): string {

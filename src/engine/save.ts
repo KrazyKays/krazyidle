@@ -31,10 +31,13 @@ function migrate(d: any): GameState {
   s.lineage = { ...base.lineage, ...d.lineage };
   // 0.4 : plus d'Affût (TERRE-3) ni de Prédateurs ; un surnom retiré disparaît des Échos et des ancêtres (TERRE-2).
   s.eco = { F: d.eco?.F ?? base.eco.F, G: d.eco?.G ?? base.eco.G };
-  const gone = new Set(['tueur_loups', 'pelletier', 'veneur']);
+  // 0.5 : plus de consignes de Récolter (SIMPLIF-1) : leurs surnoms disparaissent aussi.
+  const gone = new Set(['tueur_loups', 'pelletier', 'veneur', 'boucher', 'semeur', 'grand_veneur']);
   for (const p of [...(s.echoes ?? []), ...(s.ancestors ?? [])] as { epithet?: string }[]) if (p.epithet && gone.has(p.epithet)) delete p.epithet;
   if (s.epithets) for (const id of gone) delete s.epithets[id];
   delete (s as { hunt?: unknown }).hunt;
+  delete (s as { posture?: unknown }).posture;
+  if (s.life) delete (s.life as { post?: unknown }).post;
   if ((d.v ?? 0) < 3) mergeLandV04(s);
   // Genre des personnages : absent des sauvegardes d'avant, déduit du prénom.
   const sexed = (p: { name: string; sex?: 'f' | 'm' } | null | undefined) => { if (p && !p.sex) p.sex = sexOf(p); };

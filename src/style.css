@@ -571,8 +571,3 @@ p { margin: 6px 0; }
 
 /* Consignes de Récolter (0.4) */
 .act-wrap { display: flex; flex-direction: column; gap: 4px; }
-.posture-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 0 4px; }
-.posture-chip { font-size: 0.78rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--muted, inherit); }
-.posture-chip.active { border-color: #7cb342; color: inherit; box-shadow: 0 0 0 1px #7cb342 inset; font-weight: 600; }
-.posture-hint { margin-left: auto; white-space: nowrap; }
-@media (max-width: 420px) { .posture-hint { margin-left: 0; width: 100%; } }

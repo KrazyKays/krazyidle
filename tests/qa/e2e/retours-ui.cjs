@@ -114,8 +114,8 @@ async function dailyGhost(page, name, withRecord) {
   await page.evaluate((withRecord) => {
     const s = window.krazy.state;
     const date = new Date().toISOString().slice(0, 10);
-    // Record : Récolter toute la vie (code « EL3|date|00|résultat » ; le fantôme rejoue les actions, pas le résultat).
-    if (withRecord) s.daily[date] = { best: 100, code: btoa(`EL3|${date}|00|100`).replace(/=+$/, ''), rewarded: 0, v: 2 };
+    // Record : Récolter toute la vie (code « EL4|date|00|résultat » ; le fantôme rejoue les actions, pas le résultat).
+    if (withRecord) s.daily[date] = { best: 100, code: btoa(`EL4|${date}|00|100`).replace(/=+$/, ''), rewarded: 0, v: 2 };
     else delete s.daily[date];
   }, withRecord);
   await gotoTab(page, 'Destin', 'Aujourd');

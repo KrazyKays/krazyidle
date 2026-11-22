@@ -7,7 +7,7 @@ import {
 import { ripeTraits } from './evolution';
 import { FEAT_DEF, checkFeats } from './feats';
 import { addCadets, inbreedingRisk } from './alliances';
-import { ecoHealth, ecoRegen, ecoStep, harmonyMult, type Posture } from './ecosystem';
+import { ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
 import { crown } from './names';
@@ -27,7 +27,7 @@ export interface Runtime {
   pauseLife: boolean;
   /** secondes simulées depuis la création (un Runtime neuf n'a pas encore de moyenne de production) */
   age: number;
-  /** rattrapage du temps passé hors ligne en cours (`simulateOffline`) : le héros récolte en Équilibre */
+  /** rattrapage du temps passé hors ligne en cours (`simulateOffline`) */
   offline?: boolean;
 }
 
@@ -149,8 +149,6 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
     eco: s.eco,
     prodMult: (a) => prodMult(s, rt, a),
     ecoImpactMult: ecoImpactMult(s),
-    // Hors ligne, le héros récolte en Équilibre comme ses Échos : une Battue oubliée ne ruine pas le Domaine.
-    posture: rt.offline ? 'equilibre' : s.posture ?? 'equilibre',
     onProduce: (r, amt, fromLife, act) => {
       s.totalEver[r] += amt;
       rt.tickGross[r] += amt;
@@ -182,11 +180,6 @@ export function defaultAct(s: GameState, hero: Hero): ActId {
 
 export function startLife(s: GameState) {
   s.life = newLife(lifeDuration(s, s.hero), startLevels(s, s.hero), defaultAct(s, s.hero));
-}
-
-/** Consigne de Récolter pour le héros (0.4). */
-export function setPosture(s: GameState, p: Posture) {
-  s.posture = p;
 }
 
 /** null met la vie en pause : le temps du héros ne s'écoule plus, les Échos continuent. */
@@ -470,8 +463,6 @@ export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): 
     traits: hero.traits, negTraits: hero.traits.filter((t) => TRAIT[t]?.neg).length,
     vocTier: voc?.tier ?? 0, prevVocTier: hero.vocation?.tier ?? 0, parentEpithet: parent?.epithet, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
     eventTier: st.ev, builds: st.bd, game: s.eco.G,
-    semer: life.dur > 0 ? (life.post?.semer ?? 0) / life.dur : 0,
-    battue: life.dur > 0 ? (life.post?.battue ?? 0) / life.dur : 0,
   };
 }
 
