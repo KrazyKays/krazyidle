@@ -1,0 +1,22 @@
+{
+ "id": "T04-5-consignes",
+ "commit": "inconnu",
+ "srcDirty": false,
+ "date": "2026-11-22T14:21:19.162Z",
+ "profiles": [
+  "experimente",
+  "consignes",
+  "mono-cultiver",
+  "mono-battue",
+  "mono-consignes",
+  "optimiseur"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1200,
+ "wallMs": 100243,
+ "command": "npm run sim -- --profiles=experimente,consignes,mono-cultiver,mono-battue,mono-consignes,optimiseur --seeds=1-200 --hours=6 --id=T04-5-consignes"
+}

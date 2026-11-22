@@ -69,20 +69,42 @@ const abundG = (e: Eco) => clamp(e.G / ECO_EQ.G, 0.05, 2.2);
  * campagne (lab/balance/terre/RESULTATS.md) : c'est celle qui garde le Domaine le plus proche de l'ancien
  * Cultiver (Harmonie −3,5 à −4 points, valeur produite +0 à +18 %).
  */
-export function huntShare(e: Eco): number {
+export function huntShare(e: Eco, posture: Posture = 'equilibre'): number {
+  if (posture === 'semer') return 0;
+  if (posture === 'battue') return 1;
   const g = e.G / ECO_EQ.G;
   return clamp(0.5 + 1.5 * (g - 1), 0, 1);
 }
 
+// --- Consignes du héros (0.4) ------------------------------------------------
+/**
+ * Le héros qui récolte choisit une consigne ; ses Échos, et lui-même hors ligne, restent en Équilibre.
+ * Semer : tout aux champs, peu de Vivres tout de suite, la Flore pousse deux fois plus (le Gibier suit).
+ * Battue : tout à la chasse, beaucoup de Vivres, les hardes s'épuisent. Alterner les deux, en lisant le
+ * Domaine, rapporte plus qu'Équilibre ; tenir la Battue le ruine (calibrage : lab/balance/terre/).
+ */
+export type Posture = 'semer' | 'equilibre' | 'battue';
+export const POSTURES: Posture[] = ['semer', 'equilibre', 'battue'];
+export const POSTURE = {
+  /** Semer : rendement des champs, et pousse de la Flore (×) */
+  semerYield: 0.7,
+  semerFlore: 3,
+  /** Battue : rendement de la chasse (×) et prélèvement du Gibier (×) */
+  battueYield: 3,
+  battueGibier: 4,
+};
+
 /** Impact d'une activité sur l'écosystème. strength ≈ 1 pour le héros vivant. */
-export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
+export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number, posture: Posture = 'equilibre') {
   const s = strength * dt;
   switch (act) {
     case 'cultiver': {
       // Les champs font pousser la Flore, la chasse prélève le Gibier (anciennes activités Cultiver et Chasser).
-      const h = huntShare(e);
-      e.F = Math.min(140, e.F + 0.35 * (1 - h) * s);
-      e.G = Math.max(0.2, e.G - 0.035 * e.G * h * s);
+      const h = huntShare(e, posture);
+      const fl = posture === 'semer' ? POSTURE.semerFlore : 1;
+      const gi = posture === 'battue' ? POSTURE.battueGibier : 1;
+      e.F = Math.min(140, e.F + 0.35 * fl * (1 - h) * s);
+      e.G = Math.max(0.2, e.G - 0.035 * gi * e.G * h * s);
       break;
     }
     case 'commercer':
@@ -110,8 +132,10 @@ export function harmonyMult(e: Eco): number {
 }
 
 /** Facteur de rendement propre à l'activité (dépend des populations). */
-export function ecoFactor(act: ActId, e: Eco): number {
+export function ecoFactor(act: ActId, e: Eco, posture: Posture = 'equilibre'): number {
   if (act === 'cultiver') {
+    if (posture === 'semer') return POSTURE.semerYield * abundF(e);
+    if (posture === 'battue') return POSTURE.battueYield * abundG(e);
     const h = huntShare(e);
     return (1 - h) * abundF(e) + h * abundG(e);
   }

@@ -2,7 +2,7 @@
 // le plus jeune possible. Le code d'une partie sert à rejouer le fantôme de son record ; il n'y a plus
 // de vérification de code (0.4) : sans classement, elle ne protégeait rien et figeait l'équilibrage.
 import { ACTS, DAILY_NAMES, RES, TRAITS, type ActId, type ResId } from './data';
-import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
+import { ecoStep, harmonyMult, newEco, type Eco, type Posture } from './ecosystem';
 import { hashStr, Rng } from './rng';
 import { lifeTick, sumMods, type SimCtx } from './sim';
 import { newLife, zeroActs, zeroRes, type LifeState } from './state';
@@ -35,6 +35,20 @@ export const DAILY_MODS: DailyMod[] = [
   { id: 'prodiges', g: 'xp', name: 'Âge des prodiges', icon: '⚡', desc: 'Expérience ×1.6', xp: 1.6 },
   { id: 'lenteur', g: 'xp', name: 'Torpeur', icon: '🐌', desc: 'Expérience ×0.6', xp: 0.6 },
 ];
+
+/**
+ * Choix d'une partie (codes EL3) : 0 à 3 = les activités (Récolter en Équilibre), 4 = Récolter en Semer,
+ * 5 = Récolter en Battue (0.4). -1 = aucune activité.
+ */
+export const DAILY_CHOICES: [ActId, Posture][] = [
+  ['cultiver', 'equilibre'], ['commercer', 'equilibre'], ['etudier', 'equilibre'], ['mediter', 'equilibre'],
+  ['cultiver', 'semer'], ['cultiver', 'battue'],
+];
+export function choiceIndex(a: ActId | null, p: Posture = 'equilibre'): number {
+  if (!a) return -1;
+  if (a === 'cultiver' && p !== 'equilibre') return p === 'semer' ? 4 : 5;
+  return ACTS.indexOf(a);
+}
 
 /** Commande du jour : quantités de chaque ressource à avoir en stock au même moment (0 = pas demandé). */
 export type DailyOrder = Record<ResId, number>;
@@ -147,6 +161,10 @@ export class DailyRun {
   curve: number[];
   /** Âge (en tics) auquel chaque ligne de la commande a été remplie pour la première fois. */
   lineTick: Partial<Record<ResId, number>> = {};
+  /** Consigne de Récolter (0.4). */
+  posture: Posture = 'equilibre';
+  /** Choix (DAILY_CHOICES) de chaque seconde écoulée, consigne comprise : sert au partage. */
+  choiceRec: number[] = [];
 
   constructor(setup: DailySetup) {
     this.setup = setup;
@@ -200,9 +218,11 @@ export class DailyRun {
     return acc;
   }
 
-  setAct(a: ActId | null) {
+  setAct(a: ActId | null, posture: Posture = this.posture) {
     if (this.done) return;
-    const idx = a ? ACTS.indexOf(a) : -1;
+    this.posture = posture;
+    this.ctx.posture = posture;
+    const idx = choiceIndex(a, posture);
     if (this.actions.length && this.actions[this.actions.length - 1][0] === this.tickN) this.actions.pop();
     const prev = this.actions.length ? this.actions[this.actions.length - 1][1] : -1;
     if (prev !== idx) this.actions.push([this.tickN, idx]);
@@ -215,6 +235,7 @@ export class DailyRun {
     ecoStep(this.eco, DAILY_DT);
     lifeTick(this.ctx, this.life, this.hero, this.xpMult, DAILY_DT);
     this.tickN++;
+    if (this.tickN % TICKS_PER_SEC === 0) this.choiceRec.push(choiceIndex(this.life.act, this.posture));
     const o = this.setup.order;
     let all = true;
     for (const r of RES) {
@@ -223,6 +244,12 @@ export class DailyRun {
     }
     if (all) this.deliveredTick = this.tickN;
     if (this.tickN % TICKS_PER_SEC === 0 || this.delivered) this.curve.push(this.progress());
+  }
+
+  /** Rejoue un choix d'un code (index de DAILY_CHOICES, -1 = aucune activité). */
+  setChoice(i: number) {
+    const c = DAILY_CHOICES[i];
+    this.setAct(c ? c[0] : null, c ? c[1] : this.posture);
   }
 
   /** Avancement de la commande : moyenne des lignes, chacune plafonnée à 100 %. */
@@ -265,7 +292,7 @@ export function replay(date: string, actions: [number, number][]): number {
 /** Trace d'une partie : avancement à chaque seconde, activité de chaque seconde et âge de chaque ligne remplie. */
 export interface DailyTrace { curve: number[]; rec: number[]; lineTick: Partial<Record<ResId, number>>; deliveredTick: number | null }
 
-const traceOf = (run: DailyRun): DailyTrace => ({ curve: run.curve, rec: run.life.rec, lineTick: run.lineTick, deliveredTick: run.deliveredTick });
+const traceOf = (run: DailyRun): DailyTrace => ({ curve: run.curve, rec: run.choiceRec, lineTick: run.lineTick, deliveredTick: run.deliveredTick });
 
 /** Trace d'une partie partagée par son code (le record du jour), ou null si le code est illisible. */
 export function traceFromCode(code: string): DailyTrace | null {
@@ -281,8 +308,7 @@ function replayRun(date: string, actions: [number, number][]): DailyRun {
   const t0 = actions.length ? actions[0][0] : 0;
   while (!run.done) {
     while (i < actions.length && actions[i][0] - t0 === run.tickN) {
-      const a = actions[i][1];
-      run.setAct(a >= 0 ? ACTS[a] : null);
+      run.setChoice(actions[i][1]);
       i++;
     }
     if (!run.started) break;
@@ -291,7 +317,7 @@ function replayRun(date: string, actions: [number, number][]): DailyRun {
   return run;
 }
 
-/** EL3 (0.4) : quatre activités. Les codes EL2 (cinq activités) ne se rejouent plus. */
+/** EL3 (0.4) : quatre activités et les consignes de Récolter. Les codes EL2 (cinq activités) ne se rejouent plus. */
 const PREFIX = 'EL3';
 
 export function encodeRun(date: string, actions: [number, number][], result: number): string {
@@ -312,7 +338,7 @@ export function decodeRun(code: string): { date: string; actions: [number, numbe
           return [parseInt(tok.slice(0, -1), 36), last === 'x' ? -1 : parseInt(last, 10)] as [number, number];
         })
       : [];
-    if (actions.some(([t, a]) => !Number.isFinite(t) || !Number.isFinite(a) || a >= ACTS.length)) return null;
+    if (actions.some(([t, a]) => !Number.isFinite(t) || !Number.isFinite(a) || a >= DAILY_CHOICES.length)) return null;
     const sc = parseInt(score, 10);
     if (!Number.isFinite(sc)) return null;
     return { date, actions, score: sc };
@@ -321,8 +347,9 @@ export function decodeRun(code: string): { date: string; actions: [number, numbe
   }
 }
 
-/** Carrés de couleur de l'activité dominante par tranche de `step` secondes (partage du résultat). */
-export const ACT_SQUARE = ['🟩', '🟨', '🟦', '🟪'];
+/** Carrés de couleur du choix dominant par tranche de `step` secondes (partage) : Récolter, Commercer,
+ *  Étudier, Méditer, puis Semer et Battue. */
+export const ACT_SQUARE = ['🟩', '🟨', '🟦', '🟪', '🟫', '🟥'];
 export function dailyStrip(rec: number[], step = 6): string {
   let out = '';
   for (let i = 0; i < rec.length; i += step) {
@@ -343,7 +370,7 @@ export function playActions(setup: DailySetup, actions: [number, number][], cuto
   const run = new DailyRun(setup);
   let i = 0;
   while (!run.done && run.tickN < cutoff) {
-    while (i < actions.length && actions[i][0] <= run.tickN) { run.setAct(actions[i][1] >= 0 ? ACTS[actions[i][1]] ?? null : null); i++; }
+    while (i < actions.length && actions[i][0] <= run.tickN) { run.setChoice(actions[i][1]); i++; }
     // Sans activité de départ (ou activité inconnue), la partie ne démarre jamais : rien à jouer.
     if (!run.started) break;
     run.step();
@@ -359,7 +386,7 @@ export const SWITCH_PENALTY = 20;
  * retard (Méditer pour l'Essence ; Étudier si l'Or suffit, sinon Commercer si les Vivres suffisent, sinon la
  * source de Vivres). C'est une règle simple qu'un joueur attentif peut suivre : elle sert de point de départ.
  */
-export function reactivePlay(setup: DailySetup, src: ActId, every: number, orMin: number, vivMin: number): DailyRun {
+export function reactivePlay(setup: DailySetup, src: ActId, every: number, orMin: number, vivMin: number, posture: Posture = 'equilibre'): DailyRun {
   const run = new DailyRun(setup);
   const o = setup.order;
   const lag = (r: ResId) => (o[r] > 0 ? run.res[r] / o[r] : 9);
@@ -372,7 +399,7 @@ export function reactivePlay(setup: DailySetup, src: ActId, every: number, orMin
   };
   const per = Math.round(every * TICKS_PER_SEC);
   while (!run.done) {
-    if (run.tickN % per === 0) { const a = pick(); if (a !== run.life.act) run.setAct(a); }
+    if (run.tickN % per === 0) { const a = pick(); if (a !== run.life.act) run.setAct(a, posture); }
     run.step();
   }
   return run;
@@ -381,10 +408,10 @@ export function reactivePlay(setup: DailySetup, src: ActId, every: number, orMin
 /** Meilleur joueur réactif parmi quelques réglages (rapide : sert au calibrage de la commande). */
 export function reactiveBest(setup: DailySetup): DailyRun {
   let best: DailyRun | null = null;
-  for (const src of ['cultiver'] as ActId[])
+  for (const posture of ['equilibre', 'battue'] as Posture[])
     for (const every of [3, 6])
       for (const [orMin, vivMin] of [[6, 10], [12, 20]]) {
-        const r = reactivePlay(setup, src, every, orMin, vivMin);
+        const r = reactivePlay(setup, 'cultiver', every, orMin, vivMin, posture);
         if (!best || runCost(r) < runCost(best)) best = r;
       }
   return best!;
@@ -414,7 +441,7 @@ export function solveDaily(setup: DailySetup): DailySolution {
     const neigh: [number, number][][] = [];
     for (let i = 1; i < cur.length; i++) for (const d of [-80, -30, -10, 10, 30, 80]) neigh.push(cur.map(([t, a], j) => [j === i ? t + d : t, a] as [number, number]));
     for (let i = 1; i < cur.length; i++) neigh.push(cur.filter((_, j) => j !== i));
-    for (let i = 0; i < cur.length; i++) for (let a = 0; a < ACTS.length; a++) if (a !== cur[i][1]) neigh.push(cur.map(([t, b], j) => [t, j === i ? a : b] as [number, number]));
+    for (let i = 0; i < cur.length; i++) for (let a = 0; a < DAILY_CHOICES.length; a++) if (a !== cur[i][1]) neigh.push(cur.map(([t, b], j) => [t, j === i ? a : b] as [number, number]));
     for (const q of neigh) {
       const qq = norm(q);
       if (!qq.length) continue;

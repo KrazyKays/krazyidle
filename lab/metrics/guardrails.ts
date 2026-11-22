@@ -76,7 +76,7 @@ export const RULES: Rule[] = [
   { kpi: 'upgradeAt.alliances', kind: 'range', profiles: ['experimente'], min: 3600, max: 5 * 3600, stat: 'mean', why: 'Alliances (90 ⚜️) atteintes entre 1 h et 5 h.' },
   { kpi: 'has.chroniques', kind: 'range', profiles: ['experimente', 'optimiseur'], min: 0.9, why: 'Chroniques (160 ⚜️) achetées dans 90 % des parties de 6 h d\'un joueur compétent.' },
   { kpi: 'epithetLivesShare', kind: 'range', profiles: CONT, min: 0.3, max: 0.7, why: 'GDD 2.6 : ~50 % des vies surnommées après l\'achat de Chroniques.' },
-  { kpi: 'epithetsFound', kind: 'range', profiles: ['optimiseur', 'mono-cultiver', 'mono-commercer'], min: 3, why: 'Au moins 3 surnoms distincts en 6 h quand Chroniques est acquis (32 au catalogue en 0.4).' },
+  { kpi: 'epithetsFound', kind: 'range', profiles: ['optimiseur', 'mono-cultiver', 'mono-commercer'], min: 3, why: 'Au moins 3 surnoms distincts en 6 h quand Chroniques est acquis (34 au catalogue en 0.4).' },
 ];
 
 /** Garde-fous inter-profils (sur une seule campagne). */

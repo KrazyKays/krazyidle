@@ -5,8 +5,8 @@
 //  4. Or obtenu au premier essai par les profils « raisonnables » < 10 % ;
 //  5. âge de livraison du solveur entre 50 et 75 ans.
 // Profils : naïf = Cultiver → Commercer → Étudier → Méditer en parts égales (22 s), sans lire la commande ;
-// raisonnables = joueur réactif réglé par défaut (relit toutes les 5 s), Cultiver ou Chasser comme source.
-import { DAILY_DUR, dailySetup, dailySolution, dailyTiers, playActions, reactivePlay } from '../../../src/engine/daily';
+// raisonnables = joueur réactif réglé par défaut (relit toutes les 5 s), Récolter en Équilibre ou en Battue (0.4).
+import { DAILY_CHOICES, DAILY_DUR, dailySetup, dailySolution, dailyTiers, playActions, reactivePlay } from '../../../src/engine/daily';
 const N = +(process.argv[2] ?? 365);
 const V = process.argv.includes('-v');
 const dates = Array.from({ length: N }, (_, i) => new Date(Date.UTC(2026, 10, 1) + i * 86400e3).toISOString().slice(0, 10));
@@ -25,9 +25,9 @@ for (const d of dates) {
   if (sol.delivered && age >= 50 && age <= 75) inRange++;
   ages.push(sol.delivered ? age : 999);
   sw.push(sol.actions.length);
-  for (let a = 0; a < 5; a++) if (playActions(setup, [[0, a]]).delivered) { single++; break; }
+  for (let a = 0; a < DAILY_CHOICES.length; a++) if (playActions(setup, [[0, a]]).delivered) { single++; break; }
   naive[med(playActions(setup, [[0, 0], [220, 2], [440, 3], [660, 4]]).deliveredTick)]++;
-  for (const src of ['cultiver', 'chasser'] as const) reas[med(reactivePlay(setup, src, 5, 10, 15).deliveredTick)]++;
+  for (const post of ['equilibre', 'battue'] as const) reas[med(reactivePlay(setup, 'cultiver', 5, 10, 15, post).deliveredTick)]++;
   if (V) console.log(d, JSON.stringify(setup.order), setup.mods.map((m) => m.id).join(','), 'solveur', age, 'paliers', tiers.join('/'), 'changements', sol.actions.length, ms[ms.length - 1].toFixed(0) + ' ms');
 }
 const q = (a: number[], p: number) => [...a].sort((x, y) => x - y)[Math.floor(p * (a.length - 1))];

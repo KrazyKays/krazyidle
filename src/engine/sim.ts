@@ -1,6 +1,6 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
 import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActDef, type ActId, type Mods, type ResId } from './data';
-import { ecoFactor, ecoImpact, ecoPressure, type Eco } from './ecosystem';
+import { ecoFactor, ecoImpact, ecoPressure, type Eco, type Posture } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
 export interface SimCtx {
@@ -9,6 +9,8 @@ export interface SimCtx {
   prodMult: (a: ActId) => number;
   ecoImpactMult: number;
   onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
+  /** Consigne du héros vivant pour Récolter (0.4) ; les Échos récoltent toujours en Équilibre. */
+  posture?: Posture;
   /** Table des activités ; le Destin du jour garde la sienne, figée, pour que les anciens codes restent vérifiables. */
   acts?: Record<ActId, ActDef>;
 }
@@ -30,14 +32,15 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
     const need = def.consume[r as ResId]! * consumeScale * dt * frac;
     ctx.res[r as ResId] = Math.max(0, ctx.res[r as ResId] - need);
   }
-  const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco);
+  const post = fromLife ? ctx.posture ?? 'equilibre' : 'equilibre';
+  const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco, post);
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;
     ctx.onProduce?.(r as ResId, amt, fromLife, act);
   }
   const impact = ecoStrength * ecoPressure(power) * frac * ctx.ecoImpactMult;
-  ecoImpact(ctx.eco, act, impact, dt);
+  ecoImpact(ctx.eco, act, impact, dt, post);
   return frac;
 }
 
@@ -87,6 +90,11 @@ export function lifeTick(ctx: SimCtx, life: LifeState, hero: Pick<Hero, 'traits'
       life.lvl[a]++;
     }
     life.timeIn[a] += step;
+    const post = ctx.posture;
+    if (a === 'cultiver' && post && post !== 'equilibre') {
+      const pt = (life.post ??= { semer: 0, battue: 0 });
+      pt[post] += step;
+    }
   }
   life.t += step;
   // Une entrée par seconde écoulée. On se base sur la longueur déjà enregistrée

@@ -1,5 +1,5 @@
 import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, TRAITS, sexFor, type ActId, type ResId, type Sex } from './data';
-import { newEco, type Eco } from './ecosystem';
+import { newEco, type Eco, type Posture } from './ecosystem';
 import { hashStr, Rng } from './rng';
 
 export interface Vocation {
@@ -90,6 +90,8 @@ export interface LifeState {
   baseValue?: number;
   extended: boolean; // bonus "Temps suspendu" utilisé
   st?: LifeStats;
+  /** secondes passées à Récolter en Semer et en Battue (0.4, surnoms) */
+  post?: { semer: number; battue: number };
 }
 
 export interface Echo {
@@ -186,6 +188,8 @@ export interface GameState {
   legacyTotal: number;
   upgrades: Record<string, number>;
   eco: Eco;
+  /** consigne de Récolter choisie pour le héros (0.4) ; absente = Équilibre */
+  posture?: Posture;
   eclats: number;
   blessings: string[];
   events: Record<string, EventProgress>;

@@ -28,3 +28,20 @@ Bronze 93 % des jours. Décision : livrer, et suivre ce point chez les vrais jou
 | Marge de l'Or | +3 ans (proposé), +2 ans | +2 ans | Le solveur étant un minorant, la marge est réduite pour l'élite. |
 
 Coût (Node) de la commande et des paliers d'une date : médiane 0,32 s, q90 0,54 s, max 1,2 s, une fois par jour et par session (cache).
+
+## Recalibrage 0.4 (2026-11-22) : Récolter et ses consignes
+
+Quatre activités et six choix (Récolter en Équilibre, Semer ou Battue ; codes `EL3`), plus de Prédateurs (« Hiver
+rude » remplace « Hiver des loups »), traits de chasse fusionnés. La commande se recalibre d'elle-même
+(`dailySetup`) ; le joueur réactif récolte en Équilibre ou en Battue. Même commande, 365 dates [SIMULÉ] :
+
+| # | Critère | 0.3 | 0.4 | Verdict |
+|---|---|---|---|---|
+| 1 | Or faisable | 365/365 | 365/365 | ✅ |
+| 2 | Une activité seule livre | 0 | 0 (six choix essayés) | ✅ |
+| 3 | Bronze par la règle naïve | 1 % | 0 % | ❌ (inchangé, voir plus haut) |
+| 4 | Or au premier essai, profils raisonnables | 6 % (Bronze+ 93 %) | 3 % (Bronze+ 80 %) | ✅ |
+| 5 | Âge du solveur dans [50, 75] | 352/365, médiane 58,4 | 332/365, médiane 56,7 (36,9 à 72,2) | ✅ (91 %) |
+
+Le Bronze des profils réactifs baisse (93 → 80 %) : le profil « réactif en Battue » tient la Battue et vide
+les hardes (le Destin n'a pas de repli en Équilibre). Coût : médiane 0,27 s, q90 0,47 s, max 1,0 s.

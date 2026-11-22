@@ -149,6 +149,7 @@ export function runGame(o: RunOpts): RunResult {
       const t0 = c.t;
       if (sec >= 30) {
         rt.online = false;
+        rt.offline = true;
         const startMs = c.now + (off - sec) * 1000;
         c.t = t0 + (off - sec);
         const steps = Math.floor(sec);
@@ -158,6 +159,7 @@ export function runGame(o: RunOpts): RunResult {
           account(1);
         }
         rt.online = events;
+        rt.offline = false;
       }
       c.t = t0 + off; c.now += off * 1000;
       hourMark();
