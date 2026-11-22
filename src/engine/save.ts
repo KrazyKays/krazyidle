@@ -30,6 +30,11 @@ function migrate(d: any): GameState {
   s.stats = { ...base.stats, ...d.stats };
   s.lineage = { ...base.lineage, ...d.lineage };
   s.hunt = { ...base.hunt, ...d.hunt };
+  // 0.4 : plus de Prédateurs ; un surnom retiré disparaît des Échos et des ancêtres (TERRE-2).
+  s.eco = { F: d.eco?.F ?? base.eco.F, G: d.eco?.G ?? base.eco.G };
+  const gone = new Set(['tueur_loups']);
+  for (const p of [...(s.echoes ?? []), ...(s.ancestors ?? [])] as { epithet?: string }[]) if (p.epithet && gone.has(p.epithet)) delete p.epithet;
+  if (s.epithets) for (const id of gone) delete s.epithets[id];
   // Genre des personnages : absent des sauvegardes d'avant, déduit du prénom.
   const sexed = (p: { name: string; sex?: 'f' | 'm' } | null | undefined) => { if (p && !p.sex) p.sex = sexOf(p); };
   sexed(s.hero);

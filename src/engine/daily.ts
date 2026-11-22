@@ -27,7 +27,7 @@ export const DAILY_MODS: DailyMod[] = [
   { id: 'secheresse', g: 'cultiver', name: 'Sécheresse', icon: '☀️', desc: 'Cultiver ×0.5', act: { cultiver: 0.5 } },
   { id: 'fertiles', g: 'cultiver', name: 'Terres fertiles', icon: '🌷', desc: 'Flore initiale abondante', eco: { F: 100 } },
   { id: 'abondance', g: 'chasser', name: 'Gibier abondant', icon: '🐗', desc: 'Gibier initial ×2', eco: { G: 60 } },
-  { id: 'loups', g: 'chasser', name: 'Hiver des loups', icon: '🐺', desc: 'Prédateurs nombreux, Gibier rare', eco: { P: 30, G: 15 } },
+  { id: 'hiver', g: 'chasser', name: 'Hiver rude', icon: '❄️', desc: 'Gibier rare', eco: { G: 15 } },
   { id: 'foire', g: 'commercer', name: 'Foire du comté', icon: '🎪', desc: 'Commercer ×1.8', act: { commercer: 1.8 } },
   { id: 'inflation', g: 'commercer', name: 'Inflation', icon: '📉', desc: 'Commercer ×0.6', act: { commercer: 0.6 } },
   { id: 'academie', g: 'etudier', name: 'Académie ouverte', icon: '🎓', desc: 'Étudier ×1.8', act: { etudier: 1.8 } },

@@ -15,7 +15,7 @@ function facts(over: Partial<LifeFacts> = {}): LifeFacts {
   const share = { cultiver: 0.3, chasser: 0.1, commercer: 0.3, etudier: 0.3, mediter: 0 };
   return {
     share, used: 4, switches: 10, harmonyAvg: 0.8, harmonyMin: 0.6, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
-    traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29, predators: 11,
+    traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
     ...over,
     ...(over.share ? { share: { ...share, ...over.share } } : {}),
   };

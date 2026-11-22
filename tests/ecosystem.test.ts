@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { ECO_EQ, ecoRegen, ecoStep, gameVigor, harmonyMult, newEco, trophyFactor, type Eco } from '../src/engine/ecosystem';
+import { ECO_EQ, ecoRegen, ecoStep, harmonyMult, newEco, type Eco } from '../src/engine/ecosystem';
 import { dailySetup, DailyRun, decodeRun, encodeRun, replay } from '../src/engine/daily';
 import { runActivity, type SimCtx } from '../src/engine/sim';
 import { buyPartition } from '../src/engine/game';
@@ -24,21 +24,12 @@ describe('écosystème v2', () => {
   test('le héros qui chasse seul fait vraiment baisser le Gibier', () => {
     const { eco } = sim([['chasser', 1, 1]]);
     expect(eco.G).toBeLessThan(ECO_EQ.G * 0.8);
-    // … sans effondrement des Prédateurs : ils suivent le Gibier
-    expect(eco.P).toBeGreaterThan(ECO_EQ.P * 0.5);
   });
 
-  test('les Prédateurs comptent : sans eux, la chasse rapporte moins', () => {
-    const e = newEco();
-    expect(gameVigor(e)).toBeCloseTo(1, 5);
-    expect(gameVigor({ ...e, P: 0.1 })).toBeLessThan(0.6);
-    expect(trophyFactor(e)).toBe(0);
-    expect(trophyFactor({ ...e, P: ECO_EQ.P * 2 })).toBeGreaterThan(0.9);
-  });
-
-  test('des Prédateurs abondants rapportent des trophées en Or', () => {
-    const { got } = sim([['chasser', 1, 1]], 30, 0, { ...newEco(), P: 30 });
-    expect(got.or).toBeGreaterThan(0);
+  test('sans Prédateurs (0.4), le Domaine laissé libre reste à son équilibre', () => {
+    const { eco } = sim([], 600);
+    expect(eco.F).toBeCloseTo(ECO_EQ.F, 0);
+    expect(eco.G).toBeCloseTo(ECO_EQ.G, 0);
   });
 
   test('la surchasse par des Échos puissants épuise le Domaine', () => {

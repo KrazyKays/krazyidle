@@ -45,7 +45,7 @@ export function runBot(hours: number, seed = 42, log = false, setup?: (s: GameSt
       }
     }
     if (t % 1800 === 0) {
-      const snap = { h: (t / 3600).toFixed(1), gen: s.hero.gen, res: RES.map((r) => s.res[r].toExponential(2)).join(' '), echoes: s.echoes.length, legacy: s.legacyTotal, b: JSON.stringify(s.buildings), u: JSON.stringify(s.upgrades), unl: s.unlocked.length, eco: `${s.eco.F.toFixed(0)}/${s.eco.G.toFixed(0)}/${s.eco.P.toFixed(0)}`, echoRate: rt.echoRate.toFixed(1) };
+      const snap = { h: (t / 3600).toFixed(1), gen: s.hero.gen, res: RES.map((r) => s.res[r].toExponential(2)).join(' '), echoes: s.echoes.length, legacy: s.legacyTotal, b: JSON.stringify(s.buildings), u: JSON.stringify(s.upgrades), unl: s.unlocked.length, eco: `${s.eco.F.toFixed(0)}/${s.eco.G.toFixed(0)}`, echoRate: rt.echoRate.toFixed(1) };
       snaps.push(snap);
       if (log) console.log(JSON.stringify(snap));
     }

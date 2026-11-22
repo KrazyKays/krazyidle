@@ -34,9 +34,8 @@ export interface LifeFacts {
   /** meilleur palier d'événement atteint (0..3) */
   eventTier: number;
   builds: number;
-  /** Gibier et Prédateurs à la mort */
+  /** Gibier à la mort */
   game: number;
-  predators: number;
 }
 
 /** Effet sur l'Écho : puissance globale, puissance par activité, impact sur le Domaine (+0.5 = +50 %). */
@@ -81,7 +80,6 @@ export const EPITHETS: EpithetDef[] = [
   { id: 'bien_aime', name: 'le Bien-Aimé', nameF: 'la Bien-Aimée', icon: '💞', rarity: 1, hint: 'Épouser quelqu\'un venu d\'une lignée lointaine, au-delà du comté.', test: (f) => f.spouse === 'joueur', mods: { pow: 0.1 } },
   { id: 'juste', name: 'le Juste', nameF: 'la Juste', icon: '🕊️', rarity: 1, hint: 'Vivre de la terre et des bois sans jamais en troubler l\'équilibre.', test: (f) => worksLand(f) && f.harmonyAvg >= 0.97 && f.harmonyMin >= 0.9, mods: { eco: -0.4 } },
   { id: 'devastateur', name: 'le Dévastateur', nameF: 'la Dévastatrice', icon: '🔥', rarity: 1, hint: 'Laisser derrière soi un Domaine à l\'agonie.', test: (f) => f.harmonyMin <= 0.3, mods: { pow: 0.15, eco: 0.5 } },
-  { id: 'tueur_loups', name: 'le Tueur de loups', nameF: 'la Tueuse de loups', icon: '🐺', rarity: 1, hint: 'Que les hurlements se taisent dans les bois.', test: (f) => f.share.chasser >= 0.4 && f.predators <= 2, mods: { act: { chasser: 0.15 }, eco: 0.2 } },
   { id: 'boucher', name: 'le Boucher', nameF: 'la Bouchère', icon: '🪓', rarity: 1, hint: 'Chasser jusqu\'à ce que les hardes ne soient plus qu\'un souvenir.', test: (f) => f.share.chasser >= 0.5 && f.game <= 10, mods: { act: { chasser: 0.15 }, eco: 0.3 } },
   { id: 'jardinier', name: 'le Jardinier', nameF: 'la Jardinière', icon: '🌷', rarity: 1, hint: 'Cultiver beaucoup, sans jamais épuiser la terre.', test: (f) => f.share.cultiver >= 0.5 && f.harmonyAvg >= 0.9, mods: { act: { cultiver: 0.15 }, eco: -0.2 } },
   { id: 'alchimiste', name: 'l\'Alchimiste', icon: '⚗️', rarity: 1, hint: 'Partager sa vie entre les livres et la méditation.', test: (f) => f.share.etudier >= 0.35 && f.share.mediter >= 0.35, mods: { act: { etudier: 0.1, mediter: 0.1 } } },

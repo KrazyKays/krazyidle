@@ -43,7 +43,7 @@ describe('R8 — « le Vénérable » et surnoms répétés (DATA-01, GD-04, PBA
     share.etudier = 0.6; share.commercer = 0.4;
     return {
       share, used: 2, switches: 5, harmonyAvg: 0.9, harmonyMin: 0.8, value: 100, parentValue: 100, bestBefore: 1000, gen: 30,
-      traits: [], negTraits: 0, vocTier: 10, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29, predators: 11,
+      traits: [], negTraits: 0, vocTier: 10, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
     };
   };
   test('donné au passage au rang X, plus à chaque vie au rang X', async () => {
@@ -415,7 +415,7 @@ describe('GD-SURNOMS A — « le Constant » devient un surnom commun, sans effe
     const f = {
       share: { cultiver: 1, chasser: 0, commercer: 0, etudier: 0, mediter: 0 }, used: 1, switches: 0,
       harmonyAvg: 0.5, harmonyMin: 0.5, value: 1, parentValue: 1, bestBefore: 1, gen: 3, traits: [], negTraits: 0,
-      vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 50, predators: 5,
+      vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 50,
     };
     expect(pickEpithet(f)?.id).toBe('laboureur');
     expect(pickEpithet({ ...f, parentEpithet: 'laboureur' })?.id).toBe('constant');
@@ -509,15 +509,13 @@ describe('UX-NAV 4 — sous-onglets en bas sur téléphone, à portée du pouce'
 });
 
 describe('ECO-1 — jauges du Domaine centrées sur l\'équilibre', () => {
-  test('les trois populations ont leur équilibre au milieu de la jauge, et la jauge reste bornée', async () => {
+  test('les deux populations ont leur équilibre au milieu de la jauge, et la jauge reste bornée', async () => {
     const { ECO_EQ, ecoGauge } = await import('../../src/engine/ecosystem');
-    for (const k of ['F', 'G', 'P'] as const) {
+    for (const k of ['F', 'G'] as const) {
       expect(ecoGauge(ECO_EQ, k)).toBeCloseTo(0.5, 9);
       expect(ecoGauge({ ...ECO_EQ, [k]: 1000 }, k)).toBe(1);
       expect(ecoGauge({ ...ECO_EQ, [k]: 0 }, k)).toBe(0);
     }
-    // Avant : 0 à 140 pour tous, les Prédateurs à l'équilibre ne remplissaient que 8 % de leur barre.
-    expect(ecoGauge(ECO_EQ, 'P')).toBeGreaterThan(ECO_EQ.P / 140 * 5);
   });
 });
 
@@ -564,7 +562,7 @@ describe('TRAIT-EVO — mutations plafonnées, dons qui mûrissent (0.3)', () =>
     const facts = (cultiver: number) => ({
       share: { cultiver, chasser: 1 - cultiver, commercer: 0, etudier: 0, mediter: 0 }, used: 2, switches: 3, harmonyAvg: 0.9, harmonyMin: 0.8,
       value: 100, parentValue: 90, bestBefore: 100, gen: 5, traits: ['main_verte', 'genie'], negTraits: 0, vocTier: 2, prevVocTier: 1,
-      durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29, predators: 11,
+      durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
     });
     expect(ripeTraits(['main_verte', 'genie'], facts(0.6))).toEqual({ main_verte: 'seve' });
     expect(ripeTraits(['main_verte', 'genie'], facts(0.4))).toEqual({});
@@ -668,5 +666,29 @@ describe('TERRE-1 — plus de vérification des codes du Destin (0.4)', () => {
     // 6 s par carré : Cultiver, puis pause, puis Méditer
     const rec = [...Array(6).fill(0), ...Array(6).fill(-1), ...Array(4).fill(4)];
     expect(daily.dailyStrip(rec)).toBe('🟩⬛🟪');
+  });
+});
+
+describe('TERRE-2 — plus de Prédateurs (0.4)', () => {
+  test('le Gibier garde son équilibre à 29 sans Prédateurs, et revient après une perturbation', async () => {
+    const { ECO_EQ, ecoStep, ecoHealth } = await import('../../src/engine/ecosystem');
+    const e = { F: 30, G: 50 };
+    for (let t = 0; t < 300; t += 0.1) ecoStep(e, 0.1);
+    expect(ecoHealth(e)).toBeGreaterThan(0.95);
+    const eq = { ...ECO_EQ };
+    for (let t = 0; t < 600; t += 0.1) ecoStep(eq, 0.1);
+    expect(eq.G).toBeCloseTo(ECO_EQ.G, 0);
+    expect(Object.keys(eq).sort()).toEqual(['F', 'G']);
+  });
+  test('une ancienne sauvegarde perd ses Prédateurs et le surnom « le Tueur de loups »', async () => {
+    const { deserialize, serialize } = await import('../../src/engine/save');
+    const s: any = newGame(0, 21);
+    s.eco = { F: 60, G: 20, P: 3 };
+    s.epithets = { tueur_loups: 2, veneur: 1 };
+    s.ancestors = [{ id: 1, name: 'Jehan', gen: 1, traits: [], vocation: null, value: 1, legacy: 1, dominant: null, diedAt: 0, epithet: 'tueur_loups' }];
+    const t = deserialize(serialize(s))!;
+    expect(t.eco).toEqual({ F: 60, G: 20 });
+    expect(t.epithets).toEqual({ veneur: 1 });
+    expect(t.ancestors[0].epithet).toBeUndefined();
   });
 });

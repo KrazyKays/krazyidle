@@ -467,6 +467,7 @@ p { margin: 6px 0; }
 .act-note { color: var(--muted); font-size: 0.72rem; }
 .act-note.bad { color: var(--bad); }
 .stats-4 { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.stats-3 { grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .stat-mini { padding: 6px 8px; min-width: 0; }
 .stat-mini .stat-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stat-mini .small { font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

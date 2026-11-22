@@ -1,6 +1,6 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
 import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActDef, type ActId, type Mods, type ResId } from './data';
-import { AFFUT_DRAW, AFFUT_GAIN, AFFUT_STEALTH, TROPHY_OR, ecoFactor, ecoImpact, ecoPressure, gameScarcity, trophyFactor, type Eco, type Hunt } from './ecosystem';
+import { AFFUT_DRAW, AFFUT_GAIN, AFFUT_STEALTH, TROPHY_OR, ecoFactor, ecoImpact, ecoPressure, gameScarcity, type Eco, type Hunt } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
 export interface SimCtx {
@@ -41,7 +41,7 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
   }
   let impact = ecoStrength * ecoPressure(power) * frac * ctx.ecoImpactMult;
   if (act === 'chasser') {
-    let tro = TROPHY_OR * trophyFactor(ctx.eco) * base;
+    let tro = 0;
     if (ctx.hunt) {
       // Affût : en disette, le butin manqué est mis en réserve et le Gibier est épargné ;
       // la réserve est libérée en trophées d'Or quand la chasse rouvre.

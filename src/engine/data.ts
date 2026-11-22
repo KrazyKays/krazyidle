@@ -34,7 +34,7 @@ export const ACT: Record<ActId, ActDef> = {
   },
   chasser: {
     id: 'chasser', name: 'Chasser', icon: '🏹', color: '#d84315',
-    desc: 'Rendement selon le Gibier et sa vigueur. Trophées d\'Or si les Prédateurs pullulent. En disette, se met à l\'affût : épargne le Gibier et met le butin en réserve.',
+    desc: 'Rendement selon le Gibier. En disette, se met à l\'affût : épargne le Gibier et met le butin en réserve.',
     vocation: 'Chasseur', vocationF: 'Chasseresse', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
   },
   commercer: {

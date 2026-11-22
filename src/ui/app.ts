@@ -3,7 +3,7 @@ import {
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
-import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
+import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
@@ -70,7 +70,7 @@ export class App {
   /** Téléphone : bloc fixé en bas, sous-onglets au-dessus des onglets. */
   elDock!: HTMLElement;
   elSubDock!: HTMLElement;
-  ecoHist: { F: number; G: number; P: number }[] = [];
+  ecoHist: { F: number; G: number }[] = [];
   lastHist = 0;
   lastNav = 0;
   successionModal: ModalHandle | null = null;
@@ -624,7 +624,6 @@ export class App {
     let tro = 0;
     if (a === 'chasser') {
       const base = prodMult(s, this.rt, a) * p;
-      tro = TROPHY_OR * trophyFactor(s.eco) * base;
       if (!s.hunt.on && s.hunt.affut > 0) tro += TROPHY_OR * Math.min(s.hunt.affut, AFFUT_DRAW * base);
     }
     if (tro > 0.005) out.push(`+${fmt(tro)} ${RES_INFO.or.icon}/s`);
@@ -750,7 +749,7 @@ export class App {
   panelNature() {
     const s = this.s, b = this.bTab;
     const pops: [keyof typeof ECO_EQ, string, string, string][] = [
-      ['F', 'Flore', '🌳', '#7cb342'], ['G', 'Gibier', '🦌', '#ff8a65'], ['P', 'Prédateurs', '🐺', '#90a4ae'],
+      ['F', 'Flore', '🌳', '#7cb342'], ['G', 'Gibier', '🦌', '#ff8a65'],
     ];
     const bars = pops.map(([k, name, icon, color]) => {
       const fill = b.width(h('div', { class: 'bar-fill', style: { background: color } }), () => ecoGauge(s.eco, k));
@@ -768,12 +767,6 @@ export class App {
     });
     const health = b.text(h('span'), () => `${Math.round(ecoHealth(s.eco) * 100)}%`);
     const harm = b.text(h('span'), () => `×${harmonyMult(s.eco).toFixed(2)}`);
-    const vigor = b.text(h('span'), () => `×${gameVigor(s.eco).toFixed(2)}`);
-    // Trophées exprimés en part du butin de chasse (Or valorisé ×2 face aux Vivres).
-    const trophy = b.text(h('span'), () => {
-      const pct = Math.round((TROPHY_OR * trophyFactor(s.eco) * RES_INFO.or.value) / (ACT.chasser.produce.vivres! * RES_INFO.vivres.value) * 100);
-      return pct >= 1 ? `+${pct} % du butin en 🪙` : 'aucun';
-    });
     const regen = ecoRegenRate(s);
     const harmCard = h('div', { class: 'card' },
       h('h2', null, '🌳 Écosystème du Domaine'),
@@ -781,8 +774,6 @@ export class App {
       h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
       bars,
       h('div', { class: 'stats' },
-        stat('Vigueur du Gibier', vigor),
-        stat('Trophées', trophy),
         stat('Affût', b.text(h('span'), () => s.hunt.on ? `🎯 en cours · ${fmt(s.hunt.affut * TROPHY_OR)} 🪙` : s.hunt.affut * TROPHY_OR >= 1 ? `🏆 ${fmt(s.hunt.affut * TROPHY_OR)} 🪙 à rapporter` : 'chasse ouverte')),
         regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
       canvas,
@@ -790,7 +781,6 @@ export class App {
       h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
         h('p', { class: 'muted small' }, 'Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
         h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.'),
-        h('p', { class: 'muted small' }, '🐺 Les Prédateurs gardent les hardes saines : sans eux, la chasse rapporte moins. Ils suivent le Gibier et dépassent rarement leur équilibre : les trophées d\'Or viennent surtout de l\'Affût.'),
         h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`)));
     return h('div', null, harmCard);
   }
@@ -1472,14 +1462,14 @@ export class App {
         h('div', { class: 'muted small' }, setup.order[r] > 0 ? `commande : ${fmtInt(setup.order[r])}` : 'hors commande'))));
 
       // Écosystème
-      const ecoMini = (icon: string, name: string, k: 'F' | 'G' | 'P') => mini(`${icon} ${name}`,
+      const ecoMini = (icon: string, name: string, k: 'F' | 'G') => mini(`${icon} ${name}`,
         b.text(h('div', { class: 'stat-v' }), () => fmt(run.eco[k])),
         b.text(h('div', { class: 'muted small' }), () => { const r = run.eco[k] / ECO_EQ[k]; return r > 1.25 ? '▲ abondant' : r < 0.75 ? '▼ rare' : '≈ équilibre'; }));
       const harm = b.text(h('div', { class: 'stat-v' }), () => `×${harmonyMult(run.eco).toFixed(2)}`);
       b.cls(harm, 'good', () => harmonyMult(run.eco) >= 1.15);
       b.cls(harm, 'bad', () => harmonyMult(run.eco) < 0.9);
-      const eco = h('div', { class: 'stats stats-4' }, ecoMini('🌳', 'Flore', 'F'), ecoMini('🦌', 'Gibier', 'G'), ecoMini('🐺', 'Prédat.', 'P'),
-        mini('☯️ Harmonie', harm, h('div', { class: 'muted small' }, 'toute prod.'), 'Multiplie toute la production. Maximale quand Flore, Gibier et Prédateurs sont à l\'équilibre.'));
+      const eco = h('div', { class: 'stats stats-3' }, ecoMini('🌳', 'Flore', 'F'), ecoMini('🦌', 'Gibier', 'G'),
+        mini('☯️ Harmonie', harm, h('div', { class: 'muted small' }, 'toute prod.'), 'Multiplie toute la production. Maximale quand Flore et Gibier sont à l\'équilibre.'));
 
       // Activités
       const acts = h('div', { class: 'acts acts-daily' }, ACTS.map((a, i) => {
@@ -1631,7 +1621,7 @@ function evolutionHint(id: string): string {
   return evolutionsOf(id).map((e) => ` Peut mûrir en ${TRAIT[e.to].icon} ${traitName(TRAIT[e.to])} chez ses enfants : ${e.cond.charAt(0).toLowerCase()}${e.cond.slice(1)}.`).join('');
 }
 
-function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number; P: number }[], series: [string, string][]) {
+function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number }[], series: [string, string][]) {
   const ctx = c.getContext('2d');
   if (!ctx) return;
   const dpr = window.devicePixelRatio || 1;

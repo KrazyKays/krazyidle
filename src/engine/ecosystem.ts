@@ -1,24 +1,26 @@
-// Domaine : écosystème Flore / Gibier / Prédateurs (Lotka-Volterra amorti).
+// Domaine : écosystème Flore / Gibier (Lotka-Volterra amorti). Les Prédateurs ont disparu en 0.4 : ils
+// restaient collés à leur équilibre et n'apportaient qu'une vigueur et des trophées invisibles (TERRE-2).
 // L'optimum n'est pas le maximum : surexploiter fait osciller puis s'effondrer le système.
 import type { ActId } from './data';
 
 export interface Eco {
   F: number; // Flore
   G: number; // Gibier
-  P: number; // Prédateurs
 }
 
-export const ECO_EQ: Eco = { F: 62.5, G: 29, P: 11.2 };
+export const ECO_EQ: Eco = { F: 62.5, G: 29 };
 
 const rF = 0.15, K = 100, aFG = 0.002;
-const bG = 0.1 / 60, mG = 0.05, cGP = 0.005;
-const rP = 0.05, kP = ECO_EQ.P / ECO_EQ.G;
+/**
+ * Mortalité du Gibier. Elle reprend la part que prélevaient les Prédateurs à l'équilibre (0,05 naturelle
+ * + 0,005 × 11,2) : sans cette compensation, le Gibier n'aurait plus d'équilibre à 29 et s'emballerait.
+ */
+const bG = 0.1 / 60, mG = 0.05 + 0.005 * 11.2;
 
 /**
  * Remplissage des jauges du Domaine (0 à 1) : chaque barre va de 0 à deux fois l'équilibre, qui tombe donc
- * au milieu pour les trois populations. « L'optimum n'est pas le maximum » se lit d'un coup d'œil : on vise
- * le centre, pas le plein. Les anciennes barres allaient de 0 à 140 : les Prédateurs (équilibre 11,2, et
- * ils ne le dépassent presque jamais) n'en remplissaient que 8 % (ECO-1).
+ * au milieu pour les deux populations. « L'optimum n'est pas le maximum » se lit d'un coup d'œil : on vise
+ * le centre, pas le plein (ECO-1).
  */
 export function ecoGauge(e: Eco, k: keyof Eco): number {
   return Math.max(0, Math.min(1, e[k] / (2 * ECO_EQ[k])));
@@ -33,15 +35,11 @@ export function ecoStep(e: Eco, dt: number) {
   while (left > 0) {
     const h = Math.min(0.5, left);
     left -= h;
-    const { F, G, P } = e;
+    const { F, G } = e;
     const dF = rF * F * (1 - F / K) - aFG * F * G + 0.1;
-    const dG = bG * F * G - mG * G - cGP * G * P + 0.05;
-    // La capacité d'accueil des Prédateurs suit le Gibier : déclin graduel au lieu d'un effondrement
-    // exponentiel au moindre prélèvement.
-    const dPp = rP * P * (1 - P / (kP * Math.max(G, 0.2))) + 0.02;
+    const dG = bG * F * G - mG * G + 0.05;
     e.F = clamp(F + dF * h, 0.5, 140);
     e.G = clamp(G + dG * h, 0.2, 140);
-    e.P = clamp(P + dPp * h, 0.1, 100);
   }
 }
 
@@ -50,16 +48,8 @@ export function ecoPressure(power: number): number {
   return 1 + 0.5 * Math.log(Math.max(1, power));
 }
 
-/** Les Prédateurs gardent les hardes saines. Sans eux, le Gibier s'affaiblit (0.55 → 1.13). */
-export function gameVigor(e: Eco): number {
-  return 0.55 + 0.45 * Math.min(1.3, e.P / ECO_EQ.P);
-}
-
-/** Or rapporté par Chasser (trophées) quand les Prédateurs pullulent, par unité de production. */
+/** Or des trophées d'Affût, par unité de réserve. */
 export const TROPHY_OR = 1.5;
-export function trophyFactor(e: Eco): number {
-  return clamp(e.P / ECO_EQ.P - 1, 0, 1.5);
-}
 
 // --- Affût : la chasse en période de disette --------------------------------
 // Quand le Gibier s'effondre, les chasseurs (héros et Échos) se mettent à l'affût : ils pistent
@@ -102,7 +92,6 @@ export function ecoRegen(e: Eco, rate: number, dt: number) {
   const k = 1 - Math.exp(-rate * dt);
   e.F += (ECO_EQ.F - e.F) * k;
   e.G += (ECO_EQ.G - e.G) * k;
-  e.P += (ECO_EQ.P - e.P) * k;
 }
 
 /** Impact d'une activité sur l'écosystème. strength ≈ 1 pour le héros vivant. */
@@ -114,7 +103,6 @@ export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
       break;
     case 'chasser':
       e.G = Math.max(0.2, e.G - 0.035 * e.G * s);
-      e.P = Math.max(0.1, e.P - 0.001 * e.P * s);
       break;
     case 'commercer':
       // les caravanes défrichent un peu
@@ -123,7 +111,6 @@ export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
     case 'mediter':
       e.F += (ECO_EQ.F - e.F) * 0.03 * s;
       e.G += (ECO_EQ.G - e.G) * 0.03 * s;
-      e.P += (ECO_EQ.P - e.P) * 0.03 * s;
       break;
     default:
       break;
@@ -132,8 +119,7 @@ export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
 
 /** 0..1 : proximité de l'équilibre (distance log). */
 export function ecoHealth(e: Eco): number {
-  const d =
-    Math.log(e.F / ECO_EQ.F) ** 2 + Math.log(e.G / ECO_EQ.G) ** 2 + Math.log(e.P / ECO_EQ.P) ** 2;
+  const d = Math.log(e.F / ECO_EQ.F) ** 2 + Math.log(e.G / ECO_EQ.G) ** 2;
   return Math.exp(-d / 1.2);
 }
 
@@ -145,7 +131,7 @@ export function harmonyMult(e: Eco): number {
 /** Facteur de rendement propre à l'activité (dépend des populations). */
 export function ecoFactor(act: ActId, e: Eco): number {
   if (act === 'cultiver') return clamp(e.F / ECO_EQ.F, 0.2, 1.6);
-  if (act === 'chasser') return clamp(e.G / ECO_EQ.G, 0.05, 2.2) * gameVigor(e);
+  if (act === 'chasser') return clamp(e.G / ECO_EQ.G, 0.05, 2.2);
   return 1;
 }
 

@@ -4,7 +4,7 @@ import {
   GENOME_BUDGET, LEGACY, LEGACY_DEF, TRAIT, TRAITS, VOCATION_BONUS, WEAR_FLOOR, WEAR_STEP, bMult, genomeWeight, wearMult, xpToNext,
 } from '../../src/engine/data';
 import { dowry, inbreedingRisk, marry, CADETS_MAX } from '../../src/engine/alliances';
-import { AFFUT_DECAY, AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, AFFUT_STEALTH, ECO_EQ, TROPHY_OR, ecoPressure, gameVigor, harmonyMult, newEco, updateHunt } from '../../src/engine/ecosystem';
+import { AFFUT_DECAY, AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, AFFUT_STEALTH, ECO_EQ, TROPHY_OR, ecoPressure, harmonyMult, newEco, updateHunt } from '../../src/engine/ecosystem';
 import { EPITHETS, EPITHET_ECLATS } from '../../src/engine/epithets';
 import {
   GARDE_REGEN, SHOP, echoPowerMult, echoSlots, endLife, expressGenome, genHeirs, legacyFor, lifeDuration, newRuntime, offlineCapSec, startLife,
@@ -102,12 +102,9 @@ describe('GDD 2.3 — la Lignée', () => {
 });
 
 describe('GDD 2.4 — le Domaine', () => {
-  test('Harmonie ×0,7 → ×1,3 ; vigueur 0,55 → 1,13 ; pression 1 + ½ ln(p)', () => {
+  test('Harmonie ×0,7 → ×1,3 ; pression 1 + ½ ln(p)', () => {
     expect(harmonyMult(newEco())).toBeCloseTo(1.3);
-    expect(harmonyMult({ F: 0.5, G: 0.2, P: 0.1 })).toBeCloseTo(0.7, 2);
-    expect(gameVigor({ ...ECO_EQ, P: 0 })).toBeCloseTo(0.55);
-    expect(gameVigor(ECO_EQ)).toBeCloseTo(1);
-    expect(gameVigor({ ...ECO_EQ, P: 1000 })).toBeCloseTo(1.135, 3);
+    expect(harmonyMult({ F: 0.5, G: 0.2 })).toBeCloseTo(0.7, 2);
     expect(ecoPressure(Math.E ** 2)).toBeCloseTo(2);
   });
   test('Affût : entrée 60 %, sortie 95 %, 3 % du prélèvement, 80 % en réserve, 1,5 Or, 3 unités, 0,5 %/s', () => {
@@ -134,8 +131,8 @@ describe('GDD 2.5 — le monde partagé', () => {
 });
 
 describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
-  test('35 surnoms en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
-    expect(EPITHETS).toHaveLength(35);
+  test('34 surnoms (sans le Tueur de loups en 0.4) en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
+    expect(EPITHETS).toHaveLength(34);
     expect(new Set(EPITHETS.map((e) => e.rarity)).size).toBe(4);
     expect(Math.min(...EPITHET_ECLATS)).toBe(1);
     expect(Math.max(...EPITHET_ECLATS)).toBe(5);
