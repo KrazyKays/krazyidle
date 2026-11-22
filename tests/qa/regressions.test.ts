@@ -892,3 +892,26 @@ describe('SIMPLIF-4 — Archives de la maison et onglet Mémoire (0.5)', () => {
     expect(buyBuilding(s, 'archives')).toBe(false); // niveau max
   });
 });
+
+describe('SIMPLIF-5 — Destin du jour sans Domaine : nouveaux modificateurs (0.5)', () => {
+  test('Récolte précoce, Héritage du comté et Disette remplacent les modificateurs de Flore et de Gibier', async () => {
+    const { DAILY_MODS, DailyRun, dailySetup } = await import('../../src/engine/daily');
+    const ids = DAILY_MODS.map((m) => m.id);
+    for (const gone of ['fertiles', 'abondance', 'hiver']) expect(ids).not.toContain(gone);
+    expect(ids).toEqual(expect.arrayContaining(['precoce', 'heritage_comte', 'disette']));
+    const precoce = DAILY_MODS.find((m) => m.id === 'precoce')!;
+    const setup = { ...dailySetup('2026-11-22'), mods: [precoce] };
+    const run = new DailyRun(setup);
+    expect(run.ctx.prodMult('cultiver')).toBe(1.5);
+    run.setAct('cultiver');
+    for (let i = 0; i < 300; i++) run.step();
+    expect(run.ctx.prodMult('cultiver')).toBe(1);
+    // Ressources de départ imposées par le tirage du jour
+    for (let k = 0; k < 200; k++) {
+      const d = new Date(Date.UTC(2026, 0, 1) + k * 86400e3).toISOString().slice(0, 10);
+      const su = dailySetup(d);
+      if (su.mods.some((m) => m.id === 'disette')) expect(su.startRes.vivres).toBe(0);
+      if (su.mods.some((m) => m.id === 'heritage_comte')) expect(su.startRes.or).toBe(10);
+    }
+  });
+});

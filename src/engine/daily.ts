@@ -19,13 +19,18 @@ export interface DailyMod {
   desc: string;
   act?: Partial<Record<ActId, number>>;
   xp?: number;
+  /** multiplicateur d'une activité pendant les `sec` premières secondes de la vie (0.5) */
+  early?: { act: ActId; mult: number; sec: number };
+  /** ressources de départ imposées (0.5) */
+  start?: Partial<Record<ResId, number>>;
 }
 
 export const DAILY_MODS: DailyMod[] = [
   { id: 'secheresse', g: 'flore', name: 'Sécheresse', icon: '☀️', desc: 'Récolter ×0.5', act: { cultiver: 0.5 } },
-  { id: 'fertiles', g: 'flore', name: 'Terres fertiles', icon: '🌷', desc: 'Sans effet (SIMPLIF-5)' },
-  { id: 'abondance', g: 'gibier', name: 'Gibier abondant', icon: '🐗', desc: 'Sans effet (SIMPLIF-5)' },
-  { id: 'hiver', g: 'gibier', name: 'Hiver rude', icon: '❄️', desc: 'Sans effet (SIMPLIF-5)' },
+  // 0.5 (SIMPLIF-5) : plus de Domaine ; Terres fertiles, Gibier abondant et Hiver rude sont remplacés.
+  { id: 'precoce', g: 'flore', name: 'Récolte précoce', icon: '🌷', desc: 'Récolter ×1.5 les 30 premières années', early: { act: 'cultiver', mult: 1.5, sec: 30 } },
+  { id: 'heritage_comte', g: 'depart', name: 'Héritage du comté', icon: '💰', desc: 'Départ avec 10 Or', start: { or: 10 } },
+  { id: 'disette', g: 'depart', name: 'Disette', icon: '❄️', desc: 'Aucun Vivre au départ', start: { vivres: 0 } },
   { id: 'foire', g: 'commercer', name: 'Foire du comté', icon: '🎪', desc: 'Commercer ×1.8', act: { commercer: 1.8 } },
   { id: 'inflation', g: 'commercer', name: 'Inflation', icon: '📉', desc: 'Commercer ×0.6', act: { commercer: 0.6 } },
   { id: 'academie', g: 'etudier', name: 'Académie ouverte', icon: '🎓', desc: 'Étudier ×1.8', act: { etudier: 1.8 } },
@@ -79,6 +84,7 @@ function baseSetup(date: string): Omit<DailySetup, 'order'> {
   }
   const startRes = zeroRes();
   startRes.vivres = 10 + rng.int(4) * 5;
+  for (const m of mods) Object.assign(startRes, m.start ?? {});
   return { date, name, traits, mods, startRes };
 }
 
@@ -164,7 +170,10 @@ export class DailyRun {
       res: this.res,
       prodMult: (a) => {
         let x = 1;
-        for (const md of mods) if (md.act?.[a]) x *= md.act[a]!;
+        for (const md of mods) {
+          if (md.act?.[a]) x *= md.act[a]!;
+          if (md.early?.act === a && this.tickN < md.early.sec * TICKS_PER_SEC) x *= md.early.mult;
+        }
         return x;
       },
     };

@@ -45,3 +45,22 @@ rude » remplace « Hiver des loups »), traits de chasse fusionnés. La command
 
 Le Bronze des profils réactifs baisse (93 → 80 %) : le profil « réactif en Battue » tient la Battue et vide
 les hardes (le Destin n'a pas de repli en Équilibre). Coût : médiane 0,27 s, q90 0,47 s, max 1,0 s.
+
+## Recalibrage 0.5 (2026-11-22) : sans Domaine ni consignes (SIMPLIF-5)
+
+Quatre choix (codes `EL4`), plus d'Harmonie, rendements V3-A. Modificateurs : « Terres fertiles », « Gibier
+abondant » et « Hiver rude » sont remplacés par 🌷 **Récolte précoce** (Récolter ×1,5 les 30 premières années),
+💰 **Héritage du comté** (départ avec 10 Or) et ❄️ **Disette** (aucun Vivre au départ). Les profils raisonnables
+ne peuvent plus tenir une consigne : ce sont deux réglages du joueur réactif (seuils Or/Vivres 10/15 et 6/10).
+Règle naïve corrigée (elle jouait encore l'indice 4, Semer). Marge de l'Or inchangée (+2 ans). 365 dates [SIMULÉ] :
+
+| # | Critère (fixé avant mesure) | 0.4 | 0.5 | Verdict |
+|---|---|---|---|---|
+| 1 | Or faisable | 365/365 | 365/365 | ✅ |
+| 2 | Une activité seule livre | 0 | 0 | ✅ |
+| 3 | Bronze par la règle naïve | 0 % | 4 % | ❌ (inchangé) |
+| 4 | Or au premier essai, profils raisonnables (< 10 %) | 3 % (Bronze+ 80 %) | **9 %** (Bronze+ 100 %) | ✅ de peu |
+| 5 | Âge du solveur dans [50, 75] | 332/365 | 357/365, médiane 58,1 (37,7 à 67,3) | ✅ |
+
+L'estimation du chantier A sur 60 dates (Or 13 %) portait sur l'ancien profil « réactif en Battue » sans repli ;
+avec des profils réactifs sans consigne, l'Or reste sous la cible. Coût : médiane 0,22 s, q90 0,41 s, max 0,9 s.
