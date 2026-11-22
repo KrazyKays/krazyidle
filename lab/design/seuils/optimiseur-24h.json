@@ -1,0 +1,93 @@
+{
+ "profile": "optimiseur",
+ "seeds": 40,
+ "hours": 24,
+ "events": false,
+ "dt": 0.5,
+ "lives": 21741,
+ "livesAfterChron": 18199,
+ "epithetShareAfterChron": 100,
+ "chosen": {
+  "laboureur": "8747 (48.1 %)",
+  "constant": "8605 (47.3 %)",
+  "patriarche": "726 (4 %)",
+  "ancien": "71 (0.4 %)",
+  "obstine": "31 (0.2 %)",
+  "grand": "18 (0.1 %)",
+  "maudit_glorieux": "1 (0 %)"
+ },
+ "chosenDomainShare": 0,
+ "eligibleShare": {
+  "laboureur": 100,
+  "constant": 100,
+  "patriarche": 4,
+  "obstine": 1,
+  "ancien": 0.6,
+  "grand": 0.1,
+  "maudit_glorieux": 0
+ },
+ "neverEligible": [
+  "glorieux(3)",
+  "phenix(3)",
+  "venerable(2)",
+  "ermite(2)",
+  "sage(2)",
+  "sans_repos(2)",
+  "bien_aime(1)",
+  "juste(1)",
+  "devastateur(1)",
+  "boucher(1)",
+  "jardinier(1)",
+  "alchimiste(1)",
+  "maraicher(1)",
+  "batisseur(1)",
+  "bienheureux(1)",
+  "infortune(1)",
+  "semeur(0)",
+  "grand_veneur(0)",
+  "negociant(0)",
+  "savant(0)",
+  "contemplatif(0)",
+  "touche_a_tout(0)",
+  "epris(0)",
+  "inconstant(0)",
+  "bref(0)",
+  "faineant(0)",
+  "comete(3)"
+ ],
+ "harmony": {
+  "hAvgP10": 0.747,
+  "hAvgP50": 0.777,
+  "santé moy ≥95 % (Robuste→Longévité)": 1.1,
+  "min ≥90 et moy ≥97 (Longévité→Centenaire)": 0.3,
+  "Récolter ≥50 %": 100,
+  "dont Juste (moy ≥97, min ≥90)": 0.3,
+  "dont min ≥95 (Récolte raisonnée, hors Crypte)": 0.7,
+  "Méditer ≥60 % sans Commercer": 0,
+  "dont Ermite (moy ≥80)": null
+ },
+ "ripeRate": {
+  "robuste>longevite": "42/2737",
+  "main_verte>seve": "899/899",
+  "seve>sang_dore": "303/316",
+  "genie>elu": "19/5653",
+  "sang_dore>elu": "61/17579",
+  "centenaire>eternel": "20/10663",
+  "longevite>centenaire": "3/6086"
+ },
+ "feats": {
+  "transcendance": "65 % (p50 80 min)"
+ },
+ "chroniquesMin": {
+  "n": 40,
+  "p10": 153.3,
+  "p50": 163.8,
+  "p90": 181.3
+ },
+ "alliancesMin": {
+  "n": 40,
+  "p10": 96.1,
+  "p50": 101.5,
+  "p90": 111.3
+ }
+}

@@ -1,0 +1,96 @@
+{
+ "profile": "consignes",
+ "seeds": 200,
+ "hours": 6,
+ "events": false,
+ "dt": 0.5,
+ "lives": 32297,
+ "livesAfterChron": 5819,
+ "epithetShareAfterChron": 27.5,
+ "chosen": {
+  "negociant": "938 (58.6 %)",
+  "constant": "431 (26.9 %)",
+  "patriarche": "208 (13 %)",
+  "inconstant": "21 (1.3 %)",
+  "grand": "3 (0.2 %)"
+ },
+ "chosenDomainShare": 0,
+ "eligibleShare": {
+  "negociant": 24.1,
+  "constant": 22.4,
+  "patriarche": 3.6,
+  "inconstant": 0.9,
+  "grand": 0.1
+ },
+ "neverEligible": [
+  "maudit_glorieux(3)",
+  "glorieux(3)",
+  "phenix(3)",
+  "venerable(2)",
+  "ermite(2)",
+  "sage(2)",
+  "sans_repos(2)",
+  "bien_aime(1)",
+  "juste(1)",
+  "devastateur(1)",
+  "boucher(1)",
+  "jardinier(1)",
+  "alchimiste(1)",
+  "maraicher(1)",
+  "batisseur(1)",
+  "bienheureux(1)",
+  "ancien(1)",
+  "infortune(1)",
+  "semeur(0)",
+  "grand_veneur(0)",
+  "laboureur(0)",
+  "savant(0)",
+  "contemplatif(0)",
+  "touche_a_tout(0)",
+  "epris(0)",
+  "obstine(0)",
+  "bref(0)",
+  "faineant(0)",
+  "comete(3)"
+ ],
+ "harmony": {
+  "hAvgP10": 0.861,
+  "hAvgP50": 0.997,
+  "santé moy ≥95 % (Robuste→Longévité)": 66.2,
+  "min ≥90 et moy ≥97 (Longévité→Centenaire)": 60.8,
+  "Récolter ≥50 %": 25.5,
+  "dont Juste (moy ≥97, min ≥90)": 0,
+  "dont min ≥95 (Récolte raisonnée, hors Crypte)": 0,
+  "Méditer ≥60 % sans Commercer": 0,
+  "dont Ermite (moy ≥80)": null
+ },
+ "ripeRate": {
+  "curieux>prodige": "275/11555",
+  "ame_calme>troisieme_oeil": "1020/4546",
+  "echo_vibrant>memoire": "774/3327",
+  "robuste>longevite": "2323/3891",
+  "longevite>centenaire": "2300/3848",
+  "centenaire>eternel": "85/4034",
+  "langue_argent>langue_or": "1075/4551",
+  "main_verte>seve": "1002/4762",
+  "rat_biblio>encyclopedique": "988/4579",
+  "prodige>genie": "740/3386"
+ },
+ "feats": {
+  "transcendance": "3 % (p50 91 min)",
+  "comete": "1.5 % (p50 261 min)",
+  "quatre_metiers": "0.5 % (p50 111 min)"
+ },
+ "chroniquesMin": {
+  "n": 200,
+  "p10": 265.4,
+  "p50": 281.2,
+  "p90": 296.7
+ },
+ "alliancesMin": {
+  "n": 200,
+  "p10": 144.9,
+  "p50": 158.6,
+  "p90": 169.4
+ }
+}

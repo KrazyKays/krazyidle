@@ -1,0 +1,101 @@
+{
+ "profile": "mono-cultiver",
+ "seeds": 200,
+ "hours": 6,
+ "events": false,
+ "dt": 0.5,
+ "lives": 34036,
+ "livesAfterChron": 14736,
+ "epithetShareAfterChron": 100,
+ "chosen": {
+  "laboureur": "7142 (48.5 %)",
+  "constant": "6641 (45.1 %)",
+  "patriarche": "586 (4 %)",
+  "jardinier": "359 (2.4 %)",
+  "grand": "6 (0 %)",
+  "comete": "1 (0 %)",
+  "infortune": "1 (0 %)"
+ },
+ "chosenDomainShare": 2.4,
+ "eligibleShare": {
+  "laboureur": 100,
+  "constant": 100,
+  "jardinier": 4.1,
+  "patriarche": 4,
+  "grand": 0,
+  "comete": 0,
+  "infortune": 0
+ },
+ "neverEligible": [
+  "maudit_glorieux(3)",
+  "glorieux(3)",
+  "phenix(3)",
+  "venerable(2)",
+  "ermite(2)",
+  "sage(2)",
+  "sans_repos(2)",
+  "bien_aime(1)",
+  "juste(1)",
+  "devastateur(1)",
+  "boucher(1)",
+  "alchimiste(1)",
+  "maraicher(1)",
+  "batisseur(1)",
+  "bienheureux(1)",
+  "ancien(1)",
+  "semeur(0)",
+  "grand_veneur(0)",
+  "negociant(0)",
+  "savant(0)",
+  "contemplatif(0)",
+  "touche_a_tout(0)",
+  "epris(0)",
+  "obstine(0)",
+  "inconstant(0)",
+  "bref(0)",
+  "faineant(0)"
+ ],
+ "harmony": {
+  "hAvgP10": 0.817,
+  "hAvgP50": 0.866,
+  "santé moy ≥95 % (Robuste→Longévité)": 16.5,
+  "min ≥90 et moy ≥97 (Longévité→Centenaire)": 15.3,
+  "Récolter ≥50 %": 90.6,
+  "dont Juste (moy ≥97, min ≥90)": 6.5,
+  "dont min ≥95 (Récolte raisonnée, hors Crypte)": 7.1,
+  "Méditer ≥60 % sans Commercer": 0,
+  "dont Ermite (moy ≥80)": 100
+ },
+ "ripeRate": {
+  "robuste>longevite": "808/5161",
+  "longevite>centenaire": "530/4021",
+  "curieux>prodige": "277/12353",
+  "rat_biblio>encyclopedique": "130/5078",
+  "main_verte>seve": "2799/3336",
+  "seve>sang_dore": "1060/1137",
+  "genie>elu": "125/15696",
+  "sang_dore>elu": "231/22725",
+  "langue_argent>langue_or": "188/5089",
+  "centenaire>eternel": "100/2479",
+  "echo_vibrant>memoire": "68/3905",
+  "prodige>genie": "93/3963",
+  "ame_calme>troisieme_oeil": "121/5215",
+  "memoire>eternel": "2/2187"
+ },
+ "feats": {
+  "transcendance": "56 % (p50 92 min)",
+  "comete": "0.5 % (p50 341 min)"
+ },
+ "chroniquesMin": {
+  "n": 200,
+  "p10": 170.2,
+  "p50": 180.2,
+  "p90": 193.2
+ },
+ "alliancesMin": {
+  "n": 200,
+  "p10": 108.5,
+  "p50": 117.4,
+  "p90": 125.6
+ }
+}
