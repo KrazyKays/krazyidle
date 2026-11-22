@@ -1,0 +1,26 @@
+{
+ "id": "S50-V2-H_1.25_kc_1.35",
+ "variant": "V2 H=1.25 kc=1.35",
+ "balPatch": "[{\"file\":\"game.ts\",\"from\":\"s.totalEver[r] += amt;\",\"to\":\"s.totalEver[r] += amt; { const I = (globalThis as any).__I; if (I) { const v = amt * RES_INFO[r].value; const h = harmonyMult(s.eco); I.w += v; I.hw += v * h; I.lhw += v * Math.log(h); if (fromLife) { I.hl += v; I.hlw += v * h; } } }\"},{\"file\":\"sim.ts\",\"from\":\"const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco, post);\",\"to\":\"const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco, post); if (act === 'cultiver') { const I = (globalThis as any).__I; if (I) { const ef = ecoFactor(act, ctx.eco, post); if (ef > 0) { I.cb += mult / ef; I.ce += mult; } } }\"},{\"file\":\"game.ts\",\"from\":\"posture: rt.offline ? 'equilibre' : s.posture ?? 'equilibre',\",\"to\":\"posture: 'equilibre',\"},{\"file\":\"ecosystem.ts\",\"from\":\"export function ecoStep(e: Eco, dt: number) {\",\"to\":\"export function ecoStep(e: Eco, dt: number) { return;\"},{\"file\":\"ecosystem.ts\",\"from\":\"export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number, posture: Posture = 'equilibre') {\",\"to\":\"export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number, posture: Posture = 'equilibre') { return;\"},{\"file\":\"ecosystem.ts\",\"from\":\"export function ecoFactor(act: ActId, e: Eco, posture: Posture = 'equilibre'): number {\",\"to\":\"export function ecoFactor(act: ActId, e: Eco, posture: Posture = 'equilibre'): number { return 1;\"},{\"file\":\"ecosystem.ts\",\"from\":\"export function harmonyMult(e: Eco): number {\",\"to\":\"export function harmonyMult(e: Eco): number { return 1.25;\"},{\"file\":\"game.ts\",\"from\":\"if (rt.online && rt.event?.def.id === 'migration') s.eco.G\",\"to\":\"if (false) s.eco.G\"},{\"file\":\"game.ts\",\"from\":\"harmonyAvg: st.hn > 0 ? st.hs / st.hn : ecoHealth(s.eco), harmonyMin: st.hn > 0 ? st.hm : ecoHealth(s.eco),\",\"to\":\"harmonyAvg: 1, harmonyMin: 1,\"},{\"file\":\"data.ts\",\"from\":\"];\\nexport const BUILDING: Record<string, BuildingDef>\",\"to\":\"].filter((b) => b.id !== 'garde');\\nexport const BUILDING: Record<string, BuildingDef>\"},{\"file\":\"data.ts\",\"from\":\"produce: { vivres: 1.2 }\",\"to\":\"produce: { vivres: 1.62 }\"},{\"file\":\"data.ts\",\"from\":\"produce: { or: 1.25 }\",\"to\":\"produce: { or: 1.25 }\"},{\"file\":\"data.ts\",\"from\":\"produce: { savoir: 0.6 }\",\"to\":\"produce: { savoir: 0.6 }\"},{\"file\":\"data.ts\",\"from\":\"produce: { essence: 0.1 }\",\"to\":\"produce: { essence: 0.1 }\"}]",
+ "commit": "00219a1",
+ "srcDirty": false,
+ "date": "2026-11-22T15:19:11.381Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-50",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 43209,
+ "command": "npm run sim -- --id=S50-V2-H_1.25_kc_1.35 --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-50 --hours=6"
+}

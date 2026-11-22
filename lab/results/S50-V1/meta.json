@@ -1,0 +1,26 @@
+{
+ "id": "S50-V1",
+ "variant": "V1 ",
+ "balPatch": "[{\"file\":\"game.ts\",\"from\":\"s.totalEver[r] += amt;\",\"to\":\"s.totalEver[r] += amt; { const I = (globalThis as any).__I; if (I) { const v = amt * RES_INFO[r].value; const h = harmonyMult(s.eco); I.w += v; I.hw += v * h; I.lhw += v * Math.log(h); if (fromLife) { I.hl += v; I.hlw += v * h; } } }\"},{\"file\":\"sim.ts\",\"from\":\"const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco, post);\",\"to\":\"const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco, post); if (act === 'cultiver') { const I = (globalThis as any).__I; if (I) { const ef = ecoFactor(act, ctx.eco, post); if (ef > 0) { I.cb += mult / ef; I.ce += mult; } } }\"},{\"file\":\"game.ts\",\"from\":\"posture: rt.offline ? 'equilibre' : s.posture ?? 'equilibre',\",\"to\":\"posture: 'equilibre',\"}]",
+ "commit": "00219a1",
+ "srcDirty": false,
+ "date": "2026-11-22T15:12:51.442Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-50",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 113789,
+ "command": "npm run sim -- --id=S50-V1 --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-50 --hours=6"
+}
