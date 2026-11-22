@@ -10,9 +10,8 @@ import type { GameState } from './state';
 export const FEAT = {
   metierTier: 3,
   maisons: 4,
-  /** Crypte presque pleine : la Crypte ancestrale va jusqu'à 8 emplacements */
-  chasseSlots: 7,
-  paixMin: 0.95,
+  /** chefs de lignée Paysans d'affilée, le héros mourant compris (0.5) */
+  terre: 7,
   paixSlots: 5,
   millenaire: 1000,
   chroniqueur: 15,
@@ -29,6 +28,8 @@ export interface FeatDef {
 }
 
 const cryptFull = (s: GameState, slots: number) => s.echoes.length >= slots;
+/** La vie qui s'achève a surtout récolté (activité la plus pratiquée). */
+const landLife = (f: LifeFacts) => ACTS.every((a) => f.share.cultiver >= f.share[a]) && f.share.cultiver > 0;
 
 export const FEATS: FeatDef[] = [
   { id: 'quatre_metiers', name: 'Les quatre métiers', icon: '🛠️', eclats: 5,
@@ -37,9 +38,10 @@ export const FEATS: FeatDef[] = [
   { id: 'sang_neuf', name: 'Sang neuf', icon: '💍', eclats: 4,
     desc: `S'allier à ${FEAT.maisons} maisons différentes (comté ou autres joueurs).`,
     test: (s) => Object.keys(s.alliances ?? {}).length >= FEAT.maisons },
-  { id: 'recolte_raisonnee', name: 'Récolte raisonnée', icon: '🦌', eclats: 4,
-    desc: `Récolter au moins la moitié d'une vie sans que la santé du Domaine passe sous ${Math.round(FEAT.paixMin * 100)} %, avec au moins ${FEAT.chasseSlots} Échos dans la Crypte.`,
-    test: (s, f) => !!f && f.share.cultiver >= 0.5 && f.harmonyMin >= FEAT.paixMin && cryptFull(s, FEAT.chasseSlots) },
+  // 0.5 (SIMPLIF-3) : remplace « Récolte raisonnée » (santé du Domaine), qu'aucune partie simulée n'obtenait.
+  { id: 'sept_generations', name: 'Sept générations à la terre', icon: '🌾', eclats: 4,
+    desc: `Voir ${FEAT.terre} chefs de lignée d'affilée vivre surtout de Récolter.`,
+    test: (s, f) => !!f && landLife(f) && s.ancestors.length >= FEAT.terre - 1 && s.ancestors.slice(-(FEAT.terre - 1)).every((a) => a.dominant === 'cultiver') },
   { id: 'transcendance', name: 'Transcendance', icon: '🌱', eclats: 5,
     desc: 'Mettre à la tête de la lignée un héritier dont un don est devenu légendaire en mûrissant.',
     test: (s, f) => !f && (s.hero.evolved ?? []).some((t) => TRAIT[t]?.rarity === 3) },

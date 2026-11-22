@@ -3,6 +3,7 @@
 // Débloqué par l'amélioration d'Héritage « Alliances ». Une union par vie.
 import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, TRAIT, TRAITS, VOCATION_MAX, sexFor, type ActId } from './data';
 import { EPITHETS } from './epithets';
+import { activeEvent } from './events';
 import { hashStr, Rng } from './rng';
 import type { Alliance, GameState, Hero, HouseRef, Spouse } from './state';
 
@@ -28,9 +29,15 @@ export function canMarry(s: GameState): boolean {
  * à chaque vie (R11). Réduite de moitié entre joueurs, pour encourager les échanges.
  */
 export const DOWRY_SHARE = 0.05;
-export function dowry(s: GameState, origin: Spouse['origin']): number {
-  const base = Math.max(50, Math.round(s.res.or * DOWRY_SHARE));
-  return origin === 'joueur' ? Math.round(base / 2) : base;
+/**
+ * Moitié prix entre joueurs ; un héros Marchand négocie la dot (÷2), et le Grand marché aussi (÷2) le temps
+ * de sa fenêtre (0.5). `now` : heure réelle (ms), pour savoir si le Grand marché est ouvert.
+ */
+export function dowry(s: GameState, origin: Spouse['origin'], now?: number): number {
+  let base = Math.max(50, Math.round(s.res.or * DOWRY_SHARE));
+  if (s.hero.vocation?.act === 'commercer') base /= 2;
+  if (now !== undefined && activeEvent(now)?.def.id === 'migration') base /= 2;
+  return origin === 'joueur' ? Math.round(base / 2) : Math.round(base);
 }
 
 // ---------------------------------------------------------------------------
@@ -97,12 +104,12 @@ export function suitorFor(s: GameState, ch: CountyHouse, now: number): Spouse {
 // Union
 export type MarryResult = { ok: true } | { ok: false; reason: string };
 
-export function marry(s: GameState, spouse: Spouse): MarryResult {
+export function marry(s: GameState, spouse: Spouse, now?: number): MarryResult {
   if (!alliancesUnlocked(s)) return { ok: false, reason: 'Les Alliances ne sont pas encore débloquées.' };
   if (!s.life) return { ok: false, reason: 'Il faut un héros vivant pour célébrer une union.' };
   if (s.hero.spouse) return { ok: false, reason: 'Une seule union par vie.' };
   if (spouse.house.id === s.houseId) return { ok: false, reason: 'On ne se marie pas dans sa propre maison.' };
-  const cost = dowry(s, spouse.origin);
+  const cost = dowry(s, spouse.origin, now);
   if (s.res.or < cost) return { ok: false, reason: `Dot insuffisante : il faut ${cost} Or.` };
   s.res.or -= cost;
   s.hero.spouse = spouse;

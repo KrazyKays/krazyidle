@@ -17,6 +17,9 @@ export interface EvolutionDef {
  */
 const record = (f: LifeFacts) => f.bestBefore > 0 && f.value >= 1.5 * f.bestBefore;
 const MASTER = 6;
+/** Générations de transmission d'un don avant qu'il mûrisse (chaîne de longévité, 0.5). */
+export const WEAR_RIPE = 2;
+const wornFor = (f: LifeFacts, t: string) => (f.wear?.[t] ?? 0) >= WEAR_RIPE;
 
 const act = (from: string, to: string, a: keyof LifeFacts['share'], verb: string): EvolutionDef[] => [
   { from, to, cond: `${verb} au moins la moitié de sa vie`, test: (f) => f.share[a] >= 0.5 },
@@ -28,15 +31,17 @@ export const EVOLUTIONS: EvolutionDef[] = [
   ...act('langue_argent', 'langue_or', 'commercer', 'Commercer'),
   ...act('rat_biblio', 'encyclopedique', 'etudier', 'Étudier'),
   ...act('ame_calme', 'troisieme_oeil', 'mediter', 'Méditer'),
-  { from: 'robuste', to: 'longevite', cond: 'Vivre dans un Domaine sain (santé moyenne ≥ 95 %)', test: (f) => f.harmonyAvg >= 0.95 },
-  { from: 'longevite', to: 'centenaire', cond: 'Vivre sans jamais troubler le Domaine (santé jamais sous 90 %)', test: (f) => f.harmonyMin >= 0.9 && f.harmonyAvg >= 0.97 },
+  // 0.5 (SIMPLIF-3) : la santé du Domaine départageait des métiers (le Paysan en était privé) ; la chaîne de
+  // longévité lit désormais la mémoire du sang. Un don mûri repart sans usure : il faut le garder deux générations.
+  { from: 'robuste', to: 'longevite', cond: `Porter un don Robuste reçu depuis au moins ${WEAR_RIPE} générations`, test: (f) => wornFor(f, 'robuste') },
+  { from: 'longevite', to: 'centenaire', cond: `Porter Longévité reçue depuis au moins ${WEAR_RIPE} générations, sans aucun mauvais présage`, test: (f) => wornFor(f, 'longevite') && f.negTraits === 0 },
   { from: 'curieux', to: 'prodige', cond: 'Pratiquer au moins trois activités', test: (f) => f.used >= 3 },
   { from: 'prodige', to: 'genie', cond: 'Étudier au moins la moitié de sa vie', test: (f) => f.share.etudier >= 0.5 },
   { from: 'polyvalent', to: 'sang_dore', cond: 'Pratiquer les quatre activités', test: (f) => f.used >= 4 },
   { from: 'echo_vibrant', to: 'memoire', cond: 'Méditer au moins la moitié de sa vie', test: (f) => f.share.mediter >= 0.5 },
   { from: 'genie', to: 'elu', cond: `Faire une fois et demie mieux que la meilleure vie de la lignée, avec une vocation de rang ${MASTER} ou plus`, test: (f) => record(f) && f.vocTier >= MASTER },
   { from: 'sang_dore', to: 'elu', cond: `Faire une fois et demie mieux que la meilleure vie de la lignée, avec une vocation de rang ${MASTER} ou plus`, test: (f) => record(f) && f.vocTier >= MASTER },
-  { from: 'centenaire', to: 'eternel', cond: 'Faire une fois et demie mieux que la meilleure vie de la lignée, sans jamais troubler le Domaine (santé jamais sous 90 %)', test: (f) => record(f) && f.harmonyMin >= 0.9 },
+  { from: 'centenaire', to: 'eternel', cond: 'Faire une fois et demie mieux que la meilleure vie de la lignée', test: (f) => record(f) },
   { from: 'memoire', to: 'eternel', cond: 'Faire une fois et demie mieux que la meilleure vie de la lignée, en méditant au moins la moitié de sa vie', test: (f) => record(f) && f.share.mediter >= 0.5 },
 ];
 

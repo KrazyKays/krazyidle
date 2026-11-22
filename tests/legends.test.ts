@@ -14,7 +14,7 @@ const NOW = Date.UTC(2026, 10, 14, 12);
 function facts(over: Partial<LifeFacts> = {}): LifeFacts {
   const share = { cultiver: 0.4, commercer: 0.3, etudier: 0.3, mediter: 0 };
   return {
-    share, used: 3, switches: 10, harmonyAvg: 0.8, harmonyMin: 0.6, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
+    share, used: 3, switches: 10, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
     traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0,
     ...over,
     ...(over.share ? { share: { ...share, ...over.share } } : {}),
@@ -37,11 +37,12 @@ describe('surnoms', () => {
   });
 
   test('le plus rare l\'emporte', () => {
-    expect(pickEpithet(facts({ share: { cultiver: 0.8, commercer: 0.1, etudier: 0.05, mediter: 0.05 }, used: 1 }))?.id).toBe('laboureur');
-    // record + harmonie parfaite à la génération 12 : légendaire, pas seulement « le Grand »
-    // record écrasé + harmonie parfaite en vivant de la terre, génération 12 : légendaire
+    expect(pickEpithet(facts({ share: { cultiver: 0.8, commercer: 0.1, etudier: 0.05, mediter: 0.05 }, used: 1, parentValue: 300 }))?.id).toBe('laboureur');
+    // 0.5 : « le Juste », la juste mesure : un peu mieux que le parent, sans démesure
+    expect(pickEpithet(facts({ share: { cultiver: 0.8, commercer: 0.1, etudier: 0.05, mediter: 0.05 }, used: 1, value: 120 }))?.id).toBe('juste');
+    // record doublé à la génération 12, après un parent « le Grand » : légendaire, pas seulement « le Grand »
     const land = { cultiver: 0.6, commercer: 0.2, etudier: 0.2, mediter: 0 };
-    expect(pickEpithet(facts({ share: land, value: 2500, bestBefore: 1000, harmonyAvg: 0.97, gen: 12 }))?.id).toBe('glorieux');
+    expect(pickEpithet(facts({ share: land, value: 2500, bestBefore: 1000, gen: 12, parentEpithet: 'grand' }))?.id).toBe('glorieux');
     expect(pickEpithet(facts({ value: 1600, bestBefore: 1000, gen: 6 }))?.id).toBe('grand');
     // battre le record de peu ne suffit pas
     expect(pickEpithet(facts({ value: 1100, bestBefore: 1000, gen: 6 }))).toBeNull();
@@ -70,12 +71,11 @@ describe('surnoms', () => {
     u.life!.st = { sw: 5, ev: 0, bd: 0 }; // quelques détours : pas « le Constant »
     const e0 = u.eclats;
     endLife(u, NOW);
-    // SIMPLIF-2 : la santé du Domaine est neutre (1), « le Juste » (Rare) l'emporte jusqu'à sa réécriture.
-    expect(u.succession!.newEcho.epithet).toBe('juste');
-    expect(u.succession!.ancestor.epithet).toBe('juste');
-    expect(u.succession!.epithet).toEqual({ id: 'juste', isNew: true, eclats: 2 });
-    expect(u.eclats).toBe(e0 + 2);
-    expect(u.epithets.juste).toBe(1);
+    expect(u.succession!.newEcho.epithet).toBe('laboureur');
+    expect(u.succession!.ancestor.epithet).toBe('laboureur');
+    expect(u.succession!.epithet).toEqual({ id: 'laboureur', isNew: true, eclats: 1 });
+    expect(u.eclats).toBe(e0 + 1);
+    expect(u.epithets.laboureur).toBe(1);
   });
 
   test('l\'effet du surnom renforce l\'Écho', () => {

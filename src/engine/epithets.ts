@@ -11,8 +11,6 @@ export interface LifeFacts {
   /** nombre d'activités pratiquées au moins 10 % du temps */
   used: number;
   switches: number;
-  harmonyAvg: number;
-  harmonyMin: number;
   value: number;
   /** valeur de la vie du parent (0 pour la première) */
   parentValue: number;
@@ -27,6 +25,8 @@ export interface LifeFacts {
   prevVocTier?: number;
   /** surnom du parent : il n'est pas redonné à l'enfant, pour que la lignée écrive une histoire variée */
   parentEpithet?: string;
+  /** usure du sang des dons du héros : depuis combien de générations chacun se transmet (0.5) */
+  wear?: Record<string, number>;
   /** durée de la vie rapportée à une vie sans traits ni Temps suspendu (1 = normale) */
   durRatio: number;
   extended: boolean;
@@ -36,11 +36,10 @@ export interface LifeFacts {
   builds: number;
 }
 
-/** Effet sur l'Écho : puissance globale, puissance par activité, impact sur le Domaine (+0.5 = +50 %). */
+/** Effet sur l'Écho : puissance globale, puissance par activité (+0.5 = +50 %). */
 export interface EpithetMods {
   pow?: number;
   act?: Partial<Record<ActId, number>>;
-  eco?: number;
 }
 
 export interface EpithetDef {
@@ -58,27 +57,30 @@ export interface EpithetDef {
 
 // La production croît vite : battre le record de peu est banal. Il faut l'écraser.
 const isRecord = (f: LifeFacts, x = 1.5) => f.bestBefore > 0 && f.value >= x * f.bestBefore;
-/** A vécu de la terre et des bois (Récolter) : l'Harmonie compte vraiment. */
+/** A vécu de la terre et des bois (Récolter). */
 const worksLand = (f: LifeFacts) => f.share.cultiver >= 0.5;
+/** Rareté du surnom du parent (-1 : pas de surnom). */
+const parentRarity = (f: LifeFacts) => (f.parentEpithet ? EPITHET[f.parentEpithet]?.rarity ?? -1 : -1);
 
 // Ordre = priorité à rareté égale : les conditions les plus précises d'abord.
 export const EPITHETS: EpithetDef[] = [
   // --- Légendaires
   { id: 'maudit_glorieux', name: 'le Maudit glorieux', nameF: 'la Maudite glorieuse', icon: '💀', rarity: 3, hint: 'Porter la malédiction… et surpasser pourtant tous les ancêtres.', test: (f) => f.traits.includes('maudit') && isRecord(f), mods: { pow: 0.5 } },
-  { id: 'glorieux', name: 'le Glorieux', nameF: 'la Glorieuse', icon: '☀️', rarity: 3, hint: 'Doubler la gloire de tous les ancêtres en vivant de la terre, sans troubler la paix des bois.', test: (f) => isRecord(f, 2) && worksLand(f) && f.harmonyAvg >= 0.95 && f.gen >= 10, mods: { pow: 0.3, eco: -0.3 } },
+  // 0.5 (SIMPLIF-3) : une lignée de gloire, et non plus la paix des bois.
+  { id: 'glorieux', name: 'le Glorieux', nameF: 'la Glorieuse', icon: '☀️', rarity: 3, hint: 'Doubler la gloire de tous les ancêtres, à la suite d\'un parent déjà entré dans la légende.', test: (f) => isRecord(f, 2) && f.gen >= 10 && parentRarity(f) >= 1, mods: { pow: 0.3 } },
   { id: 'phenix', name: 'le Phénix', nameF: 'la Phénix', icon: '🪶', rarity: 3, hint: 'Renaître des cendres d\'un parent qui n\'a rien laissé.', test: (f) => f.parentValue > 0 && f.value >= 5 * f.parentValue && f.gen >= 10, mods: { pow: 0.35 } },
   // --- Épiques
   { id: 'grand', name: 'le Grand', nameF: 'la Grande', icon: '👑', rarity: 2, hint: 'Faire bien mieux que tous ceux qui sont venus avant.', test: (f) => isRecord(f) && f.gen >= 5, mods: { pow: 0.15 } },
   { id: 'venerable', name: 'le Vénérable', nameF: 'la Vénérable', icon: '🎖️', rarity: 2, hint: 'Élever un métier jusqu\'à son plus haut rang.', test: (f) => f.vocTier >= 10 && (f.prevVocTier ?? 0) < 10, mods: { pow: 0.15 } },
   { id: 'patriarche', name: 'le Patriarche', nameF: 'la Matriarche', icon: '🏰', rarity: 2, hint: 'Naître à un âge rond de la lignée : un quart de siècle, puis encore.', test: (f) => f.gen % 25 === 0, mods: { pow: 0.15 } },
-  { id: 'ermite', name: 'l\'Ermite', icon: '🌲', rarity: 2, hint: 'Fuir les marchés et prier au fond des bois, en paix avec eux.', test: (f) => f.share.mediter >= 0.6 && f.share.commercer === 0 && f.harmonyAvg >= 0.8, mods: { act: { mediter: 0.25 }, eco: -0.3 } },
+  { id: 'ermite', name: 'l\'Ermite', icon: '🌲', rarity: 2, hint: 'Fuir les marchés et prier au fond des bois.', test: (f) => f.share.mediter >= 0.6 && f.share.commercer === 0, mods: { act: { mediter: 0.25 } } },
   { id: 'sage', name: 'le Sage', nameF: 'la Sage', icon: '🦉', rarity: 2, hint: 'Étudier toute sa vie, et en avoir fait un métier reconnu.', test: (f) => f.share.etudier >= 0.5 && f.vocTier >= 5, mods: { act: { etudier: 0.25 } } },
   { id: 'sans_repos', name: 'le Sans-Repos', nameF: 'la Sans-Repos', icon: '🌪️', rarity: 2, hint: 'Ne jamais tenir en place, et toucher à presque tout.', test: (f) => f.switches >= 50 && f.used >= 4, mods: { pow: 0.12 } },
   // --- Rares
   { id: 'bien_aime', name: 'le Bien-Aimé', nameF: 'la Bien-Aimée', icon: '💞', rarity: 1, hint: 'Épouser quelqu\'un venu d\'une lignée lointaine, au-delà du comté.', test: (f) => f.spouse === 'joueur', mods: { pow: 0.1 } },
-  { id: 'juste', name: 'le Juste', nameF: 'la Juste', icon: '🕊️', rarity: 1, hint: 'Vivre de la terre et des bois sans jamais en troubler l\'équilibre.', test: (f) => worksLand(f) && f.harmonyAvg >= 0.97 && f.harmonyMin >= 0.9, mods: { eco: -0.4 } },
-  { id: 'devastateur', name: 'le Dévastateur', nameF: 'la Dévastatrice', icon: '🔥', rarity: 1, hint: 'Laisser derrière soi un Domaine à l\'agonie.', test: (f) => f.harmonyMin <= 0.3, mods: { pow: 0.15, eco: 0.5 } },
-  { id: 'jardinier', name: 'le Jardinier', nameF: 'la Jardinière', icon: '🌷', rarity: 1, hint: 'Récolter beaucoup, sans jamais épuiser la terre.', test: (f) => f.share.cultiver >= 0.5 && f.harmonyAvg >= 0.9, mods: { act: { cultiver: 0.15 }, eco: -0.2 } },
+  // 0.5 (SIMPLIF-3) : la juste mesure (ni Fainéant ni Grand) ; le don et la vie qui se répondent.
+  { id: 'juste', name: 'le Juste', nameF: 'la Juste', icon: '🕊️', rarity: 1, hint: 'Vivre de la terre et faire un peu mieux que son père ou sa mère, sans démesure.', test: (f) => worksLand(f) && f.parentValue > 0 && f.value >= f.parentValue && f.value < 1.5 * f.parentValue, mods: { pow: 0.05 } },
+  { id: 'jardinier', name: 'le Jardinier', nameF: 'la Jardinière', icon: '🌷', rarity: 1, hint: 'Récolter beaucoup, avec la terre dans le sang.', test: (f) => worksLand(f) && (f.traits.includes('main_verte') || f.traits.includes('seve')), mods: { act: { cultiver: 0.15 } } },
   { id: 'alchimiste', name: 'l\'Alchimiste', icon: '⚗️', rarity: 1, hint: 'Partager sa vie entre les livres et la méditation.', test: (f) => f.share.etudier >= 0.35 && f.share.mediter >= 0.35, mods: { act: { etudier: 0.1, mediter: 0.1 } } },
   { id: 'maraicher', name: 'le Maraîcher', nameF: 'la Maraîchère', icon: '🥕', rarity: 1, hint: 'Récolter, puis porter sa récolte au marché.', test: (f) => f.share.cultiver >= 0.35 && f.share.commercer >= 0.35, mods: { act: { cultiver: 0.1, commercer: 0.1 } } },
   { id: 'batisseur', name: 'le Bâtisseur', nameF: 'la Bâtisseuse', icon: '🏗️', rarity: 1, hint: 'Faire sortir de terre bâtiment sur bâtiment, en une seule vie.', test: (f) => f.builds >= 10, mods: { pow: 0.08 } },
@@ -148,6 +150,5 @@ export function epithetEffect(e: EpithetDef, actName: (a: ActId) => string): str
   const pct = (x: number) => `${x > 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)} %`;
   if (e.mods.pow) parts.push(`puissance ${pct(e.mods.pow)}`);
   if (e.mods.act) for (const a of ACTS) if (e.mods.act[a]) parts.push(`${actName(a)} ${pct(e.mods.act[a]!)}`);
-  if (e.mods.eco) parts.push(`impact sur le Domaine ${pct(e.mods.eco)}`);
   return parts.length ? `Écho : ${parts.join(', ')}` : 'Aucun effet : la gloire seule';
 }

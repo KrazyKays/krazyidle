@@ -428,11 +428,9 @@ export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): 
   const parent = s.ancestors[s.ancestors.length - 1];
   return {
     share, used, switches: st.sw,
-    // Plus de Domaine (SIMPLIF-2) : sa santé est neutre (1) jusqu'à la réécriture des conditions (SIMPLIF-3).
-    harmonyAvg: 1, harmonyMin: 1,
     value: life.value, parentValue: parent?.value ?? 0, bestBefore: s.stats.bestLife, gen: hero.gen,
     traits: hero.traits, negTraits: hero.traits.filter((t) => TRAIT[t]?.neg).length,
-    vocTier: voc?.tier ?? 0, prevVocTier: hero.vocation?.tier ?? 0, parentEpithet: parent?.epithet, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
+    vocTier: voc?.tier ?? 0, prevVocTier: hero.vocation?.tier ?? 0, parentEpithet: parent?.epithet, wear: heroWear(s, hero), durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
     eventTier: st.ev, builds: st.bd,
   };
 }
@@ -452,8 +450,11 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng, ripe: Record<stri
   const jojo = isJoestar(s.lineage.name) ? JOJO_LINE[parent.gen % JOJO_LINE.length] : null;
   const jojoAt = jojo ? parent.id % n : -1;
   const pw = heroWear(s, parent);
-  // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux.
-  const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + 1;
+  // Une union apporte du sang neuf : l'usure des dons du parent est divisée par deux. Harmonieux : ses dons
+  // s'usent deux fois moins vite (0.5). « Purifier le sang » par la méditation a été écarté : la diversité des
+  // traits du mono-Méditer tombait de 39 à 17 combinaisons (SIMPLIF-3, critère fixé avant mesure : −20 %).
+  const step = Math.max(0, 1 - pm.wear);
+  const carry = (t: string) => (spouse ? Math.floor((pw[t] ?? 0) / 2) : pw[t] ?? 0) + step;
   const nova = rng.chance(NOVA_CHANCE + NOVA_LUCK * luck) ? rng.int(n) : -1;
   for (let i = 0; i < n; i++) {
     const wear: Record<string, number> = {};

@@ -42,8 +42,8 @@ describe('R8 — « le Vénérable » et surnoms répétés (DATA-01, GD-04, PBA
     const share = Object.fromEntries(ACTS.map((a) => [a, 0])) as any;
     share.etudier = 0.6; share.commercer = 0.4;
     return {
-      share, used: 2, switches: 5, harmonyAvg: 0.9, harmonyMin: 0.8, value: 100, parentValue: 100, bestBefore: 1000, gen: 30,
-      traits: [], negTraits: 0, vocTier: 10, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
+      share, used: 2, switches: 5, value: 100, parentValue: 100, bestBefore: 1000, gen: 30,
+      traits: [], negTraits: 0, vocTier: 10, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0,
     };
   };
   test('donné au passage au rang X, plus à chaque vie au rang X', async () => {
@@ -415,8 +415,8 @@ describe('GD-SURNOMS A — « le Constant » devient un surnom commun, sans effe
     expect(EPITHET.constant.mods).toEqual({});
     const f = {
       share: { cultiver: 1, commercer: 0, etudier: 0, mediter: 0 }, used: 1, switches: 0,
-      harmonyAvg: 0.5, harmonyMin: 0.5, value: 1, parentValue: 1, bestBefore: 1, gen: 3, traits: [], negTraits: 0,
-      vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 50,
+      value: 1, parentValue: 0, bestBefore: 1, gen: 3, traits: [], negTraits: 0,
+      vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0,
     };
     expect(pickEpithet(f)?.id).toBe('laboureur');
     expect(pickEpithet({ ...f, parentEpithet: 'laboureur' })?.id).toBe('constant');
@@ -550,9 +550,9 @@ describe('TRAIT-EVO — mutations plafonnées, dons qui mûrissent (0.3)', () =>
   test('la vie doit mériter l\'évolution : cultiver la moitié de sa vie fait mûrir Main verte, pas moins', async () => {
     const { ripeTraits } = await import('../../src/engine/evolution');
     const facts = (cultiver: number) => ({
-      share: { cultiver, commercer: 1 - cultiver, etudier: 0, mediter: 0 }, used: 2, switches: 3, harmonyAvg: 0.9, harmonyMin: 0.8,
+      share: { cultiver, commercer: 1 - cultiver, etudier: 0, mediter: 0 }, used: 2, switches: 3,
       value: 100, parentValue: 90, bestBefore: 100, gen: 5, traits: ['main_verte', 'genie'], negTraits: 0, vocTier: 2, prevVocTier: 1,
-      durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
+      durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0,
     });
     expect(ripeTraits(['main_verte', 'genie'], facts(0.6))).toEqual({ main_verte: 'seve' });
     expect(ripeTraits(['main_verte', 'genie'], facts(0.4))).toEqual({});
@@ -782,5 +782,87 @@ describe('SIMPLIF-2 — plus de Domaine ni d\'Harmonie ; rendements compensés (
     expect(t.res.or).toBe(5 + 60 + 120);
     expect(t.res.vivres).toBe(7 + 100 + 200);
     expect(t.life.st).toEqual({ sw: 1, ev: 0, bd: 0 });
+  });
+});
+
+describe('SIMPLIF-3 — la lignée remplace le Domaine dans les conditions (0.5)', () => {
+  const base = {
+    share: { cultiver: 0.2, commercer: 0.3, etudier: 0.3, mediter: 0.2 }, used: 4, switches: 10, value: 100, parentValue: 300,
+    bestBefore: 1000, gen: 12, traits: [] as string[], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null,
+    eventTier: 0, builds: 0,
+  };
+  test('chaîne de longévité : usure du sang (Robuste ≥ 2, Longévité ≥ 2 sans mauvais présage), puis un record', async () => {
+    const { ripeTraits } = await import('../../src/engine/evolution');
+    expect(ripeTraits(['robuste'], { ...base, wear: { robuste: 1 } })).toEqual({});
+    expect(ripeTraits(['robuste'], { ...base, wear: { robuste: 2 } })).toEqual({ robuste: 'longevite' });
+    expect(ripeTraits(['longevite'], { ...base, wear: { longevite: 2 } })).toEqual({ longevite: 'centenaire' });
+    expect(ripeTraits(['longevite'], { ...base, wear: { longevite: 3 }, negTraits: 1 })).toEqual({});
+    expect(ripeTraits(['centenaire'], { ...base, value: 1600 })).toEqual({ centenaire: 'eternel' });
+    expect(ripeTraits(['centenaire'], { ...base, value: 1400 })).toEqual({});
+  });
+  test('surnoms : le Juste, le Jardinier, l\'Ermite et le Glorieux ne lisent plus le Domaine ; plus de Dévastateur', async () => {
+    const { EPITHET, pickEpithet } = await import('../../src/engine/epithets');
+    const land = { ...base, share: { cultiver: 0.6, commercer: 0.2, etudier: 0.2, mediter: 0 } };
+    expect(pickEpithet({ ...land, value: 330 })?.id).toBe('juste');
+    expect(pickEpithet({ ...land, value: 500 })?.id).not.toBe('juste');
+    expect(pickEpithet({ ...land, traits: ['seve'] })?.id).toBe('jardinier');
+    expect(pickEpithet({ ...base, share: { cultiver: 0, commercer: 0, etudier: 0.3, mediter: 0.7 } })?.id).toBe('ermite');
+    expect(pickEpithet({ ...base, value: 2500, parentValue: 2000, parentEpithet: 'laboureur' })?.id).toBe('grand'); // parent Commun
+    expect(pickEpithet({ ...base, value: 2500, parentValue: 2000, parentEpithet: 'grand' })?.id).toBe('glorieux');
+    expect(EPITHET.devastateur).toBeUndefined();
+    for (const e of Object.values(EPITHET)) expect(Object.keys(e.mods).every((k) => k === 'pow' || k === 'act')).toBe(true);
+  });
+  test('haut fait « Sept générations à la terre » : sept chefs d\'affilée qui ont surtout récolté', async () => {
+    const { FEAT_DEF } = await import('../../src/engine/feats');
+    const s = newGame(0, 43);
+    const anc = (dominant: 'cultiver' | 'commercer') => ({ id: 1, name: 'Jehan', gen: 1, traits: [], vocation: null, value: 1, legacy: 1, dominant, diedAt: 0 });
+    const land = { ...base, share: { cultiver: 0.6, commercer: 0.2, etudier: 0.2, mediter: 0 } };
+    s.ancestors = Array.from({ length: 6 }, () => anc('cultiver'));
+    expect(FEAT_DEF.sept_generations.test(s, land)).toBe(true);
+    expect(FEAT_DEF.sept_generations.test(s, base)).toBe(false);
+    s.ancestors[2] = anc('commercer');
+    expect(FEAT_DEF.sept_generations.test(s, land)).toBe(false);
+  });
+  test('usure : Harmonieux s\'use deux fois moins ; méditer ne purifie pas le sang (écarté à la mesure)', async () => {
+    const { genHeirs } = await import('../../src/engine/game');
+    const { Rng } = await import('../../src/engine/rng');
+    const s = newGame(0, 44);
+    s.upgrades.transmission = 5;
+    const heirWear = (traits: string[]) => {
+      const p = { ...s.hero, traits, wear: { robuste: 4, harmonieux: 4 } };
+      for (let seed = 1; seed < 200; seed++) {
+        const h = genHeirs(s, p, new Rng(seed), {}).find((x) => x.traits.includes('robuste'));
+        if (h) return h.wear?.robuste;
+      }
+      return undefined;
+    };
+    expect(heirWear(['robuste'])).toBe(5);
+    expect(heirWear(['robuste', 'harmonieux'])).toBe(4.5);
+  });
+  test('dot : un héros Marchand la négocie (÷2), le Grand marché aussi pendant sa fenêtre', async () => {
+    const { dowry } = await import('../../src/engine/alliances');
+    const { EVENT_DEF } = await import('../../src/engine/data');
+    const { activeEvent } = await import('../../src/engine/events');
+    const s = newGame(0, 45);
+    s.res.or = 10000;
+    expect(dowry(s, 'pnj')).toBe(500);
+    s.hero.vocation = { act: 'commercer', tier: 2 };
+    expect(dowry(s, 'pnj')).toBe(250);
+    s.hero.vocation = null;
+    expect(EVENT_DEF.migration.name).toBe('Grand marché');
+    expect(EVENT_DEF.migration.act).toEqual({ commercer: 2 });
+    let t = Date.UTC(2026, 10, 1);
+    while (activeEvent(t)?.def.id !== 'migration') t += 3600_000;
+    expect(dowry(s, 'pnj', t)).toBe(250);
+    expect(dowry(s, 'joueur', t)).toBe(125);
+  });
+  test('sauvegarde : le Dévastateur disparaît des Échos et du Codex', async () => {
+    const { deserialize, serialize } = await import('../../src/engine/save');
+    const s: any = newGame(0, 46);
+    s.epithets = { devastateur: 1, juste: 2 };
+    s.ancestors = [{ id: 1, name: 'Jehan', gen: 1, traits: [], epithet: 'devastateur' }];
+    const t: any = deserialize(serialize(s))!;
+    expect(t.epithets).toEqual({ juste: 2 });
+    expect(t.ancestors[0].epithet).toBeUndefined();
   });
 });

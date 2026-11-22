@@ -76,13 +76,13 @@ export function alliancesSection(app: App): HTMLElement | null {
 
   // Maisons du comté
   const houses = countyHouses(now).filter((ch) => ch.house.name !== s.lineage.name);
-  const cost = dowry(s, 'pnj');
+  const cost = dowry(s, 'pnj', now);
   const county = h('div', { class: 'grid-cards county' }, houses.map((ch) => {
     const sp = suitorFor(s, ch, now);
     // Risque si l'on s'unit encore à cette maison (une union de plus que celles déjà conclues).
     const risk = Math.min(0.6, 0.15 * (s.alliances[ch.house.id]?.count ?? 0));
     const btn = h('button', { class: 'btn btn-primary btn-sm', onclick: () => {
-      const r = marry(s, sp);
+      const r = marry(s, sp, now);
       if (!r.ok) { toast(r.reason, 'bad'); return; }
       toast(`💍 ${hero.name} et ${sp.name} sont ${acc(hero, 'unis', 'unies')} ! La Maison ${ch.house.name} devient votre alliée.`, 'good', 4500);
       refresh();
@@ -179,7 +179,7 @@ export function openAcceptProposal(app: App, initial = '') {
     const r = readProposal(s, input.value);
     if (!r.ok) { out.replaceChildren(h('p', { class: 'bad' }, `❌ ${r.reason}`)); return; }
     const sp = r.suitor;
-    const cost = dowry(s, 'joueur');
+    const cost = dowry(s, 'joueur', Date.now());
     let why = '';
     if (!alliancesUnlocked(s)) why = 'Débloque d\'abord l\'amélioration 💍 Alliances (Améliorer › Héritage). Garde ce code : il restera valable.';
     else if (!s.life) why = 'Choisis d\'abord la relève : il faut un héros vivant pour célébrer l\'union.';

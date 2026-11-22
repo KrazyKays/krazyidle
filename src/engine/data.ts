@@ -75,6 +75,8 @@ export interface Mods {
   xp?: number;
   life?: number; // secondes
   echo?: number;
+  /** usure du sang ralentie : +1 − wear par génération de transmission (Harmonieux 0.5) */
+  wear?: number;
   start?: number; // niveaux de départ
   heirs?: number;
   inherit?: number;
@@ -128,7 +130,7 @@ export const TRAITS: TraitDef[] = [
   { id: 'maladroit', name: 'Maladroit', nameF: 'Maladroite', icon: '🤕', rarity: 0, neg: true, desc: 'Production −10%', mods: { all: -0.1 } },
   { id: 'prodige', name: 'Prodige', icon: '⭐', rarity: 1, desc: 'Compétences niveau +1 au départ', mods: { start: 1 } },
   { id: 'longevite', name: 'Longévité', icon: '🐢', rarity: 1, desc: 'Durée de vie +15 s', mods: { life: 15 } },
-  { id: 'harmonieux', name: 'Harmonieux', nameF: 'Harmonieuse', icon: '☯️', rarity: 1, desc: 'Sans effet depuis la fin du Domaine (0.5)', mods: {} },
+  { id: 'harmonieux', name: 'Harmonieux', nameF: 'Harmonieuse', icon: '☯️', rarity: 1, desc: 'Ses dons s\'usent deux fois moins vite', mods: { wear: 0.5 } },
   { id: 'echo_vibrant', name: 'Écho vibrant', icon: '🔔', rarity: 1, desc: 'Puissance de son Écho +40%', mods: { echo: 0.4 } },
   { id: 'fertile', name: 'Fertile', icon: '👶', rarity: 1, desc: '+1 enfant proposé', mods: { heirs: 1 } },
   { id: 'polyvalent', name: 'Polyvalent', nameF: 'Polyvalente', icon: '🎭', rarity: 1, desc: 'Production +15%', mods: { all: 0.15 } },
@@ -271,7 +273,8 @@ export interface EventDef {
 export const EVENTS: EventDef[] = [
   { id: 'maree', name: 'Marée d\'or', icon: '🌊', desc: 'Commercer ×3', act: { commercer: 3 }, goal: 'or', color: '#ffca28' },
   { id: 'moisson', name: 'Moisson dorée', icon: '🌻', desc: 'Récolter ×3', act: { cultiver: 3 }, goal: 'vivres', color: '#9ccc65' },
-  { id: 'migration', name: 'Grande migration', icon: '🦌', desc: 'Récolter ×2', act: { cultiver: 2 }, goal: 'vivres', color: '#ff7043' },
+  // 0.5 (SIMPLIF-3) : « Grande migration » (Gibier) devient le Grand marché ; l'identifiant reste (Almanach, calendrier).
+  { id: 'migration', name: 'Grand marché', icon: '🎪', desc: 'Commercer ×2, dot ÷2', act: { commercer: 2 }, goal: 'or', color: '#ff7043' },
   { id: 'eclipse', name: 'Éclipse', icon: '🌑', desc: 'Méditer ×3, Échos ×1.5', act: { mediter: 3 }, echo: 1.5, goal: 'essence', color: '#ba68c8' },
   { id: 'comete', name: 'Comète savante', icon: '☄️', desc: 'Étudier ×2, XP ×3', act: { etudier: 2 }, xp: 3, goal: 'savoir', color: '#4fc3f7' },
   { id: 'concile', name: 'Concile des ancêtres', icon: '🕯️', desc: 'Échos ×2.5', echo: 2.5, goal: 'or', color: '#e0e0e0' },

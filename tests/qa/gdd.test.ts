@@ -111,8 +111,8 @@ describe('GDD 2.5 — le monde partagé', () => {
 });
 
 describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
-  test('31 surnoms (0.5 : sans le Semeur, le Grand Veneur ni le Boucher, liés aux consignes) en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
-    expect(EPITHETS).toHaveLength(31);
+  test('30 surnoms (0.5 : sans le Semeur, le Grand Veneur, le Boucher ni le Dévastateur, liés au Domaine) en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
+    expect(EPITHETS).toHaveLength(30);
     expect(new Set(EPITHETS.map((e) => e.rarity)).size).toBe(4);
     expect(Math.min(...EPITHET_ECLATS)).toBe(1);
     expect(Math.max(...EPITHET_ECLATS)).toBe(5);

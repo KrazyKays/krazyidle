@@ -35,7 +35,7 @@ function migrate(d: any): GameState {
   refundGarde(s);
   if (s.life?.st) for (const k of ['hs', 'hn', 'hm']) delete (s.life.st as unknown as Record<string, unknown>)[k];
   // 0.5 : plus de consignes de Récolter (SIMPLIF-1) : leurs surnoms disparaissent aussi.
-  const gone = new Set(['tueur_loups', 'pelletier', 'veneur', 'boucher', 'semeur', 'grand_veneur']);
+  const gone = new Set(['tueur_loups', 'pelletier', 'veneur', 'boucher', 'semeur', 'grand_veneur', 'devastateur']);
   for (const p of [...(s.echoes ?? []), ...(s.ancestors ?? [])] as { epithet?: string }[]) if (p.epithet && gone.has(p.epithet)) delete p.epithet;
   if (s.epithets) for (const id of gone) delete s.epithets[id];
   delete (s as { hunt?: unknown }).hunt;

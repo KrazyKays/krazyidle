@@ -35,7 +35,7 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, 
 }
 
 export function sumMods(traitIds: string[]): Required<Omit<Mods, 'act'>> & { act: Record<ActId, number> } {
-  const out = { all: 0, xp: 0, life: 0, echo: 0, start: 0, heirs: 0, inherit: 0, crypt: 0, act: { cultiver: 0, commercer: 0, etudier: 0, mediter: 0 } };
+  const out = { all: 0, xp: 0, life: 0, echo: 0, wear: 0, start: 0, heirs: 0, inherit: 0, crypt: 0, act: { cultiver: 0, commercer: 0, etudier: 0, mediter: 0 } };
   for (const id of traitIds) {
     const m = TRAIT[id]?.mods;
     if (!m) continue;
@@ -43,6 +43,7 @@ export function sumMods(traitIds: string[]): Required<Omit<Mods, 'act'>> & { act
     out.xp += m.xp ?? 0;
     out.life += m.life ?? 0;
     out.echo += m.echo ?? 0;
+    out.wear += m.wear ?? 0;
     out.start += m.start ?? 0;
     out.heirs += m.heirs ?? 0;
     out.inherit += m.inherit ?? 0;
