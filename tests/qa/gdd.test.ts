@@ -4,7 +4,7 @@ import {
   GENOME_BUDGET, LEGACY, LEGACY_DEF, TRAIT, TRAITS, VOCATION_BONUS, WEAR_FLOOR, WEAR_STEP, bMult, genomeWeight, wearMult, xpToNext,
 } from '../../src/engine/data';
 import { dowry, inbreedingRisk, marry, CADETS_MAX } from '../../src/engine/alliances';
-import { AFFUT_DECAY, AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, AFFUT_STEALTH, ECO_EQ, TROPHY_OR, ecoPressure, harmonyMult, newEco, updateHunt } from '../../src/engine/ecosystem';
+import { ecoPressure, harmonyMult, newEco } from '../../src/engine/ecosystem';
 import { EPITHETS, EPITHET_ECLATS } from '../../src/engine/epithets';
 import {
   GARDE_REGEN, SHOP, echoPowerMult, echoSlots, endLife, expressGenome, genHeirs, legacyFor, lifeDuration, newRuntime, offlineCapSec, startLife,
@@ -106,14 +106,6 @@ describe('GDD 2.4 — le Domaine', () => {
     expect(harmonyMult(newEco())).toBeCloseTo(1.3);
     expect(harmonyMult({ F: 0.5, G: 0.2 })).toBeCloseTo(0.7, 2);
     expect(ecoPressure(Math.E ** 2)).toBeCloseTo(2);
-  });
-  test('Affût : entrée 60 %, sortie 95 %, 3 % du prélèvement, 80 % en réserve, 1,5 Or, 3 unités, 0,5 %/s', () => {
-    expect([AFFUT_ENTER, AFFUT_EXIT, 1 - AFFUT_STEALTH, AFFUT_GAIN, TROPHY_OR, AFFUT_DRAW, AFFUT_DECAY]).toEqual([0.6, 0.95, 0.030000000000000027, 0.8, 1.5, 3, 0.005]);
-    const h = { affut: 0, on: false };
-    updateHunt(h, { ...ECO_EQ, G: ECO_EQ.G * 0.61 }); expect(h.on).toBe(false);
-    updateHunt(h, { ...ECO_EQ, G: ECO_EQ.G * 0.59 }); expect(h.on).toBe(true);
-    updateHunt(h, { ...ECO_EQ, G: ECO_EQ.G * 0.94 }); expect(h.on).toBe(true);
-    updateHunt(h, { ...ECO_EQ, G: ECO_EQ.G * 0.95 }); expect(h.on).toBe(false);
   });
   test('Garde forestier +0,4 %/s par niveau', () => {
     expect(GARDE_REGEN).toBe(0.004);

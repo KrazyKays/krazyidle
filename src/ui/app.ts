@@ -3,7 +3,7 @@ import {
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
-import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, harmonyMult } from '../engine/ecosystem';
+import { ECO_EQ, ecoFactor, ecoGauge, ecoHealth, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
@@ -595,22 +595,9 @@ export class App {
         h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl),
         h('div', { class: 'bar bar-thin' }, xp),
         rate,
-        a === 'chasser' ? b.text(h('div', { class: 'act-affut' }), () => this.affutLine()) : null,
         h('div', { class: 'act-desc' }, def.desc)));
     b.cls(btn, 'active', () => s.life?.act === a);
     return btn;
-  }
-
-  /** État de l'Affût, sous la Chasse. */
-  affutLine(): string {
-    const s = this.s, hu = s.hunt;
-    const stock = hu.affut * TROPHY_OR;
-    if (hu.on) {
-      const p = s.life ? lifePower(s.life, s.hero, 'chasser') : 0;
-      const gain = AFFUT_GAIN * gameScarcity(s.eco) * prodMult(s, this.rt, 'chasser') * p * TROPHY_OR;
-      return `🎯 À l'affût : le Gibier se refait${gain > 0.005 ? ` · +${fmt(gain)} 🪙/s en réserve` : ''}${stock >= 1 ? ` (${fmt(stock)} 🪙)` : ''}`;
-    }
-    return stock >= 1 ? `🏆 Chasse ouverte : ${fmt(stock)} 🪙 de trophées à rapporter` : '';
   }
 
   actPreview(a: ActId): string {
@@ -621,12 +608,6 @@ export class App {
     const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
-    let tro = 0;
-    if (a === 'chasser') {
-      const base = prodMult(s, this.rt, a) * p;
-      if (!s.hunt.on && s.hunt.affut > 0) tro += TROPHY_OR * Math.min(s.hunt.affut, AFFUT_DRAW * base);
-    }
-    if (tro > 0.005) out.push(`+${fmt(tro)} ${RES_INFO.or.icon}/s`);
     for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
     return out.join('  ');
   }
@@ -774,14 +755,12 @@ export class App {
       h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
       bars,
       h('div', { class: 'stats' },
-        stat('Affût', b.text(h('span'), () => s.hunt.on ? `🎯 en cours · ${fmt(s.hunt.affut * TROPHY_OR)} 🪙` : s.hunt.affut * TROPHY_OR >= 1 ? `🏆 ${fmt(s.hunt.affut * TROPHY_OR)} 🪙 à rapporter` : 'chasse ouverte')),
         regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
       canvas,
       // Les règles détaillées sont repliées : elles faisaient la moitié de l'écran à chaque visite.
       h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
         h('p', { class: 'muted small' }, 'Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
-        h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.'),
-        h('p', { class: 'muted small' }, `🎯 Affût : quand le Gibier tombe sous ${Math.round(AFFUT_ENTER * 100)} % de l'équilibre, tes chasseurs (héros et Échos) pistent sans presque tirer. Le Gibier se refait, et le butin manqué est mis en réserve. Dès qu'il retrouve ${Math.round(AFFUT_EXIT * 100)} %, la chasse rouvre et la réserve se change en trophées d'Or, d'autant plus vite que le chasseur est puissant.`)));
+        h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.')));
     return h('div', null, harmCard);
   }
 

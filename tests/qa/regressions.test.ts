@@ -692,3 +692,15 @@ describe('TERRE-2 — plus de Prédateurs (0.4)', () => {
     expect(t.ancestors[0].epithet).toBeUndefined();
   });
 });
+
+describe('TERRE-3 — plus d\'Affût (0.4)', () => {
+  test('en disette, la chasse prélève normalement et ne rapporte pas d\'Or', async () => {
+    const { runActivity } = await import('../../src/engine/sim');
+    const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
+    const eco = { F: 62.5, G: 10 };
+    runActivity({ res, eco, prodMult: () => 1, ecoImpactMult: 1 }, 'chasser', 1, 1, 1, false);
+    expect(res.or).toBe(0);
+    expect(eco.G).toBeCloseTo(10 - 0.035 * 10, 6);
+    expect('hunt' in newGame(0, 1)).toBe(false);
+  });
+});

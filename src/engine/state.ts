@@ -1,5 +1,5 @@
 import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, TRAITS, sexFor, type ActId, type ResId, type Sex } from './data';
-import { newEco, type Eco, type Hunt } from './ecosystem';
+import { newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 
 export interface Vocation {
@@ -187,8 +187,6 @@ export interface GameState {
   upgrades: Record<string, number>;
   eco: Eco;
   eclats: number;
-  /** Affût : butin de chasse mis en réserve pendant la disette, libéré en trophées */
-  hunt: Hunt;
   blessings: string[];
   events: Record<string, EventProgress>;
   daily: Record<string, DailyRecord>;
@@ -249,7 +247,6 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     upgrades: {},
     eco: newEco(),
     eclats: 0,
-    hunt: { affut: 0, on: false },
     blessings: [],
     events: {},
     daily: {},

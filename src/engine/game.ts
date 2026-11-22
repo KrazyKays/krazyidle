@@ -7,7 +7,7 @@ import {
 import { ripeTraits } from './evolution';
 import { FEAT_DEF, checkFeats } from './feats';
 import { addCadets, inbreedingRisk } from './alliances';
-import { AFFUT_DECAY, updateHunt, ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
+import { ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
 import { crown } from './names';
@@ -147,7 +147,6 @@ export function makeCtx(s: GameState, rt: Runtime): SimCtx {
     eco: s.eco,
     prodMult: (a) => prodMult(s, rt, a),
     ecoImpactMult: ecoImpactMult(s),
-    hunt: s.hunt,
     onProduce: (r, amt, fromLife, act) => {
       s.totalEver[r] += amt;
       rt.tickGross[r] += amt;
@@ -212,8 +211,6 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   // Écosystème
   ecoStep(s.eco, dt);
   ecoRegen(s.eco, ecoRegenRate(s), dt);
-  updateHunt(s.hunt, s.eco);
-  s.hunt.affut *= Math.exp(-AFFUT_DECAY * dt);
   if (rt.online && rt.event?.def.id === 'migration') s.eco.G = Math.min(140, s.eco.G + 0.25 * dt);
 
   // Échos

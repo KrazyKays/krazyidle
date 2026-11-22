@@ -1,6 +1,6 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
 import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActDef, type ActId, type Mods, type ResId } from './data';
-import { AFFUT_DRAW, AFFUT_GAIN, AFFUT_STEALTH, TROPHY_OR, ecoFactor, ecoImpact, ecoPressure, gameScarcity, type Eco, type Hunt } from './ecosystem';
+import { ecoFactor, ecoImpact, ecoPressure, type Eco } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
 export interface SimCtx {
@@ -9,8 +9,6 @@ export interface SimCtx {
   prodMult: (a: ActId) => number;
   ecoImpactMult: number;
   onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
-  /** Réserve d'Affût partagée par le héros et ses Échos (absente du Destin du jour). */
-  hunt?: Hunt;
   /** Table des activités ; le Destin du jour garde la sienne, figée, pour que les anciens codes restent vérifiables. */
   acts?: Record<ActId, ActDef>;
 }
@@ -32,33 +30,13 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
     const need = def.consume[r as ResId]! * consumeScale * dt * frac;
     ctx.res[r as ResId] = Math.max(0, ctx.res[r as ResId] - need);
   }
-  const base = ctx.prodMult(act) * power * frac * dt;
-  const mult = base * ecoFactor(act, ctx.eco);
+  const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco);
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;
     ctx.onProduce?.(r as ResId, amt, fromLife, act);
   }
-  let impact = ecoStrength * ecoPressure(power) * frac * ctx.ecoImpactMult;
-  if (act === 'chasser') {
-    let tro = 0;
-    if (ctx.hunt) {
-      // Affût : en disette, le butin manqué est mis en réserve et le Gibier est épargné ;
-      // la réserve est libérée en trophées d'Or quand la chasse rouvre.
-      if (ctx.hunt.on) {
-        ctx.hunt.affut += AFFUT_GAIN * gameScarcity(ctx.eco) * base;
-        impact *= 1 - AFFUT_STEALTH;
-      } else if (ctx.hunt.affut > 0) {
-        const d = Math.min(ctx.hunt.affut, AFFUT_DRAW * base);
-        ctx.hunt.affut -= d;
-        tro += TROPHY_OR * d;
-      }
-    }
-    if (tro > 0) {
-      ctx.res.or += tro;
-      ctx.onProduce?.('or', tro, fromLife, act);
-    }
-  }
+  const impact = ecoStrength * ecoPressure(power) * frac * ctx.ecoImpactMult;
   ecoImpact(ctx.eco, act, impact, dt);
   return frac;
 }

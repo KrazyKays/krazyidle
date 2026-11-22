@@ -92,7 +92,7 @@ describe('migration d\'anciennes sauvegardes', () => {
     old.v = 1;
     const m = deserialize(JSON.stringify(old))!;
     expect(m.v).toBe(SAVE_VERSION);
-    expect(m.hunt).toEqual({ affut: 0, on: false });
+    expect('hunt' in m).toBe(false);
     expect(m.hero.sex).toMatch(/^[fm]$/);
     const rt = newRuntime(); rt.online = false;
     for (let i = 0; i < 600; i++) tick(m, rt, 0.5, T0 + i * 500);

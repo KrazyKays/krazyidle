@@ -89,7 +89,6 @@ export function invariants(s: GameState): string[] {
   const { F, G } = s.eco;
   if (!(F >= 0.5 && F <= 140)) bad.push(`eco.F=${F}`);
   if (!(G >= 0.2 && G <= 140)) bad.push(`eco.G=${G}`);
-  if (!fin(s.hunt.affut) || s.hunt.affut < 0) bad.push(`hunt.affut=${s.hunt.affut}`);
   if (!(s.legacy >= 0 && s.legacy <= s.legacyTotal)) bad.push(`legacy=${s.legacy}/${s.legacyTotal}`);
   if (s.eclats < 0 || !fin(s.eclats)) bad.push(`eclats=${s.eclats}`);
   if (s.echoes.length > echoSlots(s)) bad.push(`echoes ${s.echoes.length}>${echoSlots(s)}`);
