@@ -463,8 +463,9 @@ describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
     expect(tabsShown('two').map((t) => t.id)).not.toContain('vie');
     expect(normTab('vie', 'two')).toBe('memoire');
     expect(normTab('vie', 'mobile')).toBe('vie');
-    expect(subsShown(s, 'memoire', 'three').map((x) => x.id)).toEqual(['archives']); // 0.5 : Archives à la place de Nature
-    expect(normSub(s, 'memoire', 'three', 'echos')).toBe('archives');
+    expect(subsShown(s, 'memoire', 'three')).toEqual([]); // les Échos ont leur colonne
+    expect(tabsShown('three').map((t) => t.id)).not.toContain('memoire');
+    expect(normTab('memoire', 'three')).toBe('ameliorer');
     expect(normSub(s, 'memoire', 'two', 'echos')).toBe('echos');
     // Un sous-onglet verrouillé n'est jamais affiché, même s'il était le dernier choisi.
     expect(normSub(s, 'maison', 'mobile', 'alliances')).toBe('lignee');
@@ -867,29 +868,22 @@ describe('SIMPLIF-3 — la lignée remplace le Domaine dans les conditions (0.5)
   });
 });
 
-describe('SIMPLIF-4 — Archives de la maison et onglet Mémoire (0.5)', () => {
-  test('les Archives ouvrent à la génération 25, 5 niveaux ; niveau 2 : vocation +5 % ; 4 : usure −1 ; 5 : +6 ✦', async () => {
-    const { BUILDING, ARCHIVES } = await import('../../src/engine/data');
-    const { buildingCost, buyBuilding, transmissionChance } = await import('../../src/engine/game');
-    const s = newGame(0, 47);
-    const pay = () => { const c = buildingCost('archives', s.buildings.archives ?? 0); s.res.savoir = c.savoir!; s.res.or = c.or!; };
-    expect(BUILDING.archives.max).toBe(5);
-    expect(ARCHIVES).toHaveLength(5);
-    pay();
-    expect(buyBuilding(s, 'archives')).toBe(false); // génération 1
-    s.hero.gen = 25;
-    for (let i = 0; i < 3; i++) { pay(); expect(buyBuilding(s, 'archives')).toBe(true); }
-    s.hero.traits = ['robuste'];
-    s.hero.wear = { robuste: 3 };
-    const before = transmissionChance(s, s.hero, 'robuste');
-    pay(); buyBuilding(s, 'archives');
-    expect(s.hero.wear).toEqual({ robuste: 2 });
-    expect(transmissionChance(s, s.hero, 'robuste')).toBeGreaterThan(before);
-    const e0 = s.eclats;
-    pay(); buyBuilding(s, 'archives');
-    expect(s.eclats).toBe(e0 + 6);
-    pay();
-    expect(buyBuilding(s, 'archives')).toBe(false); // niveau max
+describe('Archives de la maison retirées (0.5)', () => {
+  test('plus de bâtiment ni de sous-onglet Archives ; Mémoire n\'a que les Échos', async () => {
+    const { BUILDING } = await import('../../src/engine/data');
+    const { SUBS } = await import('../../src/ui/nav');
+    expect(BUILDING.archives).toBeUndefined();
+    expect(SUBS.memoire.map((x) => x.id)).toEqual(['echos']);
+  });
+  test('une sauvegarde avec des Archives est remboursée (Savoir et Or) et les perd', async () => {
+    const { deserialize, serialize } = await import('../../src/engine/save');
+    const s: any = newGame(0, 47);
+    s.buildings.archives = 2;
+    s.res.savoir = 0; s.res.or = 0;
+    const t: any = deserialize(serialize(s))!;
+    expect(t.buildings.archives).toBeUndefined();
+    expect(t.res.savoir).toBe(40 + 104);
+    expect(t.res.or).toBe(120 + 312);
   });
 });
 

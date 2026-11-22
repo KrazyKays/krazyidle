@@ -564,6 +564,3 @@ p { margin: 6px 0; }
 /* Consignes de Récolter (0.4) */
 .act-wrap { display: flex; flex-direction: column; gap: 4px; }
 
-/* --- Mémoire › Archives (0.5) ------------------------------------------------ */
-.build.locked { opacity: 0.6; }
-.archive-list { margin: 4px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 2px; }

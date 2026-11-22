@@ -33,6 +33,7 @@ function migrate(d: any): GameState {
   // 0.5 : plus de Domaine (SIMPLIF-2) ; le Garde forestier est remboursé.
   delete (s as { eco?: unknown }).eco;
   refundGarde(s);
+  refundArchives(s);
   if (s.life?.st) for (const k of ['hs', 'hn', 'hm']) delete (s.life.st as unknown as Record<string, unknown>)[k];
   // 0.5 : plus de consignes de Récolter (SIMPLIF-1) : leurs surnoms disparaissent aussi.
   const gone = new Set(['tueur_loups', 'pelletier', 'veneur', 'boucher', 'semeur', 'grand_veneur', 'devastateur']);
@@ -63,6 +64,17 @@ export function refundGarde(s: GameState) {
   s.res.or += back.or!;
   s.res.vivres += back.vivres!;
   delete s.buildings.garde;
+}
+
+/**
+ * Archives de la maison (0.5, 40 Savoir + 120 Or, ×2,6 par niveau) : retirées, leurs niveaux sont remboursés.
+ * Les effets ponctuels déjà reçus (usure −1, +6 ✦) restent acquis.
+ */
+export function refundArchives(s: GameState) {
+  if (!s.buildings || s.buildings.archives === undefined) return;
+  const lvl = s.buildings.archives;
+  for (let i = 0; i < lvl; i++) { s.res.savoir += Math.ceil(40 * Math.pow(2.6, i)); s.res.or += Math.ceil(120 * Math.pow(2.6, i)); }
+  delete s.buildings.archives;
 }
 
 /**

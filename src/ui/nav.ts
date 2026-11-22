@@ -2,7 +2,7 @@
 //
 // Les onglets sont rangés par intention du joueur :
 //   ⏳ Vie       — jouer la vie en cours ;
-//   🏛️ Mémoire   — ce que la lignée garde d'elle-même (Échos, Archives) ;
+//   🏛️ Mémoire   — ce que la lignée garde d'elle-même (Échos) ;
 //   🔨 Améliorer — tout ce qui s'achète (Bâtiments en ressources, Héritage ⚜️, Bazar ✦) ;
 //   👑 Maison    — identité et collection (Lignée et blason, Alliances, Codex) ;
 //   🌠 Destin    — les rendez-vous (Aujourd'hui : événement et Commande ; Calendrier).
@@ -12,7 +12,7 @@ import { buildingCost, canAfford, chroniclesUnlocked } from '../engine/game';
 import type { GameState } from '../engine/state';
 
 export type Tab = 'vie' | 'memoire' | 'ameliorer' | 'maison' | 'destin';
-export type Sub = 'echos' | 'archives' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
+export type Sub = 'echos' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
 /** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
 export type Layout = 'mobile' | 'two' | 'three';
 
@@ -29,7 +29,7 @@ export const TABS: TabDef[] = [
 
 export const SUBS: Record<Tab, SubDef[]> = {
   vie: [],
-  memoire: [{ id: 'echos', icon: '🌀', name: 'Échos' }, { id: 'archives', icon: '🗄️', name: 'Archives' }],
+  memoire: [{ id: 'echos', icon: '🌀', name: 'Échos' }],
   ameliorer: [{ id: 'batiments', icon: '🏠', name: 'Bâtiments' }, { id: 'heritage', icon: '⚜️', name: 'Héritage' }, { id: 'bazar', icon: '✦', name: 'Bazar' }],
   maison: [{ id: 'lignee', icon: '📜', name: 'Lignée' }, { id: 'alliances', icon: '💍', name: 'Alliances' }, { id: 'codex', icon: '📖', name: 'Codex' }],
   destin: [{ id: 'jour', icon: '☀️', name: 'Aujourd\'hui' }, { id: 'calendrier', icon: '📅', name: 'Calendrier' }],
@@ -61,7 +61,6 @@ export function subsShown(s: GameState, tab: Tab, layout: Layout): SubDef[] {
   });
 }
 
-/** Onglets proposés : sur ordinateur la Vie est toujours affichée en colonne. */
 /**
  * Place de la barre des sous-onglets. Sur téléphone, en bas, juste au-dessus des onglets : le pouce enchaîne
  * onglet puis sous-onglet sans traverser l'écran, et la barre ne touche plus la frise de vie du haut.
@@ -71,13 +70,18 @@ export function subBarPlace(layout: Layout): 'dock' | 'panneau' {
   return layout === 'mobile' ? 'dock' : 'panneau';
 }
 
+/**
+ * Onglets proposés : sur ordinateur la Vie est toujours affichée en colonne ; en 3 colonnes, la Mémoire
+ * (les Échos seuls) a sa propre colonne et quitte la barre d'onglets.
+ */
 export function tabsShown(layout: Layout): TabDef[] {
-  return TABS.filter((t) => !(layout !== 'mobile' && t.id === 'vie'));
+  return TABS.filter((t) => !(layout !== 'mobile' && t.id === 'vie') && !(layout === 'three' && t.id === 'memoire'));
 }
 
-/** Onglet effectivement affiché (la Vie n'est pas un onglet sur ordinateur). */
+/** Onglet effectivement affiché (la Vie n'est pas un onglet sur ordinateur, ni la Mémoire en 3 colonnes). */
 export function normTab(t: Tab, layout: Layout): Tab {
-  return tabsShown(layout).some((x) => x.id === t) ? t : 'memoire';
+  const list = tabsShown(layout);
+  return list.some((x) => x.id === t) ? t : list[0].id;
 }
 
 /** Sous-onglet effectivement affiché : le dernier choisi s'il est proposé, sinon le premier. */
