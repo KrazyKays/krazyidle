@@ -15,7 +15,7 @@ function facts(over: Partial<LifeFacts> = {}): LifeFacts {
   const share = { cultiver: 0.4, commercer: 0.3, etudier: 0.3, mediter: 0 };
   return {
     share, used: 3, switches: 10, harmonyAvg: 0.8, harmonyMin: 0.6, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
-    traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
+    traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0,
     ...over,
     ...(over.share ? { share: { ...share, ...over.share } } : {}),
   };
@@ -67,14 +67,15 @@ describe('surnoms', () => {
 
     const u = unlocked(5);
     u.life!.timeIn.cultiver = u.life!.dur;
-    u.life!.st = { sw: 5, hs: 0.5, hn: 1, hm: 0.5, ev: 0, bd: 0 }; // Domaine troublé et quelques détours : ni « Juste » ni « Constant »
+    u.life!.st = { sw: 5, ev: 0, bd: 0 }; // quelques détours : pas « le Constant »
     const e0 = u.eclats;
     endLife(u, NOW);
-    expect(u.succession!.newEcho.epithet).toBe('laboureur');
-    expect(u.succession!.ancestor.epithet).toBe('laboureur');
-    expect(u.succession!.epithet).toEqual({ id: 'laboureur', isNew: true, eclats: 1 });
-    expect(u.eclats).toBe(e0 + 1);
-    expect(u.epithets.laboureur).toBe(1);
+    // SIMPLIF-2 : la santé du Domaine est neutre (1), « le Juste » (Rare) l'emporte jusqu'à sa réécriture.
+    expect(u.succession!.newEcho.epithet).toBe('juste');
+    expect(u.succession!.ancestor.epithet).toBe('juste');
+    expect(u.succession!.epithet).toEqual({ id: 'juste', isNew: true, eclats: 2 });
+    expect(u.eclats).toBe(e0 + 2);
+    expect(u.epithets.juste).toBe(1);
   });
 
   test('l\'effet du surnom renforce l\'Écho', () => {

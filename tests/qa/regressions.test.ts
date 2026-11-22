@@ -65,8 +65,9 @@ describe('R10 — rééquilibrage des convertisseurs', () => {
   // Le gel du Destin du jour aux règles 0.2.1 a été levé par CMD-1 (Commande du comté) : voir plus bas.
   test('nouvelles valeurs de la partie principale', async () => {
     const { ACT, ACT_UNLOCK, BUILDING } = await import('../../src/engine/data');
-    expect(ACT.commercer.produce.or).toBe(1.25);
-    expect(ACT.mediter.produce.essence).toBe(0.1);
+    // 0.5 (SIMPLIF-2) : 1,25 et 0,10 intègrent l'Harmonie moyenne (×1,265).
+    expect(ACT.commercer.produce.or).toBe(1.58);
+    expect(ACT.mediter.produce.essence).toBe(0.127);
     expect(BUILDING.sanctuaire.cost.savoir).toBeUndefined();
     expect(ACT_UNLOCK.etudier.amount).toBe(40);
     expect(ACT_UNLOCK.mediter.amount).toBe(20);
@@ -270,7 +271,7 @@ describe('CMD-1 — la Commande du comté remplace le Destin à points (validé 
     const { dailySetup, decodeRun, DailyRun } = await import('../../src/engine/daily');
     const run = new DailyRun(dailySetup(date));
     expect(run.ctx.acts).toBeUndefined(); // table ACT de la partie principale
-    expect(ACT.commercer.produce.or).toBe(1.25);
+    expect(ACT.commercer.produce.or).toBe(1.58);
     const fx: { code: string }[] = (await import('./fixtures-destin-v021.json')).default;
     for (const f of fx) expect(decodeRun(f.code)).toBeNull();
   });
@@ -462,8 +463,8 @@ describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
     expect(tabsShown('two').map((t) => t.id)).not.toContain('vie');
     expect(normTab('vie', 'two')).toBe('domaine');
     expect(normTab('vie', 'mobile')).toBe('vie');
-    expect(subsShown(s, 'domaine', 'three').map((x) => x.id)).toEqual(['nature']);
-    expect(normSub(s, 'domaine', 'three', 'echos')).toBe('nature');
+    expect(subsShown(s, 'domaine', 'three').map((x) => x.id)).toEqual([]); // 0.5 : plus de Nature
+    expect(normSub(s, 'domaine', 'three', 'echos')).toBeNull();
     expect(normSub(s, 'domaine', 'two', 'echos')).toBe('echos');
     // Un sous-onglet verrouillé n'est jamais affiché, même s'il était le dernier choisi.
     expect(normSub(s, 'maison', 'mobile', 'alliances')).toBe('lignee');
@@ -505,17 +506,6 @@ describe('UX-NAV 4 — sous-onglets en bas sur téléphone, à portée du pouce'
     expect(rule('.top-life')).toMatch(/bottom: 0;/);
     expect(rule('.subtab')).toMatch(/min-height: 44px/);
     expect(rule('.dock')).toMatch(/position: fixed; bottom: 0/);
-  });
-});
-
-describe('ECO-1 — jauges du Domaine centrées sur l\'équilibre', () => {
-  test('les deux populations ont leur équilibre au milieu de la jauge, et la jauge reste bornée', async () => {
-    const { ECO_EQ, ecoGauge } = await import('../../src/engine/ecosystem');
-    for (const k of ['F', 'G'] as const) {
-      expect(ecoGauge(ECO_EQ, k)).toBeCloseTo(0.5, 9);
-      expect(ecoGauge({ ...ECO_EQ, [k]: 1000 }, k)).toBe(1);
-      expect(ecoGauge({ ...ECO_EQ, [k]: 0 }, k)).toBe(0);
-    }
   });
 });
 
@@ -670,16 +660,6 @@ describe('TERRE-1 — plus de vérification des codes du Destin (0.4)', () => {
 });
 
 describe('TERRE-2 — plus de Prédateurs (0.4)', () => {
-  test('le Gibier garde son équilibre à 29 sans Prédateurs, et revient après une perturbation', async () => {
-    const { ECO_EQ, ecoStep, ecoHealth } = await import('../../src/engine/ecosystem');
-    const e = { F: 30, G: 50 };
-    for (let t = 0; t < 300; t += 0.1) ecoStep(e, 0.1);
-    expect(ecoHealth(e)).toBeGreaterThan(0.95);
-    const eq = { ...ECO_EQ };
-    for (let t = 0; t < 600; t += 0.1) ecoStep(eq, 0.1);
-    expect(eq.G).toBeCloseTo(ECO_EQ.G, 0);
-    expect(Object.keys(eq).sort()).toEqual(['F', 'G']);
-  });
   test('une ancienne sauvegarde perd ses Prédateurs et le surnom « le Tueur de loups »', async () => {
     const { deserialize, serialize } = await import('../../src/engine/save');
     const s: any = newGame(0, 21);
@@ -687,46 +667,17 @@ describe('TERRE-2 — plus de Prédateurs (0.4)', () => {
     s.epithets = { tueur_loups: 2, laboureur: 1 };
     s.ancestors = [{ id: 1, name: 'Jehan', gen: 1, traits: [], vocation: null, value: 1, legacy: 1, dominant: null, diedAt: 0, epithet: 'tueur_loups' }];
     const t = deserialize(serialize(s))!;
-    expect(t.eco).toEqual({ F: 60, G: 20 });
+    expect((t as any).eco).toBeUndefined(); // 0.5 : plus de Domaine du tout (SIMPLIF-2)
     expect(t.epithets).toEqual({ laboureur: 1 });
     expect(t.ancestors[0].epithet).toBeUndefined();
   });
 });
 
-describe('TERRE-3 — plus d\'Affût (0.4)', () => {
-  test('Gibier sous l\'équilibre : la chasse prélève normalement et ne rapporte pas d\'Or', async () => {
-    const { runActivity } = await import('../../src/engine/sim');
-    const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
-    const eco = { F: 62.5, G: 25 };
-    const g0 = eco.G;
-    runActivity({ res, eco, prodMult: () => 1, ecoImpactMult: 1 }, 'cultiver', 1, 1, 1, false);
-    expect(res.or).toBe(0);
-    expect(eco.G).toBeLessThan(g0);
-    expect('hunt' in newGame(0, 1)).toBe(false);
-  });
-});
-
-describe('TERRE-2b — le Gibier se freine lui-même, comme le faisaient les Prédateurs', () => {
-  test('sous une Flore abondante, le Gibier ne s\'emballe pas', async () => {
-    const { ECO_EQ, ecoStep } = await import('../../src/engine/ecosystem');
-    const e = { F: 100, G: ECO_EQ.G };
-    let gMax = 0;
-    for (let t = 0; t < 300; t += 0.1) { e.F = 100; ecoStep(e, 0.1); gMax = Math.max(gMax, e.G); }
-    // [MESURÉ] ancien modèle à Prédateurs (en retard sur le Gibier) : jusqu'à 110 ; nouveau : ≈ 60, équilibre à F = 100
-    expect(gMax).toBeLessThan(ECO_EQ.G * 2.2);
-  });
-});
-
 describe('TERRE-4 — Cultiver et Chasser fusionnés en Récolter (0.4)', () => {
-  test('quatre activités, une par ressource ; la part de chasse suit l\'abondance du Gibier', async () => {
+  test('quatre activités, une par ressource', async () => {
     const { ACTS, ACT } = await import('../../src/engine/data');
-    const { ECO_EQ, huntShare } = await import('../../src/engine/ecosystem');
     expect(ACTS).toEqual(['cultiver', 'commercer', 'etudier', 'mediter']);
     expect(ACT.cultiver.name).toBe('Récolter');
-    expect(huntShare(ECO_EQ)).toBeCloseTo(0.5, 9);
-    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G * 1.2 })).toBeCloseTo(0.8, 9);
-    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G / 2 })).toBe(0);
-    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G * 2 })).toBe(1);
   });
   test('une sauvegarde 0.3 est reprise : vocation, Échos, compétences, dons, bâtiment, hauts faits', async () => {
     const { deserialize } = await import('../../src/engine/save');
@@ -804,5 +755,32 @@ describe('SIMPLIF-1 — plus de consignes de Récolter (0.5)', () => {
     expect(atob(code.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((code.length + 3) % 4)).startsWith('EL4|')).toBe(true);
     expect(decodeRun(code)!.actions).toEqual([[0, 0], [50, 1]]);
     expect(decodeRun(btoa(`EL3|${date}|05|1000`).replace(/=+$/, ''))).toBeNull();
+  });
+});
+
+describe('SIMPLIF-2 — plus de Domaine ni d\'Harmonie ; rendements compensés (0.5, V3-A)', () => {
+  test('rendements V3-A, sans Garde forestier ; production = rendement × puissance, sans facteur caché', async () => {
+    const { ACT, BUILDING } = await import('../../src/engine/data');
+    const { runActivity } = await import('../../src/engine/sim');
+    expect([ACT.cultiver.produce.vivres, ACT.commercer.produce.or, ACT.etudier.produce.savoir, ACT.mediter.produce.essence]).toEqual([1.92, 1.58, 0.76, 0.127]);
+    expect(BUILDING.garde).toBeUndefined();
+    const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
+    runActivity({ res, prodMult: () => 1 }, 'cultiver', 2, 1, false);
+    expect(res.vivres).toBeCloseTo(3.84, 9);
+  });
+  test('une sauvegarde 0.4 perd son Domaine ; le Garde forestier est remboursé (Or et Vivres payés)', async () => {
+    const { deserialize, serialize } = await import('../../src/engine/save');
+    const s: any = newGame(0, 42);
+    startLife(s);
+    s.eco = { F: 40, G: 10 };
+    s.buildings = { champs: 3, garde: 2 };
+    s.res.or = 5; s.res.vivres = 7;
+    s.life.st = { sw: 1, hs: 4, hn: 5, hm: 0.5, ev: 0, bd: 0 };
+    const t: any = deserialize(serialize(s))!;
+    expect(t.eco).toBeUndefined();
+    expect(t.buildings).toEqual({ champs: 3 });
+    expect(t.res.or).toBe(5 + 60 + 120);
+    expect(t.res.vivres).toBe(7 + 100 + 200);
+    expect(t.life.st).toEqual({ sw: 1, ev: 0, bd: 0 });
   });
 });

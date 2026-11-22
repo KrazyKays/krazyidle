@@ -2,7 +2,6 @@
 // le plus jeune possible. Le code d'une partie sert à rejouer le fantôme de son record ; il n'y a plus
 // de vérification de code (0.4) : sans classement, elle ne protégeait rien et figeait l'équilibrage.
 import { ACTS, DAILY_NAMES, RES, TRAITS, type ActId, type ResId } from './data';
-import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 import { lifeTick, sumMods, type SimCtx } from './sim';
 import { newLife, zeroActs, zeroRes, type LifeState } from './state';
@@ -20,14 +19,13 @@ export interface DailyMod {
   desc: string;
   act?: Partial<Record<ActId, number>>;
   xp?: number;
-  eco?: Partial<Eco>;
 }
 
 export const DAILY_MODS: DailyMod[] = [
   { id: 'secheresse', g: 'flore', name: 'Sécheresse', icon: '☀️', desc: 'Récolter ×0.5', act: { cultiver: 0.5 } },
-  { id: 'fertiles', g: 'flore', name: 'Terres fertiles', icon: '🌷', desc: 'Flore initiale abondante', eco: { F: 100 } },
-  { id: 'abondance', g: 'gibier', name: 'Gibier abondant', icon: '🐗', desc: 'Gibier initial ×2', eco: { G: 60 } },
-  { id: 'hiver', g: 'gibier', name: 'Hiver rude', icon: '❄️', desc: 'Gibier rare', eco: { G: 15 } },
+  { id: 'fertiles', g: 'flore', name: 'Terres fertiles', icon: '🌷', desc: 'Sans effet (SIMPLIF-5)' },
+  { id: 'abondance', g: 'gibier', name: 'Gibier abondant', icon: '🐗', desc: 'Sans effet (SIMPLIF-5)' },
+  { id: 'hiver', g: 'gibier', name: 'Hiver rude', icon: '❄️', desc: 'Sans effet (SIMPLIF-5)' },
   { id: 'foire', g: 'commercer', name: 'Foire du comté', icon: '🎪', desc: 'Commercer ×1.8', act: { commercer: 1.8 } },
   { id: 'inflation', g: 'commercer', name: 'Inflation', icon: '📉', desc: 'Commercer ×0.6', act: { commercer: 0.6 } },
   { id: 'academie', g: 'etudier', name: 'Académie ouverte', icon: '🎓', desc: 'Étudier ×1.8', act: { etudier: 1.8 } },
@@ -50,7 +48,6 @@ export interface DailySetup {
   name: string;
   traits: string[];
   mods: DailyMod[];
-  eco: Eco;
   startRes: Record<ResId, number>;
   order: DailyOrder;
 }
@@ -80,11 +77,9 @@ function baseSetup(date: string): Omit<DailySetup, 'order'> {
     const m = rng.pick(DAILY_MODS);
     if (!mods.some((x) => x.g === m.g)) mods.push(m);
   }
-  const eco = newEco();
-  for (const m of mods) Object.assign(eco, m.eco ?? {});
   const startRes = zeroRes();
   startRes.vivres = 10 + rng.int(4) * 5;
-  return { date, name, traits, mods, eco, startRes };
+  return { date, name, traits, mods, startRes };
 }
 
 /** Forme brute de la commande du jour (proportions), avant mise à l'échelle. */
@@ -134,14 +129,13 @@ export function dailySetup(date: string): DailySetup {
 }
 
 function structuredCloneSetup(s: DailySetup): DailySetup {
-  return { ...s, traits: [...s.traits], mods: [...s.mods], eco: { ...s.eco }, startRes: { ...s.startRes }, order: { ...s.order } };
+  return { ...s, traits: [...s.traits], mods: [...s.mods], startRes: { ...s.startRes }, order: { ...s.order } };
 }
 
 export class DailyRun {
   setup: DailySetup;
   life: LifeState;
   res: Record<ResId, number>;
-  eco: Eco;
   tickN = 0;
   actions: [number, number][] = [];
   ctx: SimCtx;
@@ -159,7 +153,6 @@ export class DailyRun {
   constructor(setup: DailySetup) {
     this.setup = setup;
     this.res = { ...setup.startRes };
-    this.eco = { ...setup.eco };
     const m = sumMods(setup.traits);
     this.life = newLife(DAILY_DUR, (() => { const z = zeroActs(); for (const a of ACTS) z[a] = Math.max(0, m.start); return z; })());
     this.hero = { traits: setup.traits, vocation: null };
@@ -169,10 +162,8 @@ export class DailyRun {
     const mods = setup.mods;
     this.ctx = {
       res: this.res,
-      eco: this.eco,
-      ecoImpactMult: Math.max(0.3, 1 - m.eco),
       prodMult: (a) => {
-        let x = harmonyMult(this.eco);
+        let x = 1;
         for (const md of mods) if (md.act?.[a]) x *= md.act[a]!;
         return x;
       },
@@ -220,7 +211,6 @@ export class DailyRun {
   step() {
     // Le temps ne s'écoule pas avant la première activité (ni dans le jeu, ni au replay d'un code).
     if (this.done || !this.started) return;
-    ecoStep(this.eco, DAILY_DT);
     lifeTick(this.ctx, this.life, this.hero, this.xpMult, DAILY_DT);
     this.tickN++;
     if (this.tickN % TICKS_PER_SEC === 0) this.choiceRec.push(choiceIndex(this.life.act));

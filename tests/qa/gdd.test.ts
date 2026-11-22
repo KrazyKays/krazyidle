@@ -4,10 +4,9 @@ import {
   GENOME_BUDGET, LEGACY, LEGACY_DEF, TRAIT, TRAITS, VOCATION_BONUS, WEAR_FLOOR, WEAR_STEP, bMult, genomeWeight, wearMult, xpToNext,
 } from '../../src/engine/data';
 import { dowry, inbreedingRisk, marry, CADETS_MAX } from '../../src/engine/alliances';
-import { ecoPressure, harmonyMult, newEco } from '../../src/engine/ecosystem';
 import { EPITHETS, EPITHET_ECLATS } from '../../src/engine/epithets';
 import {
-  GARDE_REGEN, SHOP, echoPowerMult, echoSlots, endLife, expressGenome, genHeirs, legacyFor, lifeDuration, newRuntime, offlineCapSec, startLife,
+  SHOP, echoPowerMult, echoSlots, endLife, expressGenome, genHeirs, legacyFor, lifeDuration, newRuntime, offlineCapSec, startLife,
 } from '../../src/engine/game';
 import { DAILY_DUR } from '../../src/engine/daily';
 import { EVENT_DURATION_MIN, EVENT_HOURS_UTC } from '../../src/engine/data';
@@ -98,17 +97,6 @@ describe('GDD 2.3 — la Lignée', () => {
     let max = 0;
     for (let i = 0; i < 300; i++) for (const h of genHeirs(s, parent, rng)) max = Math.max(max, h.traits.length);
     expect(max).toBe(6);
-  });
-});
-
-describe('GDD 2.4 — le Domaine', () => {
-  test('Harmonie ×0,7 → ×1,3 ; pression 1 + ½ ln(p)', () => {
-    expect(harmonyMult(newEco())).toBeCloseTo(1.3);
-    expect(harmonyMult({ F: 0.5, G: 0.2 })).toBeCloseTo(0.7, 2);
-    expect(ecoPressure(Math.E ** 2)).toBeCloseTo(2);
-  });
-  test('Garde forestier +0,4 %/s par niveau', () => {
-    expect(GARDE_REGEN).toBe(0.004);
   });
 });
 

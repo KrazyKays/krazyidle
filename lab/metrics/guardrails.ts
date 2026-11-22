@@ -62,9 +62,6 @@ export const RULES: Rule[] = [
   // Piliers
   { kpi: 'echoShare', kind: 'range', profiles: CONT, min: 0.6, max: 0.97, why: 'Pilier 1 : les Échos portent la production sans rendre le héros inutile (profils en continu uniquement).' },
   { kpi: 'echoShare', kind: 'delta', profiles: CONT, abs: 0.03, dir: 'both', why: 'Part des Échos : ±3 points.' },
-  { kpi: 'harmonyAvg', kind: 'range', profiles: ['experimente'], min: 0.9, why: 'Le joueur de référence garde le Domaine sain.' },
-  { kpi: 'harmonyAvg', kind: 'range', profiles: ['optimiseur', 'mono-cultiver'], min: 0.8, why: 'Une stratégie gourmande dégrade le Domaine sans l\'effondrer (×0,7 = plancher).' },
-  { kpi: 'harmonyAvg', kind: 'delta', profiles: ALL, abs: 0.03, dir: 'down', why: 'Harmonie : −3 points.' },
   { kpi: 'traitCombos60', kind: 'range', profiles: ['experimente', 'debutant'], min: 20, why: 'Budget génétique (GDD 2.3 : 27–30 à 8 h) : pas de retour à 2–5 combinaisons.' },
   { kpi: 'traitCombos60', kind: 'delta', profiles: ['experimente', 'optimiseur'], rel: 0.2, dir: 'down', why: 'Diversité génétique : −20 %.' },
   // Onboarding

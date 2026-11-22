@@ -3,10 +3,9 @@ import {
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
-import { ECO_EQ, ecoFactor, ecoGauge, ecoHealth, harmonyMult } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford, ecoRegenRate,
+  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford,
   VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -70,8 +69,6 @@ export class App {
   /** Téléphone : bloc fixé en bas, sous-onglets au-dessus des onglets. */
   elDock!: HTMLElement;
   elSubDock!: HTMLElement;
-  ecoHist: { F: number; G: number }[] = [];
-  lastHist = 0;
   lastNav = 0;
   successionModal: ModalHandle | null = null;
   daily: DailyRun | null = null;
@@ -203,11 +200,6 @@ export class App {
     const pending = !!this.s.succession;
     if (pending && !this.hadSuccession) toast(`🕯️ ${fullName(this.s.succession!.ancestor, this.s.lineage.names)} s'est ${acc(this.s.succession!.ancestor, 'éteint', 'éteinte')}. Une succession t'attend.`, 'info', 5000);
     this.hadSuccession = pending;
-    if (now - this.lastHist > 2000) {
-      this.lastHist = now;
-      this.ecoHist.push({ ...this.s.eco });
-      if (this.ecoHist.length > 150) this.ecoHist.shift();
-    }
     const st = this.sigTopNow();
     if (st !== this.sigTop) { this.sigTop = st; this.renderTop(); }
     const sl = this.sigLifeNow();
@@ -344,7 +336,6 @@ export class App {
     const s = this.s;
     switch (sub) {
       case 'batiments': case 'heritage': case 'codex': return this.seen.fresh(sub, this.subKeys(sub));
-      case 'nature': return ecoHealth(s.eco) < 0.55;
       case 'jour': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
@@ -373,13 +364,12 @@ export class App {
     const last = s.ancestors[s.ancestors.length - 1];
     const list: [string, boolean, string][] = [
       ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} travaille déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
-      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire et le Domaine se repose. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
+      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Domaine › Échos). Chaque génération ajoute une boucle !` : ''],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
-      ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, ou laisser le Domaine se refaire, le rétablit.'],
       ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
     ];
     for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
@@ -429,7 +419,7 @@ export class App {
       ? h('button', { class: 'btn btn-primary btn-resume', onclick: () => resumeLife(s) }, `▶ Reprendre${this.desktop ? ' (Espace)' : ''}`)
       : h('button', { class: 'btn btn-sm btn-ghost btn-pause', 'aria-label': 'Pause', onclick: () => setActivity(s, null) }, this.desktop ? '⏸️ Pause (Espace)' : '⏸️');
     parts.push(h('div', { class: `card timer ${paused ? 'paused' : ''}` },
-      paused ? h('div', { class: 'pause-banner' }, h('strong', null, '⏸️ Vie en pause'), h('span', { class: 'muted small' }, ' · le sablier est figé, tes Échos continuent · 🌿 le Domaine se repose')) : null,
+      paused ? h('div', { class: 'pause-banner' }, h('strong', null, '⏸️ Vie en pause'), h('span', { class: 'muted small' }, ' · le sablier est figé, tes Échos continuent')) : null,
       // Âge, temps restant et boutons sur une ligne : la rangée de boutons dédiée repoussait les activités.
       h('div', { class: 'row-between timer-head' },
         h('div', null,
@@ -605,7 +595,7 @@ export class App {
     if (!life) return '';
     const def = ACT[a];
     const p = lifePower(life, s.hero, a);
-    const m = prodMult(s, this.rt, a) * ecoFactor(a, s.eco) * p;
+    const m = prodMult(s, this.rt, a) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
     for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
@@ -620,7 +610,6 @@ export class App {
     const head = tab + '/' + sub + '/' + subsShown(s, tab, this.layout).map((x) => x.id).join() + '|';
     switch (sub) {
       case 'echos': return head + this.sigEchoNow();
-      case 'nature': return head;
       case 'batiments': return head + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
       case 'heritage': return head + JSON.stringify(s.upgrades);
       case 'bazar': return head + s.blessings.join() + s.partitions.join() + this.lineageSig() + !!s.life + s.life?.extended;
@@ -648,7 +637,6 @@ export class App {
     let el: HTMLElement | null = null;
     switch (sub) {
       case 'echos': el = this.panelEchoes(this.bTab); break;
-      case 'nature': el = this.panelNature(); break;
       case 'batiments': el = this.panelBatiments(); break;
       case 'heritage': el = this.panelHeritage(); break;
       case 'bazar': el = this.panelBazar(); break;
@@ -725,44 +713,6 @@ export class App {
   buildingVisible(id: string) {
     const d = BUILDINGS.find((x) => x.id === id)!;
     return Object.keys(d.cost).every((r) => this.s.totalEver[r as ResId] > 0) || (this.s.buildings[id] ?? 0) > 0;
-  }
-
-  panelNature() {
-    const s = this.s, b = this.bTab;
-    const pops: [keyof typeof ECO_EQ, string, string, string][] = [
-      ['F', 'Flore', '🌳', '#7cb342'], ['G', 'Gibier', '🦌', '#ff8a65'],
-    ];
-    const bars = pops.map(([k, name, icon, color]) => {
-      const fill = b.width(h('div', { class: 'bar-fill', style: { background: color } }), () => ecoGauge(s.eco, k));
-      return h('div', { class: 'eco-row' },
-        h('span', { class: 'eco-n' }, `${icon} ${name}`),
-        h('div', { class: 'bar eco-bar' }, fill, h('div', { class: 'eq-mark', style: { left: '50%' }, title: 'Équilibre' })),
-        b.text(h('span', { class: 'eco-v' }), () => fmt(s.eco[k])));
-    });
-    const canvas = h('canvas', { class: 'spark', width: 600, height: 120 }) as HTMLCanvasElement;
-    let lastDraw = 0;
-    b.add(() => {
-      if (Date.now() - lastDraw < 1000) return;
-      lastDraw = Date.now();
-      drawSpark(canvas, this.ecoHist, pops.map((p) => [p[0], p[3]]));
-    });
-    const health = b.text(h('span'), () => `${Math.round(ecoHealth(s.eco) * 100)}%`);
-    const harm = b.text(h('span'), () => `×${harmonyMult(s.eco).toFixed(2)}`);
-    const regen = ecoRegenRate(s);
-    const harmCard = h('div', { class: 'card' },
-      h('h2', null, '🌳 Écosystème du Domaine'),
-      h('p', { class: 'muted small' }, 'L\'optimum n\'est pas le maximum : la production dépend de l\'équilibre.'),
-      h('div', { class: 'stats' }, stat('Santé', health), stat('Harmonie (toute production)', harm)),
-      bars,
-      h('div', { class: 'stats' },
-        regen > 0 ? stat('Régénération', `${(regen * 100).toFixed(1).replace('.', ',')} %/s`) : null),
-      canvas,
-      // Les règles détaillées sont repliées : elles faisaient la moitié de l'écran à chaque visite.
-      h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
-        h('p', { class: 'muted small' }, 'Récolter fait pousser la Flore aux champs et prélève le Gibier à la chasse ; commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
-        h('p', { class: 'muted small' }, 'Consignes de ton héros : ⚖️ Équilibre chasse le surplus de Gibier et cultive le reste (tes Échos font toujours ainsi, ton héros aussi hors ligne) ; 🏹 Battue triple la récolte mais vide les hardes ; 🌱 Semer récolte peu et fait repousser le Domaine. Alterner Battue et Équilibre en lisant le Gibier rapporte davantage.'),
-        h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.')));
-    return h('div', null, harmCard);
   }
 
   // --- Améliorer : Bâtiments, Héritage, Bazar ----------------------------------
@@ -1441,15 +1391,6 @@ export class App {
         b.text(h('div', { class: 'stat-v' }), () => fmt(run.res[r])),
         h('div', { class: 'muted small' }, setup.order[r] > 0 ? `commande : ${fmtInt(setup.order[r])}` : 'hors commande'))));
 
-      // Écosystème
-      const ecoMini = (icon: string, name: string, k: 'F' | 'G') => mini(`${icon} ${name}`,
-        b.text(h('div', { class: 'stat-v' }), () => fmt(run.eco[k])),
-        b.text(h('div', { class: 'muted small' }), () => { const r = run.eco[k] / ECO_EQ[k]; return r > 1.25 ? '▲ abondant' : r < 0.75 ? '▼ rare' : '≈ équilibre'; }));
-      const harm = b.text(h('div', { class: 'stat-v' }), () => `×${harmonyMult(run.eco).toFixed(2)}`);
-      b.cls(harm, 'good', () => harmonyMult(run.eco) >= 1.15);
-      b.cls(harm, 'bad', () => harmonyMult(run.eco) < 0.9);
-      const eco = h('div', { class: 'stats stats-3' }, ecoMini('🌳', 'Flore', 'F'), ecoMini('🦌', 'Gibier', 'G'),
-        mini('☯️ Harmonie', harm, h('div', { class: 'muted small' }, 'toute prod.'), 'Multiplie toute la production. Maximale quand Flore et Gibier sont à l\'équilibre.'));
 
       // Activités
       const acts = h('div', { class: 'acts acts-daily' }, ACTS.map((a, i) => {
@@ -1458,7 +1399,7 @@ export class App {
         const xp = b.width(h('div', { class: 'bar-fill', style: { background: def.color } }), () => run.life.xp[a] / xpToNext(run.life.lvl[a]));
         const rateEl = b.text(h('div', { class: 'act-rate' }), () => {
           const p = lifePower(run.life, run.hero, a);
-          const m = run.ctx.prodMult(a) * ecoFactor(a, run.eco) * p;
+          const m = run.ctx.prodMult(a) * p;
           const o: string[] = [];
           for (const r in def.produce) o.push(`+${fmt(def.produce[r as ResId]! * m)}${RES_INFO[r as ResId].icon}/s`);
           for (const r in def.consume) o.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))}${RES_INFO[r as ResId].icon}/s`);
@@ -1468,7 +1409,6 @@ export class App {
           const out: string[] = [];
           const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
           if (lack.length) out.push(`⚠️ Manque de ${lack.map((r) => RES_INFO[r].icon).join('')}`);
-          if (a === 'cultiver') out.push(`🌳🦌 Domaine ×${ecoFactor(a, run.eco).toFixed(2)}`);
           const md = setup.mods.find((x) => x.act?.[a]);
           if (md) out.push(`${md.icon} ×${md.act![a]}`);
           return out.join(' · ');
@@ -1490,7 +1430,7 @@ export class App {
         timeBar,
         strip,
         idle,
-        acts, res, eco,
+        acts, res,
         h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
           run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost btn-sm', onclick: () => { this.endDaily(false); this.dailyModal?.close(); } }, 'Abandonner')));
@@ -1601,33 +1541,3 @@ function evolutionHint(id: string): string {
   return evolutionsOf(id).map((e) => ` Peut mûrir en ${TRAIT[e.to].icon} ${traitName(TRAIT[e.to])} chez ses enfants : ${e.cond.charAt(0).toLowerCase()}${e.cond.slice(1)}.`).join('');
 }
 
-function drawSpark(c: HTMLCanvasElement, hist: { F: number; G: number }[], series: [string, string][]) {
-  const ctx = c.getContext('2d');
-  if (!ctx) return;
-  const dpr = window.devicePixelRatio || 1;
-  const w = c.clientWidth || 300, hgt = c.clientHeight || 80;
-  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(hgt * dpr); }
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, hgt);
-  if (hist.length < 2) return;
-  // Comme les jauges : chaque courbe est rapportée à deux fois son équilibre, qui passe au milieu (ECO-1).
-  ctx.strokeStyle = 'rgba(255, 202, 40, 0.35)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-  ctx.beginPath();
-  ctx.moveTo(0, hgt / 2);
-  ctx.lineTo(w, hgt / 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  for (const [k, color] of series) {
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    hist.forEach((p, i) => {
-      const x = (i / Math.max(1, hist.length - 1)) * w;
-      const y = hgt - ecoGauge(p, k as keyof typeof p) * (hgt - 6) - 3;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
-}

@@ -6,7 +6,6 @@ import {
   type Runtime,
 } from '../../src/engine/game';
 import { canMarry, countyHouses, dowry, marry, suitorFor } from '../../src/engine/alliances';
-import { ecoFactor } from '../../src/engine/ecosystem';
 import { lifePower, sumMods } from '../../src/engine/sim';
 import type { GameState, Hero } from '../../src/engine/state';
 import type { Rng } from '../../src/engine/rng';
@@ -100,7 +99,7 @@ function buyAllGreedy(s: GameState) {
 export function actNetValue(s: GameState, rt: Runtime, a: ActId): number {
   if (!s.life || !has(s, a)) return -Infinity;
   const p = lifePower(s.life, s.hero, a);
-  const base = prodMult(s, rt, a) * p * ecoFactor(a, s.eco);
+  const base = prodMult(s, rt, a) * p;
   const def = ACT[a];
   let prod = 0, cons = 0;
   for (const r in def.produce) prod += def.produce[r as ResId]! * RES_INFO[r as ResId].value;

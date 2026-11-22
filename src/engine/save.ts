@@ -1,4 +1,4 @@
-import { ACT_INDEX_V03, TRAIT_RENAMED_V04, sexOf } from './data';
+import { ACT_INDEX_V03, TRAIT_RENAMED_V04, sexOf, type ResId } from './data';
 import { rebuildRanks } from './names';
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
@@ -30,7 +30,10 @@ function migrate(d: any): GameState {
   s.stats = { ...base.stats, ...d.stats };
   s.lineage = { ...base.lineage, ...d.lineage };
   // 0.4 : plus d'Affût (TERRE-3) ni de Prédateurs ; un surnom retiré disparaît des Échos et des ancêtres (TERRE-2).
-  s.eco = { F: d.eco?.F ?? base.eco.F, G: d.eco?.G ?? base.eco.G };
+  // 0.5 : plus de Domaine (SIMPLIF-2) ; le Garde forestier est remboursé.
+  delete (s as { eco?: unknown }).eco;
+  refundGarde(s);
+  if (s.life?.st) for (const k of ['hs', 'hn', 'hm']) delete (s.life.st as unknown as Record<string, unknown>)[k];
   // 0.5 : plus de consignes de Récolter (SIMPLIF-1) : leurs surnoms disparaissent aussi.
   const gone = new Set(['tueur_loups', 'pelletier', 'veneur', 'boucher', 'semeur', 'grand_veneur']);
   for (const p of [...(s.echoes ?? []), ...(s.ancestors ?? [])] as { epithet?: string }[]) if (p.epithet && gone.has(p.epithet)) delete p.epithet;
@@ -49,6 +52,17 @@ function migrate(d: any): GameState {
   if (!d.lineage?.names) rebuildRanks(s);
   s.v = SAVE_VERSION;
   return s;
+}
+
+/** Garde forestier (0.4, coût 60 Or + 100 Vivres, ×2 par niveau) : retiré en 0.5, ses niveaux sont remboursés. */
+export function refundGarde(s: GameState) {
+  const lvl = s.buildings?.garde ?? 0;
+  if (!s.buildings || s.buildings.garde === undefined) return;
+  const back: Partial<Record<ResId, number>> = { or: 0, vivres: 0 };
+  for (let i = 0; i < lvl; i++) { back.or! += Math.ceil(60 * Math.pow(2, i)); back.vivres! += Math.ceil(100 * Math.pow(2, i)); }
+  s.res.or += back.or!;
+  s.res.vivres += back.vivres!;
+  delete s.buildings.garde;
 }
 
 /**

@@ -2,7 +2,7 @@
 //
 // Les onglets sont rangés par intention du joueur :
 //   ⏳ Vie       — jouer la vie en cours ;
-//   🌳 Domaine   — ce qui tourne sans toi (Échos, Nature) ;
+//   🌳 Domaine   — ce qui tourne sans toi (Échos) ;
 //   🔨 Améliorer — tout ce qui s'achète (Bâtiments en ressources, Héritage ⚜️, Bazar ✦) ;
 //   👑 Maison    — identité et collection (Lignée et blason, Alliances, Codex) ;
 //   🌠 Destin    — les rendez-vous (Aujourd'hui : événement et Commande ; Calendrier).
@@ -12,7 +12,7 @@ import { buildingCost, canAfford, chroniclesUnlocked } from '../engine/game';
 import type { GameState } from '../engine/state';
 
 export type Tab = 'vie' | 'domaine' | 'ameliorer' | 'maison' | 'destin';
-export type Sub = 'echos' | 'nature' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
+export type Sub = 'echos' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
 /** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
 export type Layout = 'mobile' | 'two' | 'three';
 
@@ -29,7 +29,7 @@ export const TABS: TabDef[] = [
 
 export const SUBS: Record<Tab, SubDef[]> = {
   vie: [],
-  domaine: [{ id: 'echos', icon: '🌀', name: 'Échos' }, { id: 'nature', icon: '🌿', name: 'Nature' }],
+  domaine: [{ id: 'echos', icon: '🌀', name: 'Échos' }],
   ameliorer: [{ id: 'batiments', icon: '🏠', name: 'Bâtiments' }, { id: 'heritage', icon: '⚜️', name: 'Héritage' }, { id: 'bazar', icon: '✦', name: 'Bazar' }],
   maison: [{ id: 'lignee', icon: '📜', name: 'Lignée' }, { id: 'alliances', icon: '💍', name: 'Alliances' }, { id: 'codex', icon: '📖', name: 'Codex' }],
   destin: [{ id: 'jour', icon: '☀️', name: 'Aujourd\'hui' }, { id: 'calendrier', icon: '📅', name: 'Calendrier' }],

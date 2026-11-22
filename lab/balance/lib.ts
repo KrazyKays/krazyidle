@@ -7,7 +7,6 @@
 import * as data from '../../src/engine/data';
 import { ACTS, RES, RES_INFO, type ActId } from '../../src/engine/data';
 import { newRuntime, setActivity, simulateOffline, startLife, tick } from '../../src/engine/game';
-import { ecoHealth } from '../../src/engine/ecosystem';
 import { Rng } from '../../src/engine/rng';
 import { newGame, type GameState } from '../../src/engine/state';
 import { PROFILES, type Ctx, type Profile } from '../sim/profiles';
@@ -105,7 +104,7 @@ export function runBal(o: BalOpts): BalResult {
     tick(s, rt, dt, c.now);
     net += wealth(s) - w0;
     c.t += dt;
-    hSum += ecoHealth(s.eco); hN++;
+    hSum += 1; hN++; // 0.5 : plus de Domaine
     if (s.succession) {
       if (succAt < 0) succAt = c.t + prof.successionDelay;
       if (c.t >= succAt) { succeed(); succAt = -1; }

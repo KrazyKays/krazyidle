@@ -1,5 +1,4 @@
 import { ACTS, CRESTS, CREST_COLORS, FIRST_NAMES, TRAITS, sexFor, type ActId, type ResId, type Sex } from './data';
-import { newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
 
 export interface Vocation {
@@ -62,11 +61,6 @@ export interface Alliance {
 export interface LifeStats {
   /** changements d'activité */
   sw: number;
-  /** somme et durée d'Harmonie (moyenne) */
-  hs: number;
-  hn: number;
-  /** Harmonie minimale */
-  hm: number;
   /** meilleur palier d'événement atteint */
   ev: number;
   /** bâtiments construits */
@@ -185,7 +179,6 @@ export interface GameState {
   legacy: number;
   legacyTotal: number;
   upgrades: Record<string, number>;
-  eco: Eco;
   eclats: number;
   blessings: string[];
   events: Record<string, EventProgress>;
@@ -246,7 +239,6 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     legacy: 0,
     legacyTotal: 0,
     upgrades: {},
-    eco: newEco(),
     eclats: 0,
     blessings: [],
     events: {},
@@ -271,5 +263,5 @@ export function newLife(dur: number, startLvl: Record<ActId, number>, act: ActId
 }
 
 export function newLifeStats(): LifeStats {
-  return { sw: 0, hs: 0, hn: 0, hm: 1, ev: 0, bd: 0 };
+  return { sw: 0, ev: 0, bd: 0 };
 }

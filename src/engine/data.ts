@@ -12,6 +12,8 @@ export const RES_INFO: Record<ResId, { name: string; icon: string; value: number
 /**
  * Quatre activités, une par ressource (0.4). « cultiver » est Récolter : le métier de Paysan, qui vit des
  * champs et des bois (Cultiver et Chasser fusionnés, TERRE-4). L'identifiant est resté pour les sauvegardes.
+ * 0.5 (SIMPLIF-2) : plus de Domaine ni d'Harmonie (×1,27 en moyenne sur toute la production, et jusqu'à ×1,6
+ * sur Récolter) ; les rendements l'intègrent (variante V3-A, lab/balance/simplif/RESULTATS.md).
  */
 export type ActId = 'cultiver' | 'commercer' | 'etudier' | 'mediter';
 export const ACTS: ActId[] = ['cultiver', 'commercer', 'etudier', 'mediter'];
@@ -35,23 +37,23 @@ export interface ActDef {
 export const ACT: Record<ActId, ActDef> = {
   cultiver: {
     id: 'cultiver', name: 'Récolter', icon: '🌾', color: '#7cb342',
-    desc: 'Vit des champs et des bois : puise dans la Flore et le Gibier selon leur abondance. Les champs font pousser la Flore, la chasse prélève le Gibier.',
-    vocation: 'Paysan', vocationF: 'Paysanne', produce: { vivres: 1.2 }, consume: {}, unlockText: '',
+    desc: 'Vit des champs et des bois : produit des Vivres sans rien consommer.',
+    vocation: 'Paysan', vocationF: 'Paysanne', produce: { vivres: 1.92 }, consume: {}, unlockText: '',
   },
   commercer: {
     id: 'commercer', name: 'Commercer', icon: '⚖️', color: '#f9a825',
     desc: 'Échange des Vivres contre de l\'Or. Plus rentable avec l\'expérience.',
-    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.25 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
+    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.58 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
   },
   etudier: {
     id: 'etudier', name: 'Étudier', icon: '📖', color: '#0288d1',
     desc: 'Investit de l\'Or dans le Savoir.',
-    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.6 }, consume: { or: 2 }, unlockText: 'Amasser 40 Or',
+    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.76 }, consume: { or: 2 }, unlockText: 'Amasser 40 Or',
   },
   mediter: {
     id: 'mediter', name: 'Méditer', icon: '🕯️', color: '#8e24aa',
-    desc: 'Distille de l\'Essence et ramène l\'écosystème vers l\'équilibre.',
-    vocation: 'Mystique', produce: { essence: 0.1 }, consume: {}, unlockText: 'Accumuler 20 Savoir',
+    desc: 'Distille de l\'Essence dans le silence.',
+    vocation: 'Mystique', produce: { essence: 0.127 }, consume: {}, unlockText: 'Accumuler 20 Savoir',
   },
 };
 
@@ -73,7 +75,6 @@ export interface Mods {
   xp?: number;
   life?: number; // secondes
   echo?: number;
-  eco?: number; // réduction d'impact écologique (0.4 = -40%)
   start?: number; // niveaux de départ
   heirs?: number;
   inherit?: number;
@@ -127,7 +128,7 @@ export const TRAITS: TraitDef[] = [
   { id: 'maladroit', name: 'Maladroit', nameF: 'Maladroite', icon: '🤕', rarity: 0, neg: true, desc: 'Production −10%', mods: { all: -0.1 } },
   { id: 'prodige', name: 'Prodige', icon: '⭐', rarity: 1, desc: 'Compétences niveau +1 au départ', mods: { start: 1 } },
   { id: 'longevite', name: 'Longévité', icon: '🐢', rarity: 1, desc: 'Durée de vie +15 s', mods: { life: 15 } },
-  { id: 'harmonieux', name: 'Harmonieux', nameF: 'Harmonieuse', icon: '☯️', rarity: 1, desc: 'Impact écologique −40%', mods: { eco: 0.4 } },
+  { id: 'harmonieux', name: 'Harmonieux', nameF: 'Harmonieuse', icon: '☯️', rarity: 1, desc: 'Sans effet depuis la fin du Domaine (0.5)', mods: {} },
   { id: 'echo_vibrant', name: 'Écho vibrant', icon: '🔔', rarity: 1, desc: 'Puissance de son Écho +40%', mods: { echo: 0.4 } },
   { id: 'fertile', name: 'Fertile', icon: '👶', rarity: 1, desc: '+1 enfant proposé', mods: { heirs: 1 } },
   { id: 'polyvalent', name: 'Polyvalent', nameF: 'Polyvalente', icon: '🎭', rarity: 1, desc: 'Production +15%', mods: { all: 0.15 } },
@@ -215,7 +216,6 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
   { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
   { id: 'clepsydre', name: 'Clepsydre', icon: '⌛', desc: 'Durée de vie +4 s / niv.', cost: { savoir: 40, essence: 8 }, growth: 2.4, max: 15, effect: (l) => `Vie +${l * 4} s` },
-  { id: 'garde', name: 'Garde forestier', icon: '🌲', desc: 'Le Domaine se régénère vers l\'équilibre (+0,4 %/s / niv.)', cost: { or: 60, vivres: 100 }, growth: 2.0, max: 10, effect: (l) => `Régénération ${(l * 0.4).toFixed(1).replace('.', ',')} %/s` },
 ];
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 export const BUILDING_FOR_ACT: Record<ActId, string> = {
@@ -271,7 +271,7 @@ export interface EventDef {
 export const EVENTS: EventDef[] = [
   { id: 'maree', name: 'Marée d\'or', icon: '🌊', desc: 'Commercer ×3', act: { commercer: 3 }, goal: 'or', color: '#ffca28' },
   { id: 'moisson', name: 'Moisson dorée', icon: '🌻', desc: 'Récolter ×3', act: { cultiver: 3 }, goal: 'vivres', color: '#9ccc65' },
-  { id: 'migration', name: 'Grande migration', icon: '🦌', desc: 'Récolter ×2, le Gibier afflue', act: { cultiver: 2 }, goal: 'vivres', color: '#ff7043' },
+  { id: 'migration', name: 'Grande migration', icon: '🦌', desc: 'Récolter ×2', act: { cultiver: 2 }, goal: 'vivres', color: '#ff7043' },
   { id: 'eclipse', name: 'Éclipse', icon: '🌑', desc: 'Méditer ×3, Échos ×1.5', act: { mediter: 3 }, echo: 1.5, goal: 'essence', color: '#ba68c8' },
   { id: 'comete', name: 'Comète savante', icon: '☄️', desc: 'Étudier ×2, XP ×3', act: { etudier: 2 }, xp: 3, goal: 'savoir', color: '#4fc3f7' },
   { id: 'concile', name: 'Concile des ancêtres', icon: '🕯️', desc: 'Échos ×2.5', echo: 2.5, goal: 'or', color: '#e0e0e0' },

@@ -1,7 +1,6 @@
 // Exécute une partie complète avec un profil et collecte les indicateurs (voir lab/metrics/KPIS.md).
 import { ACTS, RES, RES_INFO, TRAIT } from '../../src/engine/data';
 import { newRuntime, offlineCapSec, setActivity, startLife, tick } from '../../src/engine/game';
-import { ecoHealth } from '../../src/engine/ecosystem';
 import { Rng } from '../../src/engine/rng';
 import { newGame, type GameState } from '../../src/engine/state';
 import { PROFILES, type Ctx } from './profiles';
@@ -74,7 +73,6 @@ function checkAnomalies(s: GameState, out: string[], t: number) {
     if (!Number.isFinite(x)) out.push(`t=${t.toFixed(0)} res.${r}=${x}`);
     else if (x < -1e-9) out.push(`t=${t.toFixed(0)} res.${r} négatif (${x})`);
   }
-  for (const k of ['F', 'G'] as const) if (!Number.isFinite(s.eco[k])) out.push(`t=${t.toFixed(0)} eco.${k}=${s.eco[k]}`);
   if (!Number.isFinite(s.legacy) || s.legacy < 0) out.push(`t=${t.toFixed(0)} legacy=${s.legacy}`);
 }
 
@@ -126,7 +124,8 @@ export function runGame(o: RunOpts): RunResult {
   const account = (step: number) => {
     const g = RES.reduce((a, r) => a + rt.tickGross[r] * RES_INFO[r].value, 0);
     allV += g; echoV += rt.echoRate * step;
-    const hh = ecoHealth(s.eco); hSum += hh * step; hN += step; hMin = Math.min(hMin, hh);
+    // 0.5 : plus de Domaine (SIMPLIF-2) ; harmonyAvg / harmonyMin restent à 1 pour la lecture des anciens résumés.
+    hSum += step; hN += step; hMin = Math.min(hMin, 1);
     const m = Math.floor(c.t / 60);
     if (m !== lastMin) { lastMin = m; checkAnomalies(s, anomalies, c.t); }
     hourMark();
@@ -136,7 +135,7 @@ export function runGame(o: RunOpts): RunResult {
     while (Math.floor(c.t / 3600 + 1e-9) > lastHour) {
       lastHour++;
       const v = totalValue(s);
-      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600, F: Math.round(s.eco.F), G: Math.round(s.eco.G), echoes: s.echoes.length, garde: s.buildings.garde ?? 0 });
+      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600, echoes: s.echoes.length });
       lastHourV = v;
     }
   };

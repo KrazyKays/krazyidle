@@ -16,7 +16,6 @@ import { Worker, isMainThread, parentPort } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { ACTS, RES, RES_INFO } from '../../src/engine/data';
 import { newRuntime, offlineCapSec, setActivity, startLife, tick } from '../../src/engine/game';
-import { ecoHealth } from '../../src/engine/ecosystem';
 import { Rng } from '../../src/engine/rng';
 import { newGame, type GameState } from '../../src/engine/state';
 import { PROFILES, type Ctx } from '../sim/profiles';
@@ -75,7 +74,7 @@ export function runExtra(o: ExtraOpts): Extra {
           // echoRate est une moyenne glissante (k = 1/3 à dt 1) : on inverse le lissage pour retrouver le brut du tick
           echoOff += echo0 + (rt.echoRate - echo0) * 3;
           if (s.succession) succWait += 1;
-          obsH(ecoHealth(s.eco), 1, c.t + i);
+          obsH(1, 1, c.t + i);
         }
         rt.online = true;
       }
@@ -95,7 +94,7 @@ export function runExtra(o: ExtraOpts): Extra {
     tick(s, rt, dt, c.now);
     c.t += dt;
     allOn += gross(rt); echoOn += rt.echoRate * dt;
-    obsH(ecoHealth(s.eco), dt, c.t);
+    obsH(1, dt, c.t);
     if (s.succession) {
       succWait += dt;
       if (succAt < 0) succAt = c.t + prof.successionDelay;

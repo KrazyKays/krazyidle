@@ -1,4 +1,4 @@
-// Logique de la partie principale : vie, Échos, Domaine, succession, événements.
+// Logique de la partie principale : vie, Échos, succession, événements.
 import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
@@ -7,12 +7,11 @@ import {
 import { ripeTraits } from './evolution';
 import { FEAT_DEF, checkFeats } from './feats';
 import { addCadets, inbreedingRisk } from './alliances';
-import { ecoHealth, ecoRegen, ecoStep, harmonyMult } from './ecosystem';
 import { EPITHET, EPITHET_ECLATS, pickEpithet, type LifeFacts } from './epithets';
 import { activeEvent, type EventWindow } from './events';
 import { crown } from './names';
 import { hashStr, Rng } from './rng';
-import { ECHO_ECO_STRENGTH, lifeTick, runActivity, sumMods, type SimCtx } from './sim';
+import { lifeTick, runActivity, sumMods, type SimCtx } from './sim';
 import { newLife, newLifeStats, zeroActs, zeroRes, type Ancestor, type Echo, type GameState, type Hero, type LifeState, type Succession, type Vocation } from './state';
 
 export interface Runtime {
@@ -47,7 +46,6 @@ const bl = (s: GameState, id: string) => s.buildings[id] ?? 0;
 export function prodMult(s: GameState, rt: Runtime, a: ActId): number {
   let m = bMult(bl(s, BUILDING_FOR_ACT[a]), 0.25);
   m *= Math.pow(1.12, up(s, 'prosperite'));
-  m *= harmonyMult(s.eco);
   const ev = rt.online ? rt.event?.def : undefined;
   if (ev?.act?.[a]) m *= ev.act[a]!;
   return m;
@@ -77,11 +75,6 @@ export function echoActMult(e: Echo, a: ActId): number {
   return 1 + (EPITHET[e.epithet ?? '']?.mods.act?.[a] ?? 0);
 }
 
-/** Pression d'un Écho sur le Domaine, modulée par son surnom. */
-export function echoEcoStrength(e: Echo): number {
-  return ECHO_ECO_STRENGTH * Math.max(0.2, 1 + (EPITHET[e.epithet ?? '']?.mods.eco ?? 0));
-}
-
 export function chroniclesUnlocked(s: GameState): boolean {
   return up(s, 'chroniques') > 0;
 }
@@ -97,17 +90,6 @@ export function xpMult(s: GameState, rt: Runtime): number {
   const ev = rt.online ? rt.event?.def : undefined;
   if (ev?.xp) x *= ev.xp;
   return x;
-}
-
-export function ecoImpactMult(s: GameState): number {
-  const m = sumMods(s.hero.traits);
-  return Math.max(0.3, 1 - m.eco);
-}
-
-/** Garde forestier : le Domaine revient de lui-même vers l'équilibre (0,4 %/s par niveau). */
-export const GARDE_REGEN = 0.004;
-export function ecoRegenRate(s: GameState): number {
-  return GARDE_REGEN * bl(s, 'garde');
 }
 
 export function lifeDuration(s: GameState, hero: Hero): number {
@@ -146,9 +128,7 @@ export function legacyFor(value: number, durRatio = 1): number {
 export function makeCtx(s: GameState, rt: Runtime): SimCtx {
   return {
     res: s.res,
-    eco: s.eco,
     prodMult: (a) => prodMult(s, rt, a),
-    ecoImpactMult: ecoImpactMult(s),
     onProduce: (r, amt, fromLife, act) => {
       s.totalEver[r] += amt;
       rt.tickGross[r] += amt;
@@ -210,18 +190,12 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   const before = { ...s.res };
   const ctx = makeCtx(s, rt);
 
-  // Écosystème
-  ecoStep(s.eco, dt);
-  ecoRegen(s.eco, ecoRegenRate(s), dt);
-  if (rt.online && rt.event?.def.id === 'migration') s.eco.G = Math.min(140, s.eco.G + 0.25 * dt);
-
   // Échos
   let echoGross = 0;
   const crypt = cryptBoost(s);
   for (const e of s.echoes) {
     if (!e.acts.length) continue;
     const p = echoPower(s, rt, e) * crypt;
-    const ecoS = echoEcoStrength(e);
     let left = dt;
     while (left > 1e-9) {
       const idx = Math.min(e.acts.length - 1, Math.floor(e.pos));
@@ -229,7 +203,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
       const a = e.acts[idx];
       if (a >= 0) {
         const g0 = sumValue(rt.tickGross);
-        runActivity(ctx, ACTS[a], e.pow[idx] * p * echoActMult(e, ACTS[a]), ecoS, step, false);
+        runActivity(ctx, ACTS[a], e.pow[idx] * p * echoActMult(e, ACTS[a]), step, false);
         echoGross += sumValue(rt.tickGross) - g0;
       }
       e.pos += step;
@@ -244,10 +218,6 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   // Vie : le temps du héros ne s'écoule que pendant une activité
   if (s.life && s.life.act && !rt.pauseLife) {
     lifeTick(ctx, s.life, s.hero, xpMult(s, rt), dt);
-    const st = lifeStats(s.life), hh = ecoHealth(s.eco);
-    st.hs += hh * dt;
-    st.hn += dt;
-    st.hm = Math.min(st.hm, hh);
     if (s.life.t >= s.life.dur - 1e-9) endLife(s, now);
   }
 
@@ -458,11 +428,12 @@ export function lifeFacts(s: GameState, life: LifeState, voc: Vocation | null): 
   const parent = s.ancestors[s.ancestors.length - 1];
   return {
     share, used, switches: st.sw,
-    harmonyAvg: st.hn > 0 ? st.hs / st.hn : ecoHealth(s.eco), harmonyMin: st.hn > 0 ? st.hm : ecoHealth(s.eco),
+    // Plus de Domaine (SIMPLIF-2) : sa santé est neutre (1) jusqu'à la réécriture des conditions (SIMPLIF-3).
+    harmonyAvg: 1, harmonyMin: 1,
     value: life.value, parentValue: parent?.value ?? 0, bestBefore: s.stats.bestLife, gen: hero.gen,
     traits: hero.traits, negTraits: hero.traits.filter((t) => TRAIT[t]?.neg).length,
     vocTier: voc?.tier ?? 0, prevVocTier: hero.vocation?.tier ?? 0, parentEpithet: parent?.epithet, durRatio: life.dur / lifeDuration(s, { ...hero, traits: [] }), extended: life.extended, spouse: hero.spouse?.origin ?? null,
-    eventTier: st.ev, builds: st.bd, game: s.eco.G,
+    eventTier: st.ev, builds: st.bd,
   };
 }
 
@@ -741,7 +712,6 @@ export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, n
   return { seconds: sec, gains, died: hadLife && !s.life, loops: s.echoes.reduce((a, e) => a + e.loops, 0) - loops0 };
 }
 
-export { harmonyMult };
 
 /** Production moyenne d'un Écho par seconde de boucle (valeur de sa vie / durée) : la vraie mesure de sa force. */
 export function echoValueRate(e: Pick<Echo, 'value' | 'acts'>): number {

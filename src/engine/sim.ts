@@ -1,22 +1,17 @@
 // Noyau de simulation partagé par la partie principale, les Échos et le Défi du jour.
 import { ACT, ACTS, RES_INFO, TRAIT, VOCATION_BONUS, skillMult, xpToNext, type ActDef, type ActId, type Mods, type ResId } from './data';
-import { ecoFactor, ecoImpact, ecoPressure, type Eco } from './ecosystem';
 import type { Hero, LifeState } from './state';
 
 export interface SimCtx {
   res: Record<ResId, number>;
-  eco: Eco;
   prodMult: (a: ActId) => number;
-  ecoImpactMult: number;
   onProduce?: (r: ResId, amt: number, fromLife: boolean, act: ActId) => void;
   /** Table des activités ; le Destin du jour garde la sienne, figée, pour que les anciens codes restent vérifiables. */
   acts?: Record<ActId, ActDef>;
 }
 
-export const ECHO_ECO_STRENGTH = 0.6;
-
 /** Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées). */
-export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength: number, dt: number, fromLife: boolean): number {
+export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, fromLife: boolean): number {
   const def = (ctx.acts ?? ACT)[act];
   let frac = 1;
   const consumeScale = Math.sqrt(Math.max(power, 0.01));
@@ -30,19 +25,17 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, ecoStrength:
     const need = def.consume[r as ResId]! * consumeScale * dt * frac;
     ctx.res[r as ResId] = Math.max(0, ctx.res[r as ResId] - need);
   }
-  const mult = ctx.prodMult(act) * power * frac * dt * ecoFactor(act, ctx.eco);
+  const mult = ctx.prodMult(act) * power * frac * dt;
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;
     ctx.onProduce?.(r as ResId, amt, fromLife, act);
   }
-  const impact = ecoStrength * ecoPressure(power) * frac * ctx.ecoImpactMult;
-  ecoImpact(ctx.eco, act, impact, dt);
   return frac;
 }
 
 export function sumMods(traitIds: string[]): Required<Omit<Mods, 'act'>> & { act: Record<ActId, number> } {
-  const out = { all: 0, xp: 0, life: 0, echo: 0, eco: 0, start: 0, heirs: 0, inherit: 0, crypt: 0, act: { cultiver: 0, commercer: 0, etudier: 0, mediter: 0 } };
+  const out = { all: 0, xp: 0, life: 0, echo: 0, start: 0, heirs: 0, inherit: 0, crypt: 0, act: { cultiver: 0, commercer: 0, etudier: 0, mediter: 0 } };
   for (const id of traitIds) {
     const m = TRAIT[id]?.mods;
     if (!m) continue;
@@ -50,7 +43,6 @@ export function sumMods(traitIds: string[]): Required<Omit<Mods, 'act'>> & { act
     out.xp += m.xp ?? 0;
     out.life += m.life ?? 0;
     out.echo += m.echo ?? 0;
-    out.eco += m.eco ?? 0;
     out.start += m.start ?? 0;
     out.heirs += m.heirs ?? 0;
     out.inherit += m.inherit ?? 0;
@@ -80,7 +72,7 @@ export function lifeTick(ctx: SimCtx, life: LifeState, hero: Pick<Hero, 'traits'
   let p = 0;
   if (a) {
     p = lifePower(life, hero, a);
-    const frac = runActivity(ctx, a, p, 1, step, true);
+    const frac = runActivity(ctx, a, p, step, true);
     life.xp[a] += step * xpMult * (0.25 + 0.75 * frac);
     while (life.xp[a] >= xpToNext(life.lvl[a])) {
       life.xp[a] -= xpToNext(life.lvl[a]);

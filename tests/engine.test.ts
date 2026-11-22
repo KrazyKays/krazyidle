@@ -1,7 +1,6 @@
 import { describe, expect, it, test } from 'vitest';
 import { ACTS, FEMININE_NAMES, FIRST_NAMES, TRAIT, acc, sexFor, traitName, vocationName, type ActId } from '../src/engine/data';
 import { DailyRun, dailySetup, decodeRun, encodeRun, replay } from '../src/engine/daily';
-import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
 import { activeEvent, upcomingEvents } from '../src/engine/events';
 import { confirmSuccession, isPaused, newRuntime, resumeLife, setActivity, startLife, tick, vocationOutlook } from '../src/engine/game';
 import { exportSave, importSave } from '../src/engine/save';
@@ -17,15 +16,6 @@ function playDaily(date: string, plan: (t: number, run: DailyRun) => ActId | nul
   }
   return run;
 }
-
-describe('écosystème', () => {
-  test('revient à l\'équilibre après perturbation', () => {
-    const e = newEco();
-    e.G = 70;
-    for (let i = 0; i < 900; i++) ecoStep(e, 1);
-    expect(ecoHealth(e)).toBeGreaterThan(0.9);
-  });
-});
 
 describe('défi du jour', () => {
   test('setup déterministe', () => {

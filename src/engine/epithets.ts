@@ -34,8 +34,6 @@ export interface LifeFacts {
   /** meilleur palier d'événement atteint (0..3) */
   eventTier: number;
   builds: number;
-  /** Gibier à la mort */
-  game: number;
 }
 
 /** Effet sur l'Écho : puissance globale, puissance par activité, impact sur le Domaine (+0.5 = +50 %). */
