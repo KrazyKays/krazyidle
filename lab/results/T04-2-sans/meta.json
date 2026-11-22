@@ -1,0 +1,25 @@
+{
+ "id": "T04-2-sans",
+ "commit": "ff4be25",
+ "srcDirty": false,
+ "date": "2026-11-22T13:47:08.029Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-chasser",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1800,
+ "wallMs": 201478,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-chasser,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=T04-2-sans"
+}

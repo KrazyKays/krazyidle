@@ -704,3 +704,14 @@ describe('TERRE-3 — plus d\'Affût (0.4)', () => {
     expect('hunt' in newGame(0, 1)).toBe(false);
   });
 });
+
+describe('TERRE-2b — le Gibier se freine lui-même, comme le faisaient les Prédateurs', () => {
+  test('sous une Flore abondante, le Gibier ne s\'emballe pas', async () => {
+    const { ECO_EQ, ecoStep } = await import('../../src/engine/ecosystem');
+    const e = { F: 100, G: ECO_EQ.G };
+    let gMax = 0;
+    for (let t = 0; t < 300; t += 0.1) { e.F = 100; ecoStep(e, 0.1); gMax = Math.max(gMax, e.G); }
+    // [MESURÉ] ancien modèle à Prédateurs (en retard sur le Gibier) : jusqu'à 110 ; nouveau : ≈ 60, équilibre à F = 100
+    expect(gMax).toBeLessThan(ECO_EQ.G * 2.2);
+  });
+});

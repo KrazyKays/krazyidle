@@ -73,7 +73,7 @@ function checkAnomalies(s: GameState, out: string[], t: number) {
     if (!Number.isFinite(x)) out.push(`t=${t.toFixed(0)} res.${r}=${x}`);
     else if (x < -1e-9) out.push(`t=${t.toFixed(0)} res.${r} négatif (${x})`);
   }
-  for (const k of ['F', 'G', 'P'] as const) if (!Number.isFinite(s.eco[k])) out.push(`t=${t.toFixed(0)} eco.${k}=${s.eco[k]}`);
+  for (const k of ['F', 'G'] as const) if (!Number.isFinite(s.eco[k])) out.push(`t=${t.toFixed(0)} eco.${k}=${s.eco[k]}`);
   if (!Number.isFinite(s.legacy) || s.legacy < 0) out.push(`t=${t.toFixed(0)} legacy=${s.legacy}`);
 }
 

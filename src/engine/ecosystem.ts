@@ -12,10 +12,12 @@ export const ECO_EQ: Eco = { F: 62.5, G: 29 };
 
 const rF = 0.15, K = 100, aFG = 0.002;
 /**
- * Mortalité du Gibier. Elle reprend la part que prélevaient les Prédateurs à l'équilibre (0,05 naturelle
- * + 0,005 × 11,2) : sans cette compensation, le Gibier n'aurait plus d'équilibre à 29 et s'emballerait.
+ * Mortalité du Gibier : naturelle (mG) et due à sa propre densité (cG·G). Le second terme remplace les
+ * Prédateurs, qui suivaient le Gibier (P ≈ 11,2/29 × G) : leur prélèvement 0,005·P·G valait ≈ 0,00193·G².
+ * Une compensation constante (0,106) gardait l'équilibre mais pas ce frein, et le Gibier s'emballait quand
+ * la Flore abonde (TERRE-2b : optimiseur −15 % de valeur, Harmonie −4 points).
  */
-const bG = 0.1 / 60, mG = 0.05 + 0.005 * 11.2;
+const bG = 0.1 / 60, mG = 0.05, cG = (0.005 * 11.2) / 29;
 
 /**
  * Remplissage des jauges du Domaine (0 à 1) : chaque barre va de 0 à deux fois l'équilibre, qui tombe donc
@@ -37,7 +39,7 @@ export function ecoStep(e: Eco, dt: number) {
     left -= h;
     const { F, G } = e;
     const dF = rF * F * (1 - F / K) - aFG * F * G + 0.1;
-    const dG = bG * F * G - mG * G + 0.05;
+    const dG = bG * F * G - mG * G - cG * G * G + 0.05;
     e.F = clamp(F + dF * h, 0.5, 140);
     e.G = clamp(G + dG * h, 0.2, 140);
   }
