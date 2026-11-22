@@ -1,7 +1,7 @@
 {
   "name": "krazyidle",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Échos de Lignée — idle game dynastique à boucles temporelles",
   "scripts": {

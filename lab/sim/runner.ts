@@ -58,7 +58,8 @@ export interface RunResult {
   traits?: { succ: number; offerLeg: number; offerEpic: number; offerEpicMut: number; offerLegMut: number; heroLeg: number; evo: number; evoLeg: number; novaOffered: number; novaLived: number };
   feats?: string[];
   /** points de contrôle horaires */
-  hourly: { h: number; log10Value: number; gen: number; legacyTotal: number; valueRate: number }[];
+  /** points horaires ; F, G, échos et Garde forestier depuis la 0.4 (diagnostic du Domaine) */
+  hourly: { h: number; log10Value: number; gen: number; legacyTotal: number; valueRate: number; F?: number; G?: number; echoes?: number; garde?: number }[];
   /** anomalies détectées (NaN, négatifs, Infinity) */
   anomalies: string[];
   ms: number;
@@ -135,7 +136,7 @@ export function runGame(o: RunOpts): RunResult {
     while (Math.floor(c.t / 3600 + 1e-9) > lastHour) {
       lastHour++;
       const v = totalValue(s);
-      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600, F: Math.round(s.eco.F), G: Math.round(s.eco.G), echoes: s.echoes.length, garde: s.buildings.garde ?? 0 } as any);
+      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600, F: Math.round(s.eco.F), G: Math.round(s.eco.G), echoes: s.echoes.length, garde: s.buildings.garde ?? 0 });
       lastHourV = v;
     }
   };

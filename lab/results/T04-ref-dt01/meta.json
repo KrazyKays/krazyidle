@@ -1,0 +1,20 @@
+{
+ "id": "T04-ref-dt01",
+ "commit": "fc06286",
+ "srcDirty": false,
+ "date": "2026-11-22T14:32:29.057Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 161010,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=T04-ref-dt01"
+}
