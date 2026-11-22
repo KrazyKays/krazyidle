@@ -1,0 +1,21 @@
+{
+ "id": "T04-4D-sans",
+ "commit": "inconnu",
+ "srcDirty": false,
+ "date": "2026-11-22T14:09:38.143Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1000,
+ "wallMs": 72739,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver,mono-commercer --seeds=1-200 --hours=6 --id=T04-4D-sans"
+}

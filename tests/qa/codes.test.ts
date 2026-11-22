@@ -67,9 +67,9 @@ describe('codes d\'alliance', () => {
   test('champs hostiles neutralisés : balises, couleur, blason, rang de vocation, génération', () => {
     const forge = (arr: unknown[]) => {
       const data = btoa(unescape(encodeURIComponent(JSON.stringify(arr)))).replace(/\+/g, '.').replace(/\//g, '_').replace(/=+$/, '');
-      return `AL1-${data}-${hashStr(data + 'sablier-des-ancetres').toString(36)}`;
+      return `AL2-${data}-${hashStr(data + 'sablier-des-ancetres').toString(36)}`;
     };
-    const p = decodeProposal(forge(['h<script>', '<b>Maison</b>', 999, 'red;x', 99, '<img>', 1, -5, [0, 21, 22, 23, 999], 3, 9999, 0, '', 1]))!;
+    const p = decodeProposal(forge(['h<script>', '<b>Maison</b>', 999, 'red;x', 99, '<img>', 1, -5, ['main_verte', 'elu', 'eternel', 'astres', '<x>', '__proto__'], 'commercer', 9999, 0, '', 1]))!;
     expect(p).not.toBeNull();
     expect(p.house.name).not.toMatch(/[<>]/);
     expect(p.name).not.toMatch(/[<>]/);
@@ -77,7 +77,7 @@ describe('codes d\'alliance', () => {
     expect(p.vocation!.tier).toBeLessThanOrEqual(10);
     expect(p.gen).toBeGreaterThanOrEqual(1);
     const bruno = house(2, 'Dorval');
-    const r = readProposal(bruno, forge(['h1', 'X', 0, '#000000', 0, 'Yvain', 0, 3, [21, 22, 23, 17, 18, 0], 3, 10, -1, '', 1]));
+    const r = readProposal(bruno, forge(['h1', 'X', 0, '#000000', 0, 'Yvain', 0, 3, ['elu', 'eternel', 'astres', 'genie', 'memoire', 'main_verte'], 'commercer', 10, -1, '', 1]));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.suitor.traits.length).toBeLessThanOrEqual(4);

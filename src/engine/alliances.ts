@@ -137,9 +137,11 @@ export function addCadets(s: GameState, heirs: Hero[]) {
 }
 
 // ---------------------------------------------------------------------------
-// Codes d'alliance : « AL1-<données>-<contrôle> », en base64 url-safe.
+// Codes d'alliance : « AL2-<données>-<contrôle> », en base64 url-safe. Depuis AL2 (0.4), traits et vocation
+// sont désignés par leur identifiant et non plus par leur rang : retirer un trait ou une activité ne décale
+// plus les codes. Les codes AL1 (rangs de la 0.3, cinq activités) ne sont plus lus.
 // Sans serveur, rien n'empêche de fabriquer un code : on borne donc ce qu'il peut apporter.
-const PREFIX = 'AL1';
+const PREFIX = 'AL2';
 const SALT = 'sablier-des-ancetres';
 
 interface Payload {
@@ -169,8 +171,8 @@ export function encodeProposal(s: GameState, cadet: Hero, re?: string, nonce = D
   const arr = [
     h.id, h.name, CRESTS.indexOf(h.crest), h.color, PARTITION_IDS.indexOf(h.partition ?? 'plein'),
     cadet.name, cadet.sex === 'f' ? 1 : 0, cadet.gen,
-    cadet.traits.map((t) => TRAITS.findIndex((x) => x.id === t)).filter((i) => i >= 0),
-    cadet.vocation ? ACTS.indexOf(cadet.vocation.act) : -1, cadet.vocation?.tier ?? 0,
+    cadet.traits.filter((t) => TRAIT[t]),
+    cadet.vocation?.act ?? '', cadet.vocation?.tier ?? 0,
     -1, re ?? '', nonce,
   ];
   const data = b64e(JSON.stringify(arr));
@@ -180,7 +182,7 @@ export function encodeProposal(s: GameState, cadet: Hero, re?: string, nonce = D
 /** Lit un code. Retourne null s'il est illisible ou altéré. */
 export function decodeProposal(code: string): Payload | null {
   try {
-    const m = code.trim().match(/AL1-([A-Za-z0-9._]+)-([a-z0-9]+)/);
+    const m = code.trim().match(/AL2-([A-Za-z0-9._]+)-([a-z0-9]+)/);
     if (!m || check(m[1]) !== m[2]) return null;
     const a = JSON.parse(b64d(m[1]));
     if (!Array.isArray(a) || a.length < 14) return null;
@@ -196,8 +198,8 @@ export function decodeProposal(code: string): Payload | null {
     if (!house.id || house.id.startsWith('pnj:')) return null;
     const nm = clean(name, 20);
     if (!nm) return null;
-    const traits = (Array.isArray(tr) ? tr : []).map((i: number) => TRAITS[i]?.id).filter((t: string | undefined): t is string => !!t);
-    const act = ACTS[va];
+    const traits = (Array.isArray(tr) ? tr : []).filter((t: unknown): t is string => typeof t === 'string' && Object.hasOwn(TRAIT, t));
+    const act = ACTS.find((a) => a === va);
     return {
       house, name: nm, sex: sx === 1 ? 'f' : 'm', gen: Math.max(1, Math.floor(Number(gen) || 1)),
       traits: [...new Set(traits)],
@@ -228,7 +230,7 @@ export function suitorFromCode(s: GameState, p: Payload): Spouse {
 }
 
 /** Ancienne empreinte (texte collé tel quel) : conservée pour reconnaître les codes acceptés avant la 0.2.2. */
-export const legacyCodeKey = (code: string) => hashStr(code.trim().replace(/^.*?(AL1-)/, '$1')).toString(36);
+export const legacyCodeKey = (code: string) => hashStr(code.trim().replace(/^.*?(AL[12]-)/, '$1')).toString(36);
 
 /**
  * Empreinte d'une demande : elle porte sur le cadet et sa maison, pas sur le texte collé ni sur le nonce.

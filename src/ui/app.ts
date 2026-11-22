@@ -372,14 +372,14 @@ export class App {
     const il = acc(hero, 'il', 'elle');
     const last = s.ancestors[s.ancestors.length - 1];
     const list: [string, boolean, string][] = [
-      ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} cultive déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
+      ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} travaille déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
       ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire et le Domaine se repose. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
       ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Domaine › Échos). Chaque génération ajoute une boucle !` : ''],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
-      ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, cultiver ou réduire la chasse le rétablit.'],
+      ['eco', ecoHealth(s.eco) < 0.55 && s.hero.gen >= 2, 'L\'écosystème se dérègle ! L\'Harmonie baisse ta production. Méditer, ou laisser le Domaine se refaire, le rétablit.'],
       ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
     ];
     for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
@@ -759,7 +759,7 @@ export class App {
       canvas,
       // Les règles détaillées sont repliées : elles faisaient la moitié de l'écran à chaque visite.
       h('details', { class: 'howto' }, h('summary', null, 'Comment ça marche ?'),
-        h('p', { class: 'muted small' }, 'Chasser prélève le Gibier, cultiver nourrit la Flore, commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
+        h('p', { class: 'muted small' }, 'Récolter fait pousser la Flore aux champs et prélève le Gibier à la chasse, en penchant vers ce qui abonde ; commercer défriche, méditer apaise. Plus tes vivants et tes Échos sont puissants, plus ils pèsent sur le Domaine.'),
         h('p', { class: 'muted small' }, 'Chaque jauge a son équilibre au milieu (le trait doré) : vise le centre, pas le plein.')));
     return h('div', null, harmCard);
   }
@@ -1467,7 +1467,7 @@ export class App {
           const out: string[] = [];
           const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
           if (lack.length) out.push(`⚠️ Manque de ${lack.map((r) => RES_INFO[r].icon).join('')}`);
-          if (a === 'cultiver' || a === 'chasser') out.push(`${a === 'cultiver' ? '🌳 Flore' : '🦌 Gibier'} ×${ecoFactor(a, run.eco).toFixed(2)}`);
+          if (a === 'cultiver') out.push(`🌳🦌 Domaine ×${ecoFactor(a, run.eco).toFixed(2)}`);
           const md = setup.mods.find((x) => x.act?.[a]);
           if (md) out.push(`${md.icon} ×${md.act![a]}`);
           return out.join(' · ');

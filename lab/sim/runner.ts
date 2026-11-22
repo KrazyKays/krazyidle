@@ -135,7 +135,7 @@ export function runGame(o: RunOpts): RunResult {
     while (Math.floor(c.t / 3600 + 1e-9) > lastHour) {
       lastHour++;
       const v = totalValue(s);
-      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600 });
+      hourly.push({ h: lastHour, log10Value: Math.log10(Math.max(1, v)), gen: s.hero.gen, legacyTotal: s.legacyTotal, valueRate: (v - lastHourV) / 3600, F: Math.round(s.eco.F), G: Math.round(s.eco.G), echoes: s.echoes.length, garde: s.buildings.garde ?? 0 } as any);
       lastHourV = v;
     }
   };

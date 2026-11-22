@@ -1,4 +1,4 @@
-import { sexOf } from './data';
+import { ACT_INDEX_V03, TRAIT_RENAMED_V04, sexOf } from './data';
 import { rebuildRanks } from './names';
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
@@ -31,10 +31,11 @@ function migrate(d: any): GameState {
   s.lineage = { ...base.lineage, ...d.lineage };
   // 0.4 : plus d'Affût (TERRE-3) ni de Prédateurs ; un surnom retiré disparaît des Échos et des ancêtres (TERRE-2).
   s.eco = { F: d.eco?.F ?? base.eco.F, G: d.eco?.G ?? base.eco.G };
-  const gone = new Set(['tueur_loups']);
+  const gone = new Set(['tueur_loups', 'pelletier', 'veneur']);
   for (const p of [...(s.echoes ?? []), ...(s.ancestors ?? [])] as { epithet?: string }[]) if (p.epithet && gone.has(p.epithet)) delete p.epithet;
   if (s.epithets) for (const id of gone) delete s.epithets[id];
   delete (s as { hunt?: unknown }).hunt;
+  if ((d.v ?? 0) < 3) mergeLandV04(s);
   // Genre des personnages : absent des sauvegardes d'avant, déduit du prénom.
   const sexed = (p: { name: string; sex?: 'f' | 'm' } | null | undefined) => { if (p && !p.sex) p.sex = sexOf(p); };
   sexed(s.hero);
@@ -45,6 +46,68 @@ function migrate(d: any): GameState {
   if (!d.lineage?.names) rebuildRanks(s);
   s.v = SAVE_VERSION;
   return s;
+}
+
+/**
+ * 0.4 (TERRE-4) : Cultiver et Chasser ne font plus qu'un métier, Récolter (identifiant « cultiver »).
+ * Vocations, compétences, rangs d'activité des Échos, dons de chasse, bâtiment et hauts faits sont repris.
+ */
+export function mergeLandV04(s: any) {
+  const act = (a: unknown) => (a === 'chasser' ? 'cultiver' : a);
+  const voc = (v: any) => { if (v?.act) v.act = act(v.act); };
+  const traits = (t: unknown) => (Array.isArray(t) ? [...new Set(t.map((x: string) => TRAIT_RENAMED_V04[x] ?? x))] : t);
+  const wear = (w: any) => {
+    if (!w) return w;
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(w)) { const kk = TRAIT_RENAMED_V04[k] ?? k; out[kk] = Math.max(out[kk] ?? 0, v as number); }
+    return out;
+  };
+  const idx = (r: unknown) => (Array.isArray(r) ? r.map((i: number) => (i >= 0 ? ACT_INDEX_V03[i] ?? 0 : i)) : r);
+  const person = (p: any) => {
+    if (!p) return;
+    if (p.traits) p.traits = traits(p.traits);
+    if (p.wear) p.wear = wear(p.wear);
+    if (p.evolved) p.evolved = traits(p.evolved);
+    voc(p.vocation);
+    if (p.dominant) p.dominant = act(p.dominant);
+    if (p.spouse) { p.spouse.traits = traits(p.spouse.traits); voc(p.spouse.vocation); }
+    if (p.acts) p.acts = idx(p.acts);
+  };
+  person(s.hero);
+  s.echoes?.forEach(person);
+  s.ancestors?.forEach(person);
+  s.cadets?.forEach(person);
+  if (s.succession) {
+    const sc = s.succession;
+    sc.heirs?.forEach(person);
+    person(sc.newEcho);
+    person(sc.ancestor);
+    voc(sc.vocationEarned);
+    if (sc.ripe) sc.ripe = Object.fromEntries(Object.entries(sc.ripe).map(([k, v]) => [TRAIT_RENAMED_V04[k] ?? k, TRAIT_RENAMED_V04[v as string] ?? v]));
+  }
+  if (s.blessings) s.blessings = (s.blessings as string[]).map((x) => TRAIT_RENAMED_V04[x] ?? x);
+  if (s.life) {
+    const l = s.life;
+    l.rec = idx(l.rec);
+    l.act = act(l.act);
+    l.lastAct = act(l.lastAct);
+    if (l.lvl?.chasser !== undefined) {
+      const hunt = l.lvl.chasser > (l.lvl.cultiver ?? 0);
+      if (hunt) { l.lvl.cultiver = l.lvl.chasser; l.xp.cultiver = l.xp.chasser; }
+      l.timeIn.cultiver = (l.timeIn.cultiver ?? 0) + (l.timeIn.chasser ?? 0);
+      delete l.lvl.chasser; delete l.xp.chasser; delete l.timeIn.chasser;
+    }
+  }
+  s.unlocked = [...new Set((s.unlocked ?? []).map(act))];
+  if (!s.unlocked.includes('cultiver')) s.unlocked.unshift('cultiver');
+  if (s.buildings?.pavillon !== undefined) {
+    s.buildings.champs = Math.max(s.buildings.champs ?? 0, s.buildings.pavillon);
+    delete s.buildings.pavillon;
+  }
+  if (s.feats) {
+    const ren: Record<string, string> = { cinq_metiers: 'quatre_metiers', chasse_raisonnee: 'recolte_raisonnee' };
+    s.feats = Object.fromEntries(Object.entries(s.feats).map(([k, v]) => [ren[k] ?? k, v]));
+  }
 }
 
 export function exportSave(s: GameState): string {

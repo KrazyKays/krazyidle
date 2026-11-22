@@ -48,7 +48,8 @@ interface Rule {
 }
 
 const CORE = ['experimente', 'optimiseur'];
-const CONT = ['experimente', 'optimiseur', 'debutant', 'mono-cultiver', 'mono-chasser', 'mono-commercer', 'mono-etudier', 'mono-mediter'];
+// 0.4 : plus de mono-chasser (Chasser fusionné dans Récolter, profil mono-cultiver).
+const CONT = ['experimente', 'optimiseur', 'debutant', 'mono-cultiver', 'mono-commercer', 'mono-etudier', 'mono-mediter'];
 const ALL = [...CONT, 'occasionnel'];
 
 export const RULES: Rule[] = [
@@ -62,7 +63,7 @@ export const RULES: Rule[] = [
   { kpi: 'echoShare', kind: 'range', profiles: CONT, min: 0.6, max: 0.97, why: 'Pilier 1 : les Échos portent la production sans rendre le héros inutile (profils en continu uniquement).' },
   { kpi: 'echoShare', kind: 'delta', profiles: CONT, abs: 0.03, dir: 'both', why: 'Part des Échos : ±3 points.' },
   { kpi: 'harmonyAvg', kind: 'range', profiles: ['experimente'], min: 0.9, why: 'Le joueur de référence garde le Domaine sain.' },
-  { kpi: 'harmonyAvg', kind: 'range', profiles: ['optimiseur', 'mono-cultiver', 'mono-chasser'], min: 0.8, why: 'Une stratégie gourmande dégrade le Domaine sans l\'effondrer (×0,7 = plancher).' },
+  { kpi: 'harmonyAvg', kind: 'range', profiles: ['optimiseur', 'mono-cultiver'], min: 0.8, why: 'Une stratégie gourmande dégrade le Domaine sans l\'effondrer (×0,7 = plancher).' },
   { kpi: 'harmonyAvg', kind: 'delta', profiles: ALL, abs: 0.03, dir: 'down', why: 'Harmonie : −3 points.' },
   { kpi: 'traitCombos60', kind: 'range', profiles: ['experimente', 'debutant'], min: 20, why: 'Budget génétique (GDD 2.3 : 27–30 à 8 h) : pas de retour à 2–5 combinaisons.' },
   { kpi: 'traitCombos60', kind: 'delta', profiles: ['experimente', 'optimiseur'], rel: 0.2, dir: 'down', why: 'Diversité génétique : −20 %.' },
@@ -75,13 +76,12 @@ export const RULES: Rule[] = [
   { kpi: 'upgradeAt.alliances', kind: 'range', profiles: ['experimente'], min: 3600, max: 5 * 3600, stat: 'mean', why: 'Alliances (90 ⚜️) atteintes entre 1 h et 5 h.' },
   { kpi: 'has.chroniques', kind: 'range', profiles: ['experimente', 'optimiseur'], min: 0.9, why: 'Chroniques (160 ⚜️) achetées dans 90 % des parties de 6 h d\'un joueur compétent.' },
   { kpi: 'epithetLivesShare', kind: 'range', profiles: CONT, min: 0.3, max: 0.7, why: 'GDD 2.6 : ~50 % des vies surnommées après l\'achat de Chroniques.' },
-  { kpi: 'epithetsFound', kind: 'range', profiles: ['optimiseur', 'mono-cultiver', 'mono-commercer'], min: 3, why: 'Au moins 3 surnoms distincts en 6 h quand Chroniques est acquis (34 au catalogue).' },
+  { kpi: 'epithetsFound', kind: 'range', profiles: ['optimiseur', 'mono-cultiver', 'mono-commercer'], min: 3, why: 'Au moins 3 surnoms distincts en 6 h quand Chroniques est acquis (32 au catalogue en 0.4).' },
 ];
 
 /** Garde-fous inter-profils (sur une seule campagne). */
 export const CROSS = [
   { id: 'mono.ratio', why: 'Aucune vocation à plus de ×10 de valeur de la meilleure (critère du protocole).', max: 10 },
-  { id: 'chasser/cultiver', why: 'Chasseur viable (GDD 2.4 : ~70 %, 33–118 % à 3 h).', min: 0.33 },
 ];
 
 function rangeValue(rule: Rule, rs: RunResult[]) {
@@ -128,10 +128,6 @@ export function evaluate(refRuns: RunResult[] | null, candRuns: RunResult[]): Ve
     const vals = Object.values(m);
     const ratio = 10 ** (Math.max(...vals) - Math.min(...vals));
     out.push({ level: ratio <= 10 ? 'VERT' : 'DETTE', profile: mono.join('/'), kpi: 'mono.ratio', rule: '≤ ×10', cand: ratio, why: CROSS[0].why + ' (inter-profils : signalé, non bloquant)' });
-    if (m['mono-chasser'] !== undefined && m['mono-cultiver'] !== undefined) {
-      const r = 10 ** (m['mono-chasser'] - m['mono-cultiver']);
-      out.push({ level: r >= 0.33 ? 'VERT' : 'ROUGE', profile: 'mono-chasser/mono-cultiver', kpi: 'chasser/cultiver', rule: '≥ 0,33', cand: r, why: CROSS[1].why });
-    }
   }
   return out;
 }

@@ -1,3 +1,5 @@
+// ⚠️ Outillage d'audit de la 0.3 : il suppose Chasser, l'Affût et les Prédateurs, retirés en 0.4 (TERRE-2 à 4).
+// Gardé pour l'historique des campagnes ; il ne tourne plus sur le jeu actuel.
 // Robustesse des mesures : effet du pas dt, stabilité selon l'horizon, reproductibilité, convergence en graines.
 //
 //   node --import ./lab/sim/register.mjs lab/metrics/robustness.ts

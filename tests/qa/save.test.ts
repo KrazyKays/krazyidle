@@ -44,12 +44,13 @@ describe('export / import', () => {
 
   test('vie en pause : la pause est sauvegardée puis levée au lancement', () => {
     const s = newGame(0, 1);
+    s.unlocked.push('commercer');
     startLife(s);
-    setActivity(s, 'chasser');
+    setActivity(s, 'commercer');
     setActivity(s, null);
     const back = roundTrip(s);
     resumeLife(back);
-    expect(back.life!.act).toBe('chasser');
+    expect(back.life!.act).toBe('commercer');
   });
 
   test('avec alliances, cadets, codes utilisés, surnoms et partitions', () => {

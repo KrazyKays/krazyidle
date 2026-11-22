@@ -24,10 +24,10 @@ export interface DailyMod {
 }
 
 export const DAILY_MODS: DailyMod[] = [
-  { id: 'secheresse', g: 'cultiver', name: 'Sécheresse', icon: '☀️', desc: 'Cultiver ×0.5', act: { cultiver: 0.5 } },
-  { id: 'fertiles', g: 'cultiver', name: 'Terres fertiles', icon: '🌷', desc: 'Flore initiale abondante', eco: { F: 100 } },
-  { id: 'abondance', g: 'chasser', name: 'Gibier abondant', icon: '🐗', desc: 'Gibier initial ×2', eco: { G: 60 } },
-  { id: 'hiver', g: 'chasser', name: 'Hiver rude', icon: '❄️', desc: 'Gibier rare', eco: { G: 15 } },
+  { id: 'secheresse', g: 'flore', name: 'Sécheresse', icon: '☀️', desc: 'Récolter ×0.5', act: { cultiver: 0.5 } },
+  { id: 'fertiles', g: 'flore', name: 'Terres fertiles', icon: '🌷', desc: 'Flore initiale abondante', eco: { F: 100 } },
+  { id: 'abondance', g: 'gibier', name: 'Gibier abondant', icon: '🐗', desc: 'Gibier initial ×2', eco: { G: 60 } },
+  { id: 'hiver', g: 'gibier', name: 'Hiver rude', icon: '❄️', desc: 'Gibier rare', eco: { G: 15 } },
   { id: 'foire', g: 'commercer', name: 'Foire du comté', icon: '🎪', desc: 'Commercer ×1.8', act: { commercer: 1.8 } },
   { id: 'inflation', g: 'commercer', name: 'Inflation', icon: '📉', desc: 'Commercer ×0.6', act: { commercer: 0.6 } },
   { id: 'academie', g: 'etudier', name: 'Académie ouverte', icon: '🎓', desc: 'Étudier ×1.8', act: { etudier: 1.8 } },
@@ -291,7 +291,8 @@ function replayRun(date: string, actions: [number, number][]): DailyRun {
   return run;
 }
 
-const PREFIX = 'EL2';
+/** EL3 (0.4) : quatre activités. Les codes EL2 (cinq activités) ne se rejouent plus. */
+const PREFIX = 'EL3';
 
 export function encodeRun(date: string, actions: [number, number][], result: number): string {
   const body = actions.map(([t, a]) => t.toString(36) + (a < 0 ? 'x' : String(a))).join('.');
@@ -311,7 +312,7 @@ export function decodeRun(code: string): { date: string; actions: [number, numbe
           return [parseInt(tok.slice(0, -1), 36), last === 'x' ? -1 : parseInt(last, 10)] as [number, number];
         })
       : [];
-    if (actions.some(([t, a]) => !Number.isFinite(t) || !Number.isFinite(a) || a > 4)) return null;
+    if (actions.some(([t, a]) => !Number.isFinite(t) || !Number.isFinite(a) || a >= ACTS.length)) return null;
     const sc = parseInt(score, 10);
     if (!Number.isFinite(sc)) return null;
     return { date, actions, score: sc };
@@ -321,7 +322,7 @@ export function decodeRun(code: string): { date: string; actions: [number, numbe
 }
 
 /** Carrés de couleur de l'activité dominante par tranche de `step` secondes (partage du résultat). */
-export const ACT_SQUARE = ['🟩', '🟧', '🟨', '🟦', '🟪'];
+export const ACT_SQUARE = ['🟩', '🟨', '🟦', '🟪'];
 export function dailyStrip(rec: number[], step = 6): string {
   let out = '';
   for (let i = 0; i < rec.length; i += step) {
@@ -342,7 +343,9 @@ export function playActions(setup: DailySetup, actions: [number, number][], cuto
   const run = new DailyRun(setup);
   let i = 0;
   while (!run.done && run.tickN < cutoff) {
-    while (i < actions.length && actions[i][0] <= run.tickN) { run.setAct(actions[i][1] >= 0 ? ACTS[actions[i][1]] : null); i++; }
+    while (i < actions.length && actions[i][0] <= run.tickN) { run.setAct(actions[i][1] >= 0 ? ACTS[actions[i][1]] ?? null : null); i++; }
+    // Sans activité de départ (ou activité inconnue), la partie ne démarre jamais : rien à jouer.
+    if (!run.started) break;
     run.step();
   }
   return run;
@@ -378,7 +381,7 @@ export function reactivePlay(setup: DailySetup, src: ActId, every: number, orMin
 /** Meilleur joueur réactif parmi quelques réglages (rapide : sert au calibrage de la commande). */
 export function reactiveBest(setup: DailySetup): DailyRun {
   let best: DailyRun | null = null;
-  for (const src of ['cultiver', 'chasser'] as ActId[])
+  for (const src of ['cultiver'] as ActId[])
     for (const every of [3, 6])
       for (const [orMin, vivMin] of [[6, 10], [12, 20]]) {
         const r = reactivePlay(setup, src, every, orMin, vivMin);
@@ -411,7 +414,7 @@ export function solveDaily(setup: DailySetup): DailySolution {
     const neigh: [number, number][][] = [];
     for (let i = 1; i < cur.length; i++) for (const d of [-80, -30, -10, 10, 30, 80]) neigh.push(cur.map(([t, a], j) => [j === i ? t + d : t, a] as [number, number]));
     for (let i = 1; i < cur.length; i++) neigh.push(cur.filter((_, j) => j !== i));
-    for (let i = 0; i < cur.length; i++) for (let a = 0; a < 5; a++) if (a !== cur[i][1]) neigh.push(cur.map(([t, b], j) => [t, j === i ? a : b] as [number, number]));
+    for (let i = 0; i < cur.length; i++) for (let a = 0; a < ACTS.length; a++) if (a !== cur[i][1]) neigh.push(cur.map(([t, b], j) => [t, j === i ? a : b] as [number, number]));
     for (const q of neigh) {
       const qq = norm(q);
       if (!qq.length) continue;

@@ -49,9 +49,8 @@ describe('défi du jour', () => {
     const strategies: Record<string, (t: number, r: DailyRun) => ActId | null> = {
       rien: () => null,
       cultiver: () => 'cultiver',
-      chasser: () => 'chasser',
       chaine: (t, r) => (t < 25 ? 'cultiver' : t < 55 ? (r.res.vivres > 1 ? 'commercer' : 'cultiver') : r.res.or > 1 ? 'etudier' : 'commercer'),
-      commerce: (t, r) => (r.res.vivres > 3 || t > 5 ? (r.res.vivres > 0.5 ? 'commercer' : 'chasser') : 'chasser'),
+      commerce: (t, r) => (r.res.vivres > 3 || t > 5 ? (r.res.vivres > 0.5 ? 'commercer' : 'cultiver') : 'cultiver'),
       mediter: () => 'mediter',
     };
     const out: Record<string, number[]> = {};
@@ -81,7 +80,7 @@ describe('partie', () => {
     const v0 = s.res.vivres;
     for (let i = 0; i < 100; i++) { now += 100; tick(s, rt, 0.1, now); }
     expect(s.res.vivres).toBeGreaterThan(v0); // l'Écho produit seul
-    expect(ACTS.length).toBe(5);
+    expect(ACTS.length).toBe(4);
   });
 
   test('la vie ne s\'écoule que pendant une activité, les Échos continuent', () => {
@@ -101,16 +100,18 @@ describe('partie', () => {
     expect(s.life!.t).toBe(t0); // sablier figé
     expect(s.life!.rec.length).toBe(0); // rien n'est enregistré
     expect(s.res.vivres).toBeGreaterThan(v0); // l'Écho produit toujours
-    s.life!.lastAct = 'chasser';
+    s.unlocked.push('commercer');
+    s.life!.lastAct = 'commercer';
     resumeLife(s);
-    expect(s.life!.act).toBe('chasser');
+    expect(s.life!.act).toBe('commercer');
   });
 
   test('l\'héritier commence par l\'activité de sa vocation', () => {
     const s = newGame(0, 2);
-    s.hero.vocation = { act: 'chasser', tier: 2 };
+    s.unlocked.push('commercer');
+    s.hero.vocation = { act: 'commercer', tier: 2 };
     startLife(s);
-    expect(s.life!.act).toBe('chasser');
+    expect(s.life!.act).toBe('commercer');
     s.hero.vocation = { act: 'mediter', tier: 1 }; // pas encore débloquée
     startLife(s);
     expect(s.life!.act).toBe('cultiver');
@@ -118,12 +119,13 @@ describe('partie', () => {
 
   test('une vie en pause sauvegardée repart au chargement', () => {
     const s = newGame(0, 4);
+    s.unlocked.push('commercer');
     startLife(s);
-    setActivity(s, 'chasser');
+    setActivity(s, 'commercer');
     setActivity(s, null);
     const back = importSave(exportSave(s))!;
     resumeLife(back);
-    expect(back.life!.act).toBe('chasser');
+    expect(back.life!.act).toBe('commercer');
   });
 
   test('sauvegarde export/import', () => {
@@ -215,15 +217,15 @@ describe('pronostic de vocation', () => {
 
   test('annonce une vocation affaiblie quand le seuil devient inatteignable', () => {
     const s = newGame(0, 6);
-    s.hero.vocation = { act: 'chasser', tier: 3 };
+    s.hero.vocation = { act: 'commercer', tier: 3 };
     startLife(s);
     const life = s.life!;
     const dur = life.dur;
     life.t = dur * 0.9;
-    life.timeIn.chasser = dur * 0.3; life.timeIn.cultiver = dur * 0.3; life.timeIn.commercer = dur * 0.3;
+    life.timeIn.commercer = dur * 0.3; life.timeIn.cultiver = dur * 0.3; life.timeIn.etudier = dur * 0.3;
     const o = vocationOutlook(life, s.hero)!;
     expect(o.state).toBe('lost');
-    expect(o.result).toEqual({ act: 'chasser', tier: 2 });
+    expect(o.result).toEqual({ act: 'commercer', tier: 2 });
   });
 
   test('pronostic cohérent avec le résultat réel en fin de vie', () => {
@@ -233,7 +235,7 @@ describe('pronostic de vocation', () => {
     startLife(s);
     let now = 0, i = 0;
     while (s.life) {
-      setActivity(s, (i++ % 10) < 6 ? 'cultiver' : 'chasser');
+      setActivity(s, (i++ % 10) < 6 ? 'cultiver' : 'commercer');
       const last = vocationOutlook(s.life, s.hero);
       now += 100; tick(s, rt, 0.1, now);
       if (!s.life) expect(last?.result).toEqual(s.succession!.vocationEarned);
@@ -277,14 +279,14 @@ describe('genre des personnages', () => {
     expect(traitName(TRAIT.elu, m)).toBe('Élu');
     expect(traitName(TRAIT.elu)).toBe('Élu / Élue');
     expect(traitName(TRAIT.robuste, f)).toBe('Robuste');
-    expect(vocationName({ act: 'chasser', tier: 2 }, f, String)).toBe('Chasseresse 2');
+    expect(vocationName({ act: 'cultiver', tier: 2 }, f, String)).toBe('Paysanne 2');
     expect(vocationName({ act: 'mediter', tier: 1 }, f, String)).toBe('Mystique 1');
   });
 
   it('le Destin du jour reste identique (aucun tirage ajouté)', () => {
-    // valeurs relevées avant l'ajout du genre : les codes partagés doivent rester valides
+    // valeurs relevées à la 0.4 (sans Œil de faucon, fusionné dans Main verte) : le Destin est le même pour tous
     const d = dailySetup('2026-01-01');
     expect(d.name).toBe('Tancrède');
-    expect(d.traits).toEqual(['rat_biblio', 'prodige', 'distrait']);
+    expect(d.traits).toEqual(['ame_calme', 'prodige', 'distrait']);
   });
 });

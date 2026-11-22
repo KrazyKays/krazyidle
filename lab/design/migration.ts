@@ -1,3 +1,5 @@
+// ⚠️ Outillage d'audit de la 0.3 : il suppose Chasser, l'Affût et les Prédateurs, retirés en 0.4 (TERRE-2 à 4).
+// Gardé pour l'historique des campagnes ; il ne tourne plus sur le jeu actuel.
 // Pourquoi « Grande migration » n'est jamais validée ? Trace objectif / progression / part de l'Or dans la production.
 // Usage : node --import ./lab/sim/register.mjs lab/design/migration.ts [profil=mono-chasser] [seed=1]
 import { RES, RES_INFO } from '../../src/engine/data';

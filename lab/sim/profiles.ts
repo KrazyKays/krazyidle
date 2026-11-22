@@ -53,9 +53,12 @@ export function feasible(s: GameState, a: ActId): ActId {
 function legacyBotMain(s: GameState): ActId {
   const g = s.hero.gen;
   if (s.hero.vocation && g % 3 !== 0) return s.hero.vocation.act;
-  const order: ActId[] = ['cultiver', 'commercer', 'etudier', 'mediter', 'chasser'];
+  const order: ActId[] = ['cultiver', 'commercer', 'etudier', 'mediter'];
   const avail = order.filter((a) => has(s, a));
-  return avail[g % avail.length] ?? ACTS[0];
+  // Rang tournant g % n. Seul cas corrigé (0.4) : avec trois activités débloquées, g % 3 vaut toujours 0 sur
+  // les générations qui changent de métier (g multiple de 3), et le bot restait aux champs pour toujours.
+  const n = avail.length;
+  return avail[n % 3 === 0 && g % 3 === 0 ? Math.floor(g / 3) % n : g % n] ?? ACTS[0];
 }
 
 function legacyBotActivity(s: GameState): ActId {

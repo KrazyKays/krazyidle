@@ -31,15 +31,15 @@ export interface FeatDef {
 const cryptFull = (s: GameState, slots: number) => s.echoes.length >= slots;
 
 export const FEATS: FeatDef[] = [
-  { id: 'cinq_metiers', name: 'Les cinq métiers', icon: '🛠️', eclats: 5,
+  { id: 'quatre_metiers', name: 'Les quatre métiers', icon: '🛠️', eclats: 5,
     desc: `Garder dans la Crypte un Écho de chaque vocation, chacune au rang ${FEAT.metierTier} ou plus.`,
     test: (s) => ACTS.every((a) => s.echoes.some((e) => e.vocation?.act === a && e.vocation.tier >= FEAT.metierTier)) },
   { id: 'sang_neuf', name: 'Sang neuf', icon: '💍', eclats: 4,
     desc: `S'allier à ${FEAT.maisons} maisons différentes (comté ou autres joueurs).`,
     test: (s) => Object.keys(s.alliances ?? {}).length >= FEAT.maisons },
-  { id: 'chasse_raisonnee', name: 'Chasse raisonnée', icon: '🦌', eclats: 4,
-    desc: `Chasser au moins la moitié d'une vie sans que la santé du Domaine passe sous ${Math.round(FEAT.paixMin * 100)} %, avec au moins ${FEAT.chasseSlots} Échos dans la Crypte.`,
-    test: (s, f) => !!f && f.share.chasser >= 0.5 && f.harmonyMin >= FEAT.paixMin && cryptFull(s, FEAT.chasseSlots) },
+  { id: 'recolte_raisonnee', name: 'Récolte raisonnée', icon: '🦌', eclats: 4,
+    desc: `Récolter au moins la moitié d'une vie sans que la santé du Domaine passe sous ${Math.round(FEAT.paixMin * 100)} %, avec au moins ${FEAT.chasseSlots} Échos dans la Crypte.`,
+    test: (s, f) => !!f && f.share.cultiver >= 0.5 && f.harmonyMin >= FEAT.paixMin && cryptFull(s, FEAT.chasseSlots) },
   { id: 'transcendance', name: 'Transcendance', icon: '🌱', eclats: 5,
     desc: 'Mettre à la tête de la lignée un héritier dont un don est devenu légendaire en mûrissant.',
     test: (s, f) => !f && (s.hero.evolved ?? []).some((t) => TRAIT[t]?.rarity === 3) },

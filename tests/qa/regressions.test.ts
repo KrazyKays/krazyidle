@@ -234,7 +234,7 @@ describe('CMD-1 — la Commande du comté remplace le Destin à points (validé 
   });
   test('aucune activité tenue seule ne livre la commande', async () => {
     const { dailySetup, playActions } = await import('../../src/engine/daily');
-    for (const dd of ['2026-11-17', '2026-11-18', '2026-11-19']) for (let a = 0; a < 5; a++) expect(playActions(dailySetup(dd), [[0, a]]).delivered).toBe(false);
+    for (const dd of ['2026-11-17', '2026-11-18', '2026-11-19']) for (let a = 0; a < 4; a++) expect(playActions(dailySetup(dd), [[0, a]]).delivered).toBe(false);
   });
   test('stock au même moment : la partie s\'arrête à la livraison, au tic où tout est réuni', async () => {
     const { dailySetup, dailySolution, playActions, RES_ORDER } = await import('../../src/engine/daily').then((m) => ({ ...m, RES_ORDER: ['vivres', 'or', 'savoir', 'essence'] as const }));
@@ -413,7 +413,7 @@ describe('GD-SURNOMS A — « le Constant » devient un surnom commun, sans effe
     expect(EPITHET.constant.rarity).toBe(0);
     expect(EPITHET.constant.mods).toEqual({});
     const f = {
-      share: { cultiver: 1, chasser: 0, commercer: 0, etudier: 0, mediter: 0 }, used: 1, switches: 0,
+      share: { cultiver: 1, commercer: 0, etudier: 0, mediter: 0 }, used: 1, switches: 0,
       harmonyAvg: 0.5, harmonyMin: 0.5, value: 1, parentValue: 1, bestBefore: 1, gen: 3, traits: [], negTraits: 0,
       vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 50,
     };
@@ -560,7 +560,7 @@ describe('TRAIT-EVO — mutations plafonnées, dons qui mûrissent (0.3)', () =>
   test('la vie doit mériter l\'évolution : cultiver la moitié de sa vie fait mûrir Main verte, pas moins', async () => {
     const { ripeTraits } = await import('../../src/engine/evolution');
     const facts = (cultiver: number) => ({
-      share: { cultiver, chasser: 1 - cultiver, commercer: 0, etudier: 0, mediter: 0 }, used: 2, switches: 3, harmonyAvg: 0.9, harmonyMin: 0.8,
+      share: { cultiver, commercer: 1 - cultiver, etudier: 0, mediter: 0 }, used: 2, switches: 3, harmonyAvg: 0.9, harmonyMin: 0.8,
       value: 100, parentValue: 90, bestBefore: 100, gen: 5, traits: ['main_verte', 'genie'], negTraits: 0, vocTier: 2, prevVocTier: 1,
       durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
     });
@@ -664,7 +664,7 @@ describe('TERRE-1 — plus de vérification des codes du Destin (0.4)', () => {
     const daily = await import('../../src/engine/daily');
     expect('verifyCode' in daily).toBe(false);
     // 6 s par carré : Cultiver, puis pause, puis Méditer
-    const rec = [...Array(6).fill(0), ...Array(6).fill(-1), ...Array(4).fill(4)];
+    const rec = [...Array(6).fill(0), ...Array(6).fill(-1), ...Array(4).fill(3)];
     expect(daily.dailyStrip(rec)).toBe('🟩⬛🟪');
   });
 });
@@ -684,23 +684,24 @@ describe('TERRE-2 — plus de Prédateurs (0.4)', () => {
     const { deserialize, serialize } = await import('../../src/engine/save');
     const s: any = newGame(0, 21);
     s.eco = { F: 60, G: 20, P: 3 };
-    s.epithets = { tueur_loups: 2, veneur: 1 };
+    s.epithets = { tueur_loups: 2, laboureur: 1 };
     s.ancestors = [{ id: 1, name: 'Jehan', gen: 1, traits: [], vocation: null, value: 1, legacy: 1, dominant: null, diedAt: 0, epithet: 'tueur_loups' }];
     const t = deserialize(serialize(s))!;
     expect(t.eco).toEqual({ F: 60, G: 20 });
-    expect(t.epithets).toEqual({ veneur: 1 });
+    expect(t.epithets).toEqual({ laboureur: 1 });
     expect(t.ancestors[0].epithet).toBeUndefined();
   });
 });
 
 describe('TERRE-3 — plus d\'Affût (0.4)', () => {
-  test('en disette, la chasse prélève normalement et ne rapporte pas d\'Or', async () => {
+  test('Gibier sous l\'équilibre : la chasse prélève normalement et ne rapporte pas d\'Or', async () => {
     const { runActivity } = await import('../../src/engine/sim');
     const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
-    const eco = { F: 62.5, G: 10 };
-    runActivity({ res, eco, prodMult: () => 1, ecoImpactMult: 1 }, 'chasser', 1, 1, 1, false);
+    const eco = { F: 62.5, G: 25 };
+    const g0 = eco.G;
+    runActivity({ res, eco, prodMult: () => 1, ecoImpactMult: 1 }, 'cultiver', 1, 1, 1, false);
     expect(res.or).toBe(0);
-    expect(eco.G).toBeCloseTo(10 - 0.035 * 10, 6);
+    expect(eco.G).toBeLessThan(g0);
     expect('hunt' in newGame(0, 1)).toBe(false);
   });
 });
@@ -713,5 +714,64 @@ describe('TERRE-2b — le Gibier se freine lui-même, comme le faisaient les Pr�
     for (let t = 0; t < 300; t += 0.1) { e.F = 100; ecoStep(e, 0.1); gMax = Math.max(gMax, e.G); }
     // [MESURÉ] ancien modèle à Prédateurs (en retard sur le Gibier) : jusqu'à 110 ; nouveau : ≈ 60, équilibre à F = 100
     expect(gMax).toBeLessThan(ECO_EQ.G * 2.2);
+  });
+});
+
+describe('TERRE-4 — Cultiver et Chasser fusionnés en Récolter (0.4)', () => {
+  test('quatre activités, une par ressource ; la part de chasse suit l\'abondance du Gibier', async () => {
+    const { ACTS, ACT } = await import('../../src/engine/data');
+    const { ECO_EQ, huntShare } = await import('../../src/engine/ecosystem');
+    expect(ACTS).toEqual(['cultiver', 'commercer', 'etudier', 'mediter']);
+    expect(ACT.cultiver.name).toBe('Récolter');
+    expect(huntShare(ECO_EQ)).toBeCloseTo(0.5, 9);
+    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G * 1.2 })).toBeCloseTo(0.8, 9);
+    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G / 2 })).toBe(0);
+    expect(huntShare({ ...ECO_EQ, G: ECO_EQ.G * 2 })).toBe(1);
+  });
+  test('une sauvegarde 0.3 est reprise : vocation, Échos, compétences, dons, bâtiment, hauts faits', async () => {
+    const { deserialize } = await import('../../src/engine/save');
+    const { startLife } = await import('../../src/engine/game');
+    const s: any = newGame(0, 30);
+    startLife(s);
+    s.v = 2;
+    s.unlocked = ['cultiver', 'chasser', 'commercer'];
+    s.hero.vocation = { act: 'chasser', tier: 4 };
+    s.hero.traits = ['oeil_faucon', 'main_verte', 'pas_loup'];
+    s.hero.wear = { oeil_faucon: 3, main_verte: 1 };
+    s.life.lvl = { cultiver: 2, chasser: 7, commercer: 1, etudier: 0, mediter: 0 };
+    s.life.xp = { cultiver: 1, chasser: 2, commercer: 0, etudier: 0, mediter: 0 };
+    s.life.timeIn = { cultiver: 5, chasser: 10, commercer: 1, etudier: 0, mediter: 0 };
+    s.life.act = 'chasser';
+    s.life.rec = [0, 1, 2, 4, -1];
+    s.echoes = [{ id: 9, heroId: 1, name: 'Jehan', gen: 1, traits: ['oeil_faucon'], vocation: { act: 'chasser', tier: 2 }, acts: [1, 1, 4, 3, -1], pow: [1, 1, 1, 1, 0], strength: 0, pos: 0, loops: 0, pinned: false, value: 10 }];
+    s.buildings = { champs: 2, pavillon: 5 };
+    s.feats = { cinq_metiers: 1, chasse_raisonnee: 2 };
+    s.blessings = ['oeil_faucon'];
+    const t = deserialize(JSON.stringify(s))!;
+    expect(t.unlocked).toEqual(['cultiver', 'commercer']);
+    expect(t.hero.vocation).toEqual({ act: 'cultiver', tier: 4 });
+    expect(t.hero.traits).toEqual(['main_verte', 'seve']);
+    expect(t.hero.wear).toEqual({ main_verte: 3 });
+    expect(t.life!.lvl).toEqual({ cultiver: 7, commercer: 1, etudier: 0, mediter: 0 });
+    expect(t.life!.xp.cultiver).toBe(2);
+    expect(t.life!.timeIn.cultiver).toBe(15);
+    expect(t.life!.act).toBe('cultiver');
+    expect(t.life!.rec).toEqual([0, 0, 1, 3, -1]);
+    expect(t.echoes[0].acts).toEqual([0, 0, 3, 2, -1]);
+    expect(t.echoes[0].traits).toEqual(['main_verte']);
+    expect(t.echoes[0].vocation!.act).toBe('cultiver');
+    expect(t.buildings).toEqual({ champs: 5 });
+    expect(t.feats).toEqual({ quatre_metiers: 1, recolte_raisonnee: 2 });
+    expect(t.blessings).toEqual(['main_verte']);
+  });
+  test('codes d\'alliance AL2 par identifiants ; les AL1 (rangs de la 0.3) ne sont plus lus', async () => {
+    const { decodeProposal, encodeProposal } = await import('../../src/engine/alliances');
+    const a = newGame(0, 31);
+    const code = encodeProposal(a, { ...a.hero, id: 77, traits: ['main_verte', 'elu'], vocation: { act: 'commercer', tier: 3 } });
+    expect(code.startsWith('AL2-')).toBe(true);
+    const p = decodeProposal(code)!;
+    expect(p.traits).toEqual(['main_verte', 'elu']);
+    expect(p.vocation).toEqual({ act: 'commercer', tier: 3 });
+    expect(decodeProposal(code.replace('AL2-', 'AL1-'))).toBeNull();
   });
 });

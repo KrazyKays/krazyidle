@@ -1,5 +1,5 @@
 // Évolution des traits (0.3) : un don se transcende en passant à l'enfant, à condition que la vie de son
-// porteur l'ait mérité. « Main verte » ne devient « Sève de la terre » que chez qui a vraiment cultivé.
+// porteur l'ait mérité. « Main verte » ne devient « Sève de la terre » que chez qui a vraiment récolté.
 // Les grands dons se fabriquent ainsi sur plusieurs générations au lieu de tomber du ciel par mutation.
 import type { LifeFacts } from './epithets';
 
@@ -24,8 +24,7 @@ const act = (from: string, to: string, a: keyof LifeFacts['share'], verb: string
 ];
 
 export const EVOLUTIONS: EvolutionDef[] = [
-  ...act('main_verte', 'seve', 'cultiver', 'Cultiver'),
-  ...act('oeil_faucon', 'pas_loup', 'chasser', 'Chasser'),
+  ...act('main_verte', 'seve', 'cultiver', 'Récolter'),
   ...act('langue_argent', 'langue_or', 'commercer', 'Commercer'),
   ...act('rat_biblio', 'encyclopedique', 'etudier', 'Étudier'),
   ...act('ame_calme', 'troisieme_oeil', 'mediter', 'Méditer'),
@@ -33,7 +32,7 @@ export const EVOLUTIONS: EvolutionDef[] = [
   { from: 'longevite', to: 'centenaire', cond: 'Vivre sans jamais troubler le Domaine (santé jamais sous 90 %)', test: (f) => f.harmonyMin >= 0.9 && f.harmonyAvg >= 0.97 },
   { from: 'curieux', to: 'prodige', cond: 'Pratiquer au moins trois activités', test: (f) => f.used >= 3 },
   { from: 'prodige', to: 'genie', cond: 'Étudier au moins la moitié de sa vie', test: (f) => f.share.etudier >= 0.5 },
-  { from: 'polyvalent', to: 'sang_dore', cond: 'Pratiquer au moins quatre activités', test: (f) => f.used >= 4 },
+  { from: 'polyvalent', to: 'sang_dore', cond: 'Pratiquer les quatre activités', test: (f) => f.used >= 4 },
   { from: 'echo_vibrant', to: 'memoire', cond: 'Méditer au moins la moitié de sa vie', test: (f) => f.share.mediter >= 0.5 },
   { from: 'genie', to: 'elu', cond: `Faire une fois et demie mieux que la meilleure vie de la lignée, avec une vocation de rang ${MASTER} ou plus`, test: (f) => record(f) && f.vocTier >= MASTER },
   { from: 'sang_dore', to: 'elu', cond: `Faire une fois et demie mieux que la meilleure vie de la lignée, avec une vocation de rang ${MASTER} ou plus`, test: (f) => record(f) && f.vocTier >= MASTER },

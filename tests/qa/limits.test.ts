@@ -93,12 +93,12 @@ describe('plafonds', () => {
 describe('achats à coût exact', () => {
   test('bâtiment payé au centime près : achat accepté, ressource à 0', () => {
     const s = fresh();
-    const c = buildingCost('pavillon', 0);
+    const c = buildingCost('garde', 0);
     s.res.vivres = c.vivres!; s.res.or = c.or!;
-    expect(buyBuilding(s, 'pavillon')).toBe(true);
+    expect(buyBuilding(s, 'garde')).toBe(true);
     expect(s.res.vivres).toBe(0);
     expect(s.res.or).toBe(0);
-    expect(BUILDING.pavillon).toBeTruthy();
+    expect(BUILDING.garde).toBeTruthy();
   });
   test('un centième de moins : refusé', () => {
     const s = fresh();

@@ -12,9 +12,9 @@ import { newGame, type GameState, type Hero } from '../src/engine/state';
 const NOW = Date.UTC(2026, 10, 14, 12);
 
 function facts(over: Partial<LifeFacts> = {}): LifeFacts {
-  const share = { cultiver: 0.3, chasser: 0.1, commercer: 0.3, etudier: 0.3, mediter: 0 };
+  const share = { cultiver: 0.4, commercer: 0.3, etudier: 0.3, mediter: 0 };
   return {
-    share, used: 4, switches: 10, harmonyAvg: 0.8, harmonyMin: 0.6, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
+    share, used: 3, switches: 10, harmonyAvg: 0.8, harmonyMin: 0.6, value: 100, parentValue: 100, bestBefore: 1000, gen: 7,
     traits: [], negTraits: 0, vocTier: 0, durRatio: 1, extended: false, spouse: null, eventTier: 0, builds: 0, game: 29,
     ...over,
     ...(over.share ? { share: { ...share, ...over.share } } : {}),
@@ -37,10 +37,10 @@ describe('surnoms', () => {
   });
 
   test('le plus rare l\'emporte', () => {
-    expect(pickEpithet(facts({ share: { cultiver: 0.8, chasser: 0.05, commercer: 0.05, etudier: 0.05, mediter: 0.05 }, used: 1 }))?.id).toBe('laboureur');
+    expect(pickEpithet(facts({ share: { cultiver: 0.8, commercer: 0.1, etudier: 0.05, mediter: 0.05 }, used: 1 }))?.id).toBe('laboureur');
     // record + harmonie parfaite à la génération 12 : légendaire, pas seulement « le Grand »
     // record écrasé + harmonie parfaite en vivant de la terre, génération 12 : légendaire
-    const land = { cultiver: 0.6, chasser: 0, commercer: 0.2, etudier: 0.2, mediter: 0 };
+    const land = { cultiver: 0.6, commercer: 0.2, etudier: 0.2, mediter: 0 };
     expect(pickEpithet(facts({ share: land, value: 2500, bestBefore: 1000, harmonyAvg: 0.97, gen: 12 }))?.id).toBe('glorieux');
     expect(pickEpithet(facts({ value: 1600, bestBefore: 1000, gen: 6 }))?.id).toBe('grand');
     // battre le record de peu ne suffit pas
@@ -92,8 +92,9 @@ describe('surnoms', () => {
 
   test('les changements d\'activité sont comptés', () => {
     const s = unlocked();
+    s.unlocked.push('commercer');
     s.life!.t = 1;
-    setActivity(s, 'chasser');
+    setActivity(s, 'commercer');
     setActivity(s, 'cultiver');
     setActivity(s, null);
     setActivity(s, 'cultiver');

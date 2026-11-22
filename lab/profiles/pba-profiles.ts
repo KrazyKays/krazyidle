@@ -1,3 +1,5 @@
+// ⚠️ Outillage d'audit de la 0.3 : il suppose Chasser, l'Affût et les Prédateurs, retirés en 0.4 (TERRE-2 à 4).
+// Gardé pour l'historique des campagnes ; il ne tourne plus sur le jeu actuel.
 // Profils supplémentaires du Player Behavior Analyst (phase 1, audit 2026-11-14).
 // N'altère NI le jeu NI lab/sim : ajoute des entrées à PROFILES et instrumente les successions.
 // Toutes les hypothèses (temps de réaction, fréquence, règles de décision) sont dans `desc`.

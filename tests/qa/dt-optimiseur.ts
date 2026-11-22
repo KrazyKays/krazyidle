@@ -26,7 +26,7 @@ function run(seed: number, dt: number, lives: number) {
     t += dt;
     if (s.succession) {
       const sc = s.succession;
-      out.push({ share: sc.ancestor.dominant === 'chasser' ? 1 : 0, voc: sc.vocationEarned ? `${sc.vocationEarned.act}${sc.vocationEarned.tier}` : '-' });
+      out.push({ share: sc.ancestor.dominant === 'cultiver' ? 1 : 0, voc: sc.vocationEarned ? `${sc.vocationEarned.act}${sc.vocationEarned.tier}` : '-' });
       (out[out.length - 1] as any).ch = 0;
       confirmSuccession(s, 0, [sc.newEcho.id]);
     }

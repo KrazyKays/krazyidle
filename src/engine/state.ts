@@ -210,13 +210,14 @@ export interface GameState {
   stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; /** Bénédictions légendaires ou mythiques achetées (0.3) */ blessHigh?: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 
-export const SAVE_VERSION = 2;
+/** 3 (0.4) : Cultiver et Chasser fusionnés en Récolter (`mergeLandV04`). */
+export const SAVE_VERSION = 3;
 
 export function zeroRes(): Record<ResId, number> {
   return { vivres: 0, or: 0, savoir: 0, essence: 0 };
 }
 export function zeroActs(): Record<ActId, number> {
-  return { cultiver: 0, chasser: 0, commercer: 0, etudier: 0, mediter: 0 };
+  return { cultiver: 0, commercer: 0, etudier: 0, mediter: 0 };
 }
 
 export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0): GameState {
@@ -235,7 +236,7 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     partitions: ['plein'],
     res: zeroRes(),
     totalEver: zeroRes(),
-    unlocked: ['cultiver', 'chasser'],
+    unlocked: ['cultiver'],
     nextId: 2,
     hero,
     life: null,

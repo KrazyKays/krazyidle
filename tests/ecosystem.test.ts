@@ -20,10 +20,11 @@ function sim(actors: [ActId, number, number][], secs = 600, regen = 0, eco: Eco 
   return { eco, got };
 }
 
-describe('écosystème v2', () => {
-  test('le héros qui chasse seul fait vraiment baisser le Gibier', () => {
-    const { eco } = sim([['chasser', 1, 1]]);
-    expect(eco.G).toBeLessThan(ECO_EQ.G * 0.8);
+describe('écosystème (0.4 : Récolter)', () => {
+  test('récolter fait pousser la Flore et prélève le Gibier', () => {
+    const { eco } = sim([['cultiver', 1, 1]]);
+    expect(eco.F).toBeGreaterThan(ECO_EQ.F);
+    expect(eco.G).toBeLessThan(ECO_EQ.G);
   });
 
   test('sans Prédateurs (0.4), le Domaine laissé libre reste à son équilibre', () => {
@@ -32,25 +33,28 @@ describe('écosystème v2', () => {
     expect(eco.G).toBeCloseTo(ECO_EQ.G, 0);
   });
 
-  test('la surchasse par des Échos puissants épuise le Domaine', () => {
-    const light = sim([['chasser', 1, 1]]);
-    const heavy = sim([['chasser', 5, 1], ['chasser', 5, 0.6], ['chasser', 5, 0.6]]);
-    expect(heavy.eco.G).toBeLessThan(5);
-    expect(harmonyMult(heavy.eco)).toBeLessThan(0.75);
-    // trois chasseurs ×5 ne rapportent pas 15 fois plus qu'un seul héros ×1
-    expect(heavy.got.vivres).toBeLessThan(light.got.vivres * 3);
+  test('des Échos puissants dégradent le Domaine, qui se dérègle sans s\'effondrer', () => {
+    const light = sim([['cultiver', 1, 1]]);
+    const heavy = sim([['cultiver', 5, 1], ['cultiver', 5, 0.6], ['cultiver', 5, 0.6]]);
+    // [MESURÉ] Harmonie ×1,26 contre ×1,29 sur 10 min (l'ancienne chasse seule tombait sous ×0,75) : en
+    // Équilibre, on ne chasse que le surplus de Gibier. Épuiser les hardes passe par la Battue (consignes).
+    expect(harmonyMult(heavy.eco)).toBeLessThan(harmonyMult(light.eco) - 0.02);
+    // Comme l'ancien Cultiver, la récolte croît presque comme la puissance (×15 ici) ; le Domaine la borne
+    // (Harmonie, rendement plafonné), il ne l'écrase pas : c'est la Battue qui épuise les hardes.
+    expect(heavy.got.vivres / 15).toBeLessThan(light.got.vivres * 1.3);
+    expect(heavy.eco.G).toBeGreaterThan(1);
   });
 
   test('la puissance pèse sur le Domaine : un héros ×5 prélève plus qu\'un héros ×1', () => {
-    expect(sim([['chasser', 5, 1]]).eco.G).toBeLessThan(sim([['chasser', 1, 1]]).eco.G - 3);
+    expect(sim([['cultiver', 5, 1]]).eco.G).toBeLessThan(sim([['cultiver', 1, 1]]).eco.G - 1);
   });
 
   test('le Garde forestier régénère sans neutraliser la pression', () => {
-    const heavy: [ActId, number, number][] = [['chasser', 5, 1], ['chasser', 5, 0.6], ['chasser', 5, 0.6]];
+    const heavy: [ActId, number, number][] = [['cultiver', 5, 1], ['cultiver', 5, 0.6], ['cultiver', 5, 0.6]];
     const none = sim(heavy);
     const garde = sim(heavy, 600, 0.04);
-    expect(garde.eco.G).toBeGreaterThan(none.eco.G);
-    expect(harmonyMult(garde.eco)).toBeLessThan(1.1);
+    expect(harmonyMult(garde.eco)).toBeGreaterThan(harmonyMult(none.eco));
+    expect(harmonyMult(garde.eco)).toBeLessThan(1.3);
   });
 });
 

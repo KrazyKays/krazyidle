@@ -1,3 +1,5 @@
+// ⚠️ Outillage d'audit de la 0.3 : il suppose Chasser, l'Affût et les Prédateurs, retirés en 0.4 (TERRE-2 à 4).
+// Gardé pour l'historique des campagnes ; il ne tourne plus sur le jeu actuel.
 // R10 — l'écart hors ligne / en ligne d'une lignée de chasseurs (test QA offline.test.ts) a-t-il changé ?
 // Même protocole que le test, sur 20 graines. Lancer avec et sans BAL_OBJ (anciennes valeurs).
 import '../lib';

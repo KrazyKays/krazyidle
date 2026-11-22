@@ -29,7 +29,7 @@ describe('GDD 2.1 — la Vie', () => {
   test('vocation gagnée à 50 % de la vie', () => {
     const s = newGame(0, 1);
     startLife(s);
-    s.life!.timeIn.chasser = 30; s.life!.timeIn.cultiver = 30; s.life!.t = 60;
+    s.life!.timeIn.commercer = 30; s.life!.timeIn.cultiver = 30; s.life!.t = 60;
     endLife(s, 0);
     expect(s.succession!.vocationEarned?.tier).toBe(1);
   });
@@ -123,8 +123,8 @@ describe('GDD 2.5 — le monde partagé', () => {
 });
 
 describe('GDD 2.6 / 2.7 — Chroniques et Alliances', () => {
-  test('34 surnoms (sans le Tueur de loups en 0.4) en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
-    expect(EPITHETS).toHaveLength(34);
+  test('32 surnoms (0.4 : sans le Tueur de loups, le Pelletier ni le Veneur) en 4 raretés (la Comète en 0.3), 1 à 5 ✦ ; Chroniques 90 ⚜️, Alliances 45 ⚜️ (R12)', () => {
+    expect(EPITHETS).toHaveLength(32);
     expect(new Set(EPITHETS.map((e) => e.rarity)).size).toBe(4);
     expect(Math.min(...EPITHET_ECLATS)).toBe(1);
     expect(Math.max(...EPITHET_ECLATS)).toBe(5);

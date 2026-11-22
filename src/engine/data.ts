@@ -9,8 +9,14 @@ export const RES_INFO: Record<ResId, { name: string; icon: string; value: number
   essence: { name: 'Essence', icon: '✨', value: 20, color: '#ce93d8' },
 };
 
-export type ActId = 'cultiver' | 'chasser' | 'commercer' | 'etudier' | 'mediter';
-export const ACTS: ActId[] = ['cultiver', 'chasser', 'commercer', 'etudier', 'mediter'];
+/**
+ * Quatre activités, une par ressource (0.4). « cultiver » est Récolter : le métier de Paysan, qui vit des
+ * champs et des bois (Cultiver et Chasser fusionnés, TERRE-4). L'identifiant est resté pour les sauvegardes.
+ */
+export type ActId = 'cultiver' | 'commercer' | 'etudier' | 'mediter';
+export const ACTS: ActId[] = ['cultiver', 'commercer', 'etudier', 'mediter'];
+/** Rang des activités avant la 0.4 (Chasser était le 2ᵉ) → rang actuel : Chasser devient Récolter. */
+export const ACT_INDEX_V03 = [0, 0, 1, 2, 3];
 
 export interface ActDef {
   id: ActId;
@@ -28,14 +34,9 @@ export interface ActDef {
 
 export const ACT: Record<ActId, ActDef> = {
   cultiver: {
-    id: 'cultiver', name: 'Cultiver', icon: '🌱', color: '#7cb342',
-    desc: 'Produit des Vivres selon la Flore du domaine. Fait pousser la Flore.',
+    id: 'cultiver', name: 'Récolter', icon: '🌾', color: '#7cb342',
+    desc: 'Vit des champs et des bois : puise dans la Flore et le Gibier selon leur abondance. Les champs font pousser la Flore, la chasse prélève le Gibier.',
     vocation: 'Paysan', vocationF: 'Paysanne', produce: { vivres: 1.2 }, consume: {}, unlockText: '',
-  },
-  chasser: {
-    id: 'chasser', name: 'Chasser', icon: '🏹', color: '#d84315',
-    desc: 'Produit beaucoup de Vivres selon le Gibier, mais le prélève.',
-    vocation: 'Chasseur', vocationF: 'Chasseresse', produce: { vivres: 2.0 }, consume: {}, unlockText: '',
   },
   commercer: {
     id: 'commercer', name: 'Commercer', icon: '⚖️', color: '#f9a825',
@@ -56,7 +57,6 @@ export const ACT: Record<ActId, ActDef> = {
 
 export const ACT_UNLOCK: Record<ActId, { res: ResId | null; amount: number }> = {
   cultiver: { res: null, amount: 0 },
-  chasser: { res: null, amount: 0 },
   commercer: { res: 'vivres', amount: 40 },
   etudier: { res: 'or', amount: 40 },
   mediter: { res: 'savoir', amount: 20 },
@@ -116,8 +116,7 @@ export const RARITY = [
 ];
 
 export const TRAITS: TraitDef[] = [
-  { id: 'main_verte', name: 'Main verte', icon: '🌿', rarity: 0, desc: 'Cultiver +40%', mods: { act: { cultiver: 0.4 } } },
-  { id: 'oeil_faucon', name: 'Œil de faucon', icon: '🦅', rarity: 0, desc: 'Chasser +40%', mods: { act: { chasser: 0.4 } } },
+  { id: 'main_verte', name: 'Main verte', icon: '🌿', rarity: 0, desc: 'Récolter +40%', mods: { act: { cultiver: 0.4 } } },
   { id: 'langue_argent', name: 'Langue d\'argent', icon: '🗣️', rarity: 0, desc: 'Commercer +40%', mods: { act: { commercer: 0.4 } } },
   { id: 'rat_biblio', name: 'Rat de bibliothèque', icon: '🐭', rarity: 0, desc: 'Étudier +40%', mods: { act: { etudier: 0.4 } } },
   { id: 'ame_calme', name: 'Âme calme', icon: '🍃', rarity: 0, desc: 'Méditer +40%', mods: { act: { mediter: 0.4 } } },
@@ -140,16 +139,17 @@ export const TRAITS: TraitDef[] = [
   { id: 'elu', name: 'Élu', nameF: 'Élue', icon: '👑', rarity: 3, desc: 'Production +80%, expérience +40%', mods: { all: 0.8, xp: 0.4 } },
   { id: 'eternel', name: 'Éternel', nameF: 'Éternelle', icon: '♾️', rarity: 3, desc: 'Vie +45 s, Écho +50%', mods: { life: 45, echo: 0.5 } },
   { id: 'astres', name: 'Béni des astres', nameF: 'Bénie des astres', icon: '🌠', rarity: 4, shop: true, desc: 'Production +50%, Écho +50%, transmission +20%', mods: { all: 0.5, echo: 0.5, inherit: 0.2 } },
-  // --- 0.3 : à la fin du tableau, car les codes d'alliance désignent les traits par leur rang. ---
+  // --- 0.3 ---
   // Formes mûries des dons d'activité (voir evolution.ts) : elles ne naissent pas par mutation.
-  { id: 'seve', name: 'Sève de la terre', icon: '🌱', rarity: 1, since: '0.3', matured: true, desc: 'Cultiver +90%', mods: { act: { cultiver: 0.9 } } },
-  { id: 'pas_loup', name: 'Pas de loup', icon: '🐾', rarity: 1, since: '0.3', matured: true, desc: 'Chasser +90%', mods: { act: { chasser: 0.9 } } },
+  { id: 'seve', name: 'Sève de la terre', icon: '🌱', rarity: 1, since: '0.3', matured: true, desc: 'Récolter +90%', mods: { act: { cultiver: 0.9 } } },
   { id: 'langue_or', name: 'Langue d\'or', icon: '🪙', rarity: 1, since: '0.3', matured: true, desc: 'Commercer +90%', mods: { act: { commercer: 0.9 } } },
   { id: 'encyclopedique', name: 'Esprit encyclopédique', icon: '📚', rarity: 1, since: '0.3', matured: true, desc: 'Étudier +90%', mods: { act: { etudier: 0.9 } } },
   { id: 'troisieme_oeil', name: 'Troisième œil', icon: '👁️', rarity: 1, since: '0.3', matured: true, desc: 'Méditer +90%', mods: { act: { mediter: 0.9 } } },
   { id: 'etoile_filante', name: 'Étoile filante', icon: '💫', rarity: 3, nova: true, since: '0.3', desc: 'Tous les Échos ×2 pendant sa vie. Ne se transmet pas, ne laisse pas d\'Écho', mods: { crypt: 1 } },
 ];
 export const TRAIT: Record<string, TraitDef> = Object.fromEntries(TRAITS.map((t) => [t.id, t]));
+/** Traits fusionnés en 0.4 (dons de chasse → dons de récolte) : appliqué aux sauvegardes. */
+export const TRAIT_RENAMED_V04: Record<string, string> = { oeil_faucon: 'main_verte', pas_loup: 'seve' };
 
 // --- Génome : budget et usure du sang ---------------------------------------
 /** Poids génétique total des traits positifs qu'un héritier peut porter (hors Bénédictions). */
@@ -210,8 +210,7 @@ export interface BuildingDef {
 }
 
 export const BUILDINGS: BuildingDef[] = [
-  { id: 'champs', name: 'Champs', icon: '🌾', desc: 'Cultiver +25% / niv.', cost: { vivres: 25 }, growth: 1.9, effect: (l) => `Cultiver ×${fmtMult(bMult(l, 0.25))}` },
-  { id: 'pavillon', name: 'Pavillon de chasse', icon: '🛖', desc: 'Chasser +25% / niv.', cost: { vivres: 40, or: 5 }, growth: 1.9, effect: (l) => `Chasser ×${fmtMult(bMult(l, 0.25))}` },
+  { id: 'champs', name: 'Champs et garennes', icon: '🌾', desc: 'Récolter +25% / niv.', cost: { vivres: 25 }, growth: 1.9, effect: (l) => `Récolter ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'comptoir', name: 'Comptoir', icon: '🏪', desc: 'Commercer +25% / niv.', cost: { or: 30 }, growth: 2.0, effect: (l) => `Commercer ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
   { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
@@ -220,7 +219,7 @@ export const BUILDINGS: BuildingDef[] = [
 ];
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 export const BUILDING_FOR_ACT: Record<ActId, string> = {
-  cultiver: 'champs', chasser: 'pavillon', commercer: 'comptoir', etudier: 'bibliotheque', mediter: 'sanctuaire',
+  cultiver: 'champs', commercer: 'comptoir', etudier: 'bibliotheque', mediter: 'sanctuaire',
 };
 
 /** Multiplicateur de bâtiment : +x par niveau, ×2 tous les 10 niveaux. */
@@ -271,8 +270,8 @@ export interface EventDef {
 }
 export const EVENTS: EventDef[] = [
   { id: 'maree', name: 'Marée d\'or', icon: '🌊', desc: 'Commercer ×3', act: { commercer: 3 }, goal: 'or', color: '#ffca28' },
-  { id: 'moisson', name: 'Moisson dorée', icon: '🌻', desc: 'Cultiver ×3', act: { cultiver: 3 }, goal: 'vivres', color: '#9ccc65' },
-  { id: 'migration', name: 'Grande migration', icon: '🦌', desc: 'Chasser ×2, le Gibier afflue', act: { chasser: 2 }, goal: 'vivres', color: '#ff7043' },
+  { id: 'moisson', name: 'Moisson dorée', icon: '🌻', desc: 'Récolter ×3', act: { cultiver: 3 }, goal: 'vivres', color: '#9ccc65' },
+  { id: 'migration', name: 'Grande migration', icon: '🦌', desc: 'Récolter ×2, le Gibier afflue', act: { cultiver: 2 }, goal: 'vivres', color: '#ff7043' },
   { id: 'eclipse', name: 'Éclipse', icon: '🌑', desc: 'Méditer ×3, Échos ×1.5', act: { mediter: 3 }, echo: 1.5, goal: 'essence', color: '#ba68c8' },
   { id: 'comete', name: 'Comète savante', icon: '☄️', desc: 'Étudier ×2, XP ×3', act: { etudier: 2 }, xp: 3, goal: 'savoir', color: '#4fc3f7' },
   { id: 'concile', name: 'Concile des ancêtres', icon: '🕯️', desc: 'Échos ×2.5', echo: 2.5, goal: 'or', color: '#e0e0e0' },

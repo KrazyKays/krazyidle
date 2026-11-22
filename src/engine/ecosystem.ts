@@ -58,16 +58,33 @@ export function ecoRegen(e: Eco, rate: number, dt: number) {
   e.G += (ECO_EQ.G - e.G) * k;
 }
 
+/** Abondance relative de la Flore et du Gibier, bornée comme les rendements. */
+const abundF = (e: Eco) => clamp(e.F / ECO_EQ.F, 0.2, 1.6);
+const abundG = (e: Eco) => clamp(e.G / ECO_EQ.G, 0.05, 2.2);
+
+/**
+ * Récolter (0.4) : part de la chasse dans le travail de la terre. On chasse le surplus de Gibier :
+ * ½ + 1,5·(G/G_éq − 1), soit moitié-moitié à l'équilibre, plus de chasse dès que les hardes abondent (toute la
+ * récolte à 4/3 de l'équilibre), plus du tout sous 2/3. Retenue parmi cinq règles en mémoire puis trois en
+ * campagne (lab/balance/terre/RESULTATS.md) : c'est celle qui garde le Domaine le plus proche de l'ancien
+ * Cultiver (Harmonie −3,5 à −4 points, valeur produite +0 à +18 %).
+ */
+export function huntShare(e: Eco): number {
+  const g = e.G / ECO_EQ.G;
+  return clamp(0.5 + 1.5 * (g - 1), 0, 1);
+}
+
 /** Impact d'une activité sur l'écosystème. strength ≈ 1 pour le héros vivant. */
 export function ecoImpact(e: Eco, act: ActId, strength: number, dt: number) {
   const s = strength * dt;
   switch (act) {
-    case 'cultiver':
-      e.F = Math.min(140, e.F + 0.35 * s);
+    case 'cultiver': {
+      // Les champs font pousser la Flore, la chasse prélève le Gibier (anciennes activités Cultiver et Chasser).
+      const h = huntShare(e);
+      e.F = Math.min(140, e.F + 0.35 * (1 - h) * s);
+      e.G = Math.max(0.2, e.G - 0.035 * e.G * h * s);
       break;
-    case 'chasser':
-      e.G = Math.max(0.2, e.G - 0.035 * e.G * s);
-      break;
+    }
     case 'commercer':
       // les caravanes défrichent un peu
       e.F = Math.max(0.5, e.F - 0.08 * s);
@@ -94,8 +111,10 @@ export function harmonyMult(e: Eco): number {
 
 /** Facteur de rendement propre à l'activité (dépend des populations). */
 export function ecoFactor(act: ActId, e: Eco): number {
-  if (act === 'cultiver') return clamp(e.F / ECO_EQ.F, 0.2, 1.6);
-  if (act === 'chasser') return clamp(e.G / ECO_EQ.G, 0.05, 2.2);
+  if (act === 'cultiver') {
+    const h = huntShare(e);
+    return (1 - h) * abundF(e) + h * abundG(e);
+  }
   return 1;
 }
 

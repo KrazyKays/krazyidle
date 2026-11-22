@@ -39,19 +39,16 @@ describe('hors ligne vs en ligne', () => {
     });
   }
 
-  // Une graine seule variait de ±4 % (é.-t. mesuré sur 20 graines, lab/balance/r10/offline-hunt.ts). Biais connu :
-  // la chasse perd ~3 % au pas de 1 s (QA, confrontation B4). Depuis la 0.3 (dons mûris, Pas de loup +90 %), quand
-  // le héros meurt au début de la fenêtre et que des Échos chasseurs puissants chassent seuls, une graine peut perdre
-  // jusqu'à 21 % (moyenne de ce cas −3,7 %, contre −1,8 % avant ; ensemble −2,6 % sur 50 graines) : le test porte
-  // désormais sur 24 graines consécutives au lieu de 8, seuil inchangé (dette consignée dans CHANGELOG-EQUILIBRAGE).
-  test('lignée de chasseurs (Affût) : écart moyen hors ligne / en ligne borné à ±5 % (24 graines)', () => {
+  // Lignée de paysans (Récolter, 0.4) dont les Échos ne font que récolter : le Domaine est sous pression, c'est
+  // là que le pas de 1 s du hors-ligne peut s'écarter du pas de 0,1 s (biais connu de l'ancienne chasse).
+  test('lignée de paysans : écart moyen hors ligne / en ligne borné à ±5 % (24 graines)', () => {
     const gaps: number[] = [];
     for (let seed = 11; seed <= 34; seed++) {
       const base = midGame(seed);
-      for (const e of base.echoes) { e.acts = e.acts.map(() => 1); }
-      const on = runFor(clone(base), 1200, 0.1, 'chasser');
+      for (const e of base.echoes) { e.acts = e.acts.map(() => 0); }
+      const on = runFor(clone(base), 1200, 0.1, 'cultiver');
       const off = clone(base);
-      if (off.life) setActivity(off, 'chasser');
+      if (off.life) setActivity(off, 'cultiver');
       simulateOffline(off, newRuntime(), 1200, T0 + 1200_000);
       gaps.push((value(off) - value(base)) / (value(on) - value(base)) - 1);
     }
