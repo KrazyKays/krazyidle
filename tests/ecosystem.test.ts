@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { ECO_EQ, ecoRegen, ecoStep, gameVigor, harmonyMult, newEco, trophyFactor, type Eco } from '../src/engine/ecosystem';
-import { dailySetup, DailyRun, encodeRun, verifyCode } from '../src/engine/daily';
+import { dailySetup, DailyRun, decodeRun, encodeRun, replay } from '../src/engine/daily';
 import { runActivity, type SimCtx } from '../src/engine/sim';
 import { buyPartition } from '../src/engine/game';
 import { importSave, exportSave } from '../src/engine/save';
@@ -68,9 +68,10 @@ describe('remise à zéro de la 0.1.0', () => {
     const run = new DailyRun(dailySetup('2026-11-14'));
     while (!run.done) { run.setAct('cultiver'); run.step(); }
     const code = encodeRun('2026-11-14', run.actions, run.score());
-    expect(verifyCode(code)!.ok).toBe(true);
+    const d = decodeRun(code)!;
+    expect(replay(d.date, d.actions)).toBe(run.score());
     // un code au format d'avant la sortie (préfixe KI1) est refusé
-    expect(verifyCode(btoa('KI1|2026-11-14|0x|10').replace(/=+$/, ''))).toBeNull();
+    expect(decodeRun(btoa('KI1|2026-11-14|0x|10').replace(/=+$/, ''))).toBeNull();
   });
 });
 

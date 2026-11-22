@@ -1,6 +1,6 @@
 import { describe, expect, it, test } from 'vitest';
 import { ACTS, FEMININE_NAMES, FIRST_NAMES, TRAIT, acc, sexFor, traitName, vocationName, type ActId } from '../src/engine/data';
-import { DailyRun, dailySetup, decodeRun, encodeRun, replay, verifyCode } from '../src/engine/daily';
+import { DailyRun, dailySetup, decodeRun, encodeRun, replay } from '../src/engine/daily';
 import { ecoHealth, ecoStep, newEco } from '../src/engine/ecosystem';
 import { activeEvent, upcomingEvents } from '../src/engine/events';
 import { confirmSuccession, isPaused, newRuntime, resumeLife, setActivity, startLife, tick, vocationOutlook } from '../src/engine/game';
@@ -33,17 +33,15 @@ describe('défi du jour', () => {
     expect(JSON.stringify(dailySetup('2026-11-12'))).not.toEqual(JSON.stringify(dailySetup('2026-11-13')));
   });
 
-  test('replay et code vérifiable', () => {
+  test('replay et code du fantôme', () => {
     const run = playDaily('2026-11-12', (t) => (t < 30 ? 'cultiver' : t < 60 ? 'commercer' : 'etudier'));
     const score = run.score();
     expect(score).toBeGreaterThan(0);
     expect(replay('2026-11-12', run.actions)).toBe(score);
     const code = encodeRun('2026-11-12', run.actions, score);
     expect(decodeRun(code)!.actions).toEqual(run.actions);
-    expect(verifyCode(code)!.ok).toBe(true);
-    const fake = encodeRun('2026-11-12', run.actions, score + 50);
-    expect(verifyCode(fake)!.ok).toBe(false);
-    expect(verifyCode('n\'importe quoi')).toBeNull();
+    expect(decodeRun(code)!.score).toBe(score);
+    expect(decodeRun('n\'importe quoi')).toBeNull();
   });
 
   test('calibrage des stratégies', () => {

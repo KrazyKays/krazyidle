@@ -176,7 +176,7 @@ describe('UI-1 — fantôme du Destin du jour (retours du 2026-11-17), adapté �
     expect(run.curve[DAILY_DUR]).toBe(run.progress());
   });
   test('le fantôme du record se reconstruit depuis son code, sans rien ajouter à la sauvegarde', async () => {
-    const { dailySetup, dailySolution, encodeRun, playActions, traceFromCode, verifyCode } = await import('../../src/engine/daily');
+    const { dailySetup, dailySolution, encodeRun, playActions, traceFromCode } = await import('../../src/engine/daily');
     const date = '2026-11-17';
     const sol = dailySolution(date);
     const run = playActions(dailySetup(date), sol.actions);
@@ -184,7 +184,6 @@ describe('UI-1 — fantôme du Destin du jour (retours du 2026-11-17), adapté �
     const tr = traceFromCode(code)!;
     expect(tr.deliveredTick).toBe(run.deliveredTick);
     expect(tr.lineTick).toEqual(run.lineTick);
-    expect(verifyCode(code)!.ok).toBe(true);
     expect(traceFromCode('pas-un-code')).toBeNull();
   });
 });
@@ -268,12 +267,12 @@ describe('CMD-1 — la Commande du comté remplace le Destin à points (validé 
   });
   test('rendements de la partie principale (plus de règles figées 0.2.1) ; les anciens codes EL1 sont refusés', async () => {
     const { ACT } = await import('../../src/engine/data');
-    const { dailySetup, verifyCode, DailyRun } = await import('../../src/engine/daily');
+    const { dailySetup, decodeRun, DailyRun } = await import('../../src/engine/daily');
     const run = new DailyRun(dailySetup(date));
     expect(run.ctx.acts).toBeUndefined(); // table ACT de la partie principale
     expect(ACT.commercer.produce.or).toBe(1.25);
     const fx: { code: string }[] = (await import('./fixtures-destin-v021.json')).default;
-    for (const f of fx) expect(verifyCode(f.code)).toBeNull();
+    for (const f of fx) expect(decodeRun(f.code)).toBeNull();
   });
   test('la commande et les paliers sont identiques à chaque appel (déterministes, pour tous les joueurs)', async () => {
     const { dailySetup, dailyTiers } = await import('../../src/engine/daily');
@@ -659,5 +658,15 @@ describe('FEATS — hauts faits de fin de partie (0.3)', () => {
     expect(s.eclats).toBe(5);
     expect(checkFeats(s, 6)).toEqual([]);
     expect(s.feats).toEqual({ millenaire: 5 });
+  });
+});
+
+describe('TERRE-1 — plus de vérification des codes du Destin (0.4)', () => {
+  test('le moteur n\'exporte plus de vérification ; le partage montre une bande d\'activités', async () => {
+    const daily = await import('../../src/engine/daily');
+    expect('verifyCode' in daily).toBe(false);
+    // 6 s par carré : Cultiver, puis pause, puis Méditer
+    const rec = [...Array(6).fill(0), ...Array(6).fill(-1), ...Array(4).fill(4)];
+    expect(daily.dailyStrip(rec)).toBe('🟩⬛🟪');
   });
 });

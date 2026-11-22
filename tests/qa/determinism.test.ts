@@ -1,7 +1,7 @@
 // QA — déterminisme de la partie et du Destin du jour.
 import { describe, expect, test } from 'vitest';
 import { ACTS } from '../../src/engine/data';
-import { DailyRun, dailySetup, encodeRun, replay, verifyCode } from '../../src/engine/daily';
+import { DailyRun, dailySetup, decodeRun, encodeRun, replay } from '../../src/engine/daily';
 import { activeEvent, upcomingEvents } from '../../src/engine/events';
 import { countyHouses } from '../../src/engine/alliances';
 import { Rng } from '../../src/engine/rng';
@@ -58,7 +58,8 @@ describe('Destin du jour : replay', () => {
         const run = randomRun(date, d * 100 + k);
         const score = run.score();
         expect(replay(date, run.actions)).toBe(score);
-        expect(verifyCode(encodeRun(date, run.actions, score))!.ok).toBe(true);
+        const dec = decodeRun(encodeRun(date, run.actions, score))!;
+        expect(replay(dec.date, dec.actions)).toBe(score);
         n++;
       }
     }

@@ -2,7 +2,7 @@ import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, isJoestar, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
-import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, encodeRun, medalsOf, resultAge, traceFromCode, verifyCode } from '../engine/daily';
+import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
 import { AFFUT_DRAW, AFFUT_ENTER, AFFUT_EXIT, AFFUT_GAIN, ECO_EQ, TROPHY_OR, ecoFactor, ecoGauge, ecoHealth, gameScarcity, gameVigor, harmonyMult, trophyFactor } from '../engine/ecosystem';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
@@ -911,7 +911,7 @@ export class App {
     parts.push(h('div', { class: 'card daily-card' },
       h('div', { class: 'label' }, `Destin du jour · ${new Date(now).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`),
       h('h2', null, `📜 La Commande du comté`),
-      h('p', { class: 'muted small' }, `La vie de ${setup.name}, identique pour tous les joueurs. Réunis la commande en stock, au même moment, le plus jeune possible, et partage ton résultat vérifiable.`),
+      h('p', { class: 'muted small' }, `La vie de ${setup.name}, identique pour tous les joueurs. Réunis la commande en stock, au même moment, le plus jeune possible, et partage ton résultat.`),
       this.orderChips(setup.order),
       this.traitChips(setup.traits, false, setup),
       h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
@@ -921,8 +921,7 @@ export class App {
         stat('Nouveau destin', b.text(h('span'), () => fmtDur((nextDay - Date.now()) / 1000)))),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-primary', onclick: () => this.openDaily() }, rec ? '🔁 Rejouer' : '▶️ Jouer'),
-        rec ? h('button', { class: 'btn', onclick: () => this.shareDaily(date, rec.best, rec.code) }, '📤 Partager') : null,
-        h('button', { class: 'btn btn-ghost', onclick: () => this.openVerify() }, '🔎 Vérifier un code'))));
+        rec ? h('button', { class: 'btn', onclick: () => this.shareDaily(date, rec.best, rec.code) }, '📤 Partager') : null)));
 
     const ev = this.rt.event;
     if (ev) {
@@ -1553,8 +1552,6 @@ export class App {
           h('p', { class: 'muted' }, isBest ? 'Nouveau record personnel du jour !' : `Ton record du jour reste : ${fmtDailyResult(rec.best)}.`),
           gain ? h('p', { class: 'accent' }, `+${gain} ✦ Éclats célestes`) : null),
         h('div', { class: 'timeline', style: { background: stripGradient(run.life.rec, run.life.rec.length || 1) } }),
-        h('p', { class: 'muted small' }, 'Code vérifiable (tout le monde peut rejouer ta partie et confirmer ton résultat) :'),
-        h('textarea', { class: 'input mono', rows: 2, readonly: true }, code),
         h('div', { class: 'row-wrap' },
           h('button', { class: 'btn btn-primary', onclick: () => this.shareDaily(date, result, code) }, '📤 Partager'),
           h('button', { class: 'btn', onclick: () => { intro(); } }, '🔁 Rejouer'),
@@ -1583,28 +1580,13 @@ export class App {
   async shareDaily(date: string, result: number, code: string) {
     const d = new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR');
     const n = medalsOf(date, result);
-    const text = `📜 Échos de Lignée — Commande du ${d}\n${n ? MEDALS[n - 1] : '🎗️'} ${fmtDailyResult(result)}\nVérifie mon résultat : ${code}\n${GAME_URL}`;
+    const tr = traceFromCode(code);
+    const strip = tr ? `\n${dailyStrip(tr.rec)}` : '';
+    const text = `📜 Échos de Lignée — Commande du ${d}\n${n ? MEDALS[n - 1] : '🎗️'} ${fmtDailyResult(result)}${strip}\nFais mieux : ${GAME_URL}`;
     try {
       if (navigator.share) { await navigator.share({ text }); return; }
     } catch { /* annulé */ }
     toast((await copyText(text)) ? '📋 Résultat copié : colle-le où tu veux !' : 'Copie impossible', 'good');
-  }
-
-  openVerify() {
-    const input = h('textarea', { class: 'input mono', rows: 3, placeholder: 'Colle un code de résultat…' }) as HTMLTextAreaElement;
-    const out = h('div');
-    modal(h('div', null,
-      h('h2', null, '🔎 Vérifier un résultat'),
-      h('p', { class: 'muted small' }, 'Le jeu rejoue exactement la partie décrite par le code et compare le résultat annoncé.'),
-      input,
-      h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary', onclick: () => {
-        const m = input.value.match(/[A-Za-z0-9_-]{12,}/g);
-        const code = m ? m.sort((a, b) => b.length - a.length)[0] : '';
-        const r = verifyCode(code);
-        if (!r) out.replaceChildren(h('p', { class: 'bad' }, '❌ Code illisible (ou d\'une ancienne version du Destin).'));
-        else out.replaceChildren(h('p', { class: r.ok ? 'good' : 'bad' }, r.ok ? `✅ Authentique : ${fmtDailyResult(r.actual)} le ${r.date}.` : `❌ Falsifié : annoncé « ${fmtDailyResult(r.claimed)} », réel « ${fmtDailyResult(r.actual)} ».`));
-      } }, 'Vérifier')),
-      out));
   }
 }
 

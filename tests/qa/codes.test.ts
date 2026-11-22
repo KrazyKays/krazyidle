@@ -1,7 +1,7 @@
-// QA — codes : Destin du jour (score vérifiable) et codes d'alliance (bornes, réutilisation, propre maison).
+// QA — codes : Destin du jour (fantôme du record) et codes d'alliance (bornes, réutilisation, propre maison).
 import { describe, expect, test } from 'vitest';
 import { ACTS, TRAIT } from '../../src/engine/data';
-import { dailySetup, dailySolution, decodeRun, encodeRun, playActions, verifyCode } from '../../src/engine/daily';
+import { dailySetup, dailySolution, decodeRun, encodeRun, playActions, replay, traceFromCode } from '../../src/engine/daily';
 import { acceptProposal, codeKey, decodeProposal, encodeProposal, readProposal } from '../../src/engine/alliances';
 import { startLife } from '../../src/engine/game';
 import { hashStr } from '../../src/engine/rng';
@@ -9,23 +9,16 @@ import { newGame, type GameState } from '../../src/engine/state';
 
 const b64url = (raw: string) => btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-describe('Destin du jour : codes trafiqués', () => {
+describe('Destin du jour : code du fantôme (plus de vérification depuis la 0.4)', () => {
   const date = '2026-11-14';
-  // Partie qui livre la commande (plan du solveur) : son résultat est un âge de livraison au dixième,
-  // qui change dès qu'on touche à la date ou à une action.
   const run = playActions(dailySetup(date), dailySolution(date).actions);
   const score = run.score();
   const good = encodeRun(date, run.actions, score);
 
-  test('le code honnête est vérifié', () => {
-    expect(verifyCode(good)!.ok).toBe(true);
-  });
-
-  test('score gonflé, date changée, action changée : refusés', () => {
-    expect(verifyCode(encodeRun(date, run.actions, score + 1))!.ok).toBe(false);
-    expect(verifyCode(encodeRun('2026-11-15', run.actions, score))!.ok).toBe(false);
-    const acts = run.actions.map(([t, a]) => [t, a === 2 ? 1 : a] as [number, number]);
-    expect(verifyCode(encodeRun(date, acts, score))!.ok).toBe(false);
+  test('le code rejoue exactement la partie (fantôme du record)', () => {
+    const d = decodeRun(good)!;
+    expect(replay(d.date, d.actions)).toBe(score);
+    expect(traceFromCode(good)!.deliveredTick).toBe(run.deliveredTick);
   });
 
   test('codes malformés : null, jamais d\'exception', () => {
@@ -34,35 +27,28 @@ describe('Destin du jour : codes trafiqués', () => {
       b64url('EL1|2026-11-14|00|0'), b64url('EL3|2026-11-14|00|0'), b64url('EL1|14/11/2026|00|0'), '%%%%', b64url('EL1|2026-11-14|.|0'),
     ];
     for (const c of bad) {
-      expect(() => verifyCode(c)).not.toThrow();
+      expect(() => traceFromCode(c)).not.toThrow();
     }
     expect(decodeRun(b64url('EL2|2026-11-14|09|10'))).toBeNull(); // activité 9 inexistante
     expect(decodeRun(b64url('EL1|2026-11-14|00|10'))).toBeNull(); // ancien Destin à points
   });
 
-  test('actions hors ordre ou hors durée : le replay reste celui d\'une vraie partie (pas de score impossible)', () => {
-    // Actions en désordre : le replay s'arrête de lire au premier tick non atteint → score d'une partie légale.
+  test('actions hors ordre ou hors durée : le replay reste celui d\'une vraie partie', () => {
     const shuffled: [number, number][] = [[500, 2], [0, 0], [10, 1]];
-    const r = verifyCode(encodeRun(date, shuffled, 0))!;
-    expect(r).not.toBeNull();
-    expect(r.actual).toBeGreaterThanOrEqual(0);
-    const late = verifyCode(encodeRun(date, [[0, 0], [99999, 3]], 0))!;
-    const only = verifyCode(encodeRun(date, [[0, 0]], 0))!;
-    expect(late.actual).toBe(only.actual);
+    expect(replay(date, shuffled)).toBeGreaterThanOrEqual(0);
+    expect(replay(date, [[0, 0], [99999, 3]])).toBe(replay(date, [[0, 0]]));
   });
 
   test('un code de 100 000 actions est traité en temps borné', () => {
     const many: [number, number][] = [];
     for (let i = 0; i < 100_000; i++) many.push([i, i % 5]);
     const t = performance.now();
-    verifyCode(encodeRun(date, many, 0));
+    traceFromCode(encodeRun(date, many, 0));
     expect(performance.now() - t).toBeLessThan(3000);
   });
 
-  test('score non numérique dans le code : refusé (claimed NaN ≠ actual)', () => {
-    const raw = `EL2|${date}|00|abc`;
-    const r = verifyCode(b64url(raw));
-    expect(r?.ok ?? false).toBe(false);
+  test('score non numérique dans le code : illisible', () => {
+    expect(decodeRun(b64url(`EL2|${date}|00|abc`))).toBeNull();
   });
 });
 

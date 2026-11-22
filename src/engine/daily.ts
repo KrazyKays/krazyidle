@@ -1,5 +1,6 @@
 // Destin du jour : « la Commande du comté ». Une vie identique pour tous les joueurs, une commande à livrer
-// le plus jeune possible, rejouable et vérifiable par code.
+// le plus jeune possible. Le code d'une partie sert à rejouer le fantôme de son record ; il n'y a plus
+// de vérification de code (0.4) : sans classement, elle ne protégeait rien et figeait l'équilibrage.
 import { ACTS, DAILY_NAMES, RES, TRAITS, type ActId, type ResId } from './data';
 import { ecoStep, harmonyMult, newEco, type Eco } from './ecosystem';
 import { hashStr, Rng } from './rng';
@@ -319,11 +320,17 @@ export function decodeRun(code: string): { date: string; actions: [number, numbe
   }
 }
 
-export function verifyCode(code: string): { ok: boolean; date: string; claimed: number; actual: number } | null {
-  const d = decodeRun(code);
-  if (!d) return null;
-  const actual = replay(d.date, d.actions);
-  return { ok: actual === d.score, date: d.date, claimed: d.score, actual };
+/** Carrés de couleur de l'activité dominante par tranche de `step` secondes (partage du résultat). */
+export const ACT_SQUARE = ['🟩', '🟧', '🟨', '🟦', '🟪'];
+export function dailyStrip(rec: number[], step = 6): string {
+  let out = '';
+  for (let i = 0; i < rec.length; i += step) {
+    const n = new Map<number, number>();
+    for (const a of rec.slice(i, i + step)) n.set(a, (n.get(a) ?? 0) + 1);
+    const top = [...n.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0])[0][0];
+    out += top >= 0 ? ACT_SQUARE[top] ?? '⬜' : '⬛';
+  }
+  return out;
 }
 
 // --- Solveur et paliers ------------------------------------------------------------------------------
