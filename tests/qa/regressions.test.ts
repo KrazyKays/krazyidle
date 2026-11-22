@@ -437,9 +437,9 @@ describe('GD-SURNOMS C — un surnom commun déjà connu ne déploie plus la gra
 describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
   test('cinq onglets ; tous les achats sous Améliorer, les Échos sous Domaine', async () => {
     const { TABS, SUBS, SUB_TAB } = await import('../../src/ui/nav');
-    expect(TABS.map((t) => t.id)).toEqual(['vie', 'domaine', 'ameliorer', 'maison', 'destin']);
+    expect(TABS.map((t) => t.id)).toEqual(['vie', 'memoire', 'ameliorer', 'maison', 'destin']);
     expect(SUBS.ameliorer.map((x) => x.id)).toEqual(['batiments', 'heritage', 'bazar']);
-    expect(SUB_TAB.echos).toBe('domaine');
+    expect(SUB_TAB.echos).toBe('memoire');
     expect(SUB_TAB.alliances).toBe('maison');
     expect(SUB_TAB.jour).toBe('destin');
   });
@@ -457,15 +457,15 @@ describe('UX-NAV 1 — menus rangés par intention, avec sous-onglets', () => {
     s.eclats = 0; s.flags.bazar = true;
     expect(ids('ameliorer')).toContain('bazar');
   });
-  test('sur ordinateur, la Vie n\'est pas un onglet ; en 3 colonnes les Échos quittent le Domaine', async () => {
+  test('sur ordinateur, la Vie n\'est pas un onglet ; en 3 colonnes les Échos quittent la Mémoire', async () => {
     const { normSub, normTab, subsShown, tabsShown } = await import('../../src/ui/nav');
     const s = newGame(0, 1);
     expect(tabsShown('two').map((t) => t.id)).not.toContain('vie');
-    expect(normTab('vie', 'two')).toBe('domaine');
+    expect(normTab('vie', 'two')).toBe('memoire');
     expect(normTab('vie', 'mobile')).toBe('vie');
-    expect(subsShown(s, 'domaine', 'three').map((x) => x.id)).toEqual([]); // 0.5 : plus de Nature
-    expect(normSub(s, 'domaine', 'three', 'echos')).toBeNull();
-    expect(normSub(s, 'domaine', 'two', 'echos')).toBe('echos');
+    expect(subsShown(s, 'memoire', 'three').map((x) => x.id)).toEqual(['archives']); // 0.5 : Archives à la place de Nature
+    expect(normSub(s, 'memoire', 'three', 'echos')).toBe('archives');
+    expect(normSub(s, 'memoire', 'two', 'echos')).toBe('echos');
     // Un sous-onglet verrouillé n'est jamais affiché, même s'il était le dernier choisi.
     expect(normSub(s, 'maison', 'mobile', 'alliances')).toBe('lignee');
     expect(normSub(s, 'vie', 'mobile', undefined)).toBeNull();
@@ -864,5 +864,31 @@ describe('SIMPLIF-3 — la lignée remplace le Domaine dans les conditions (0.5)
     const t: any = deserialize(serialize(s))!;
     expect(t.epithets).toEqual({ juste: 2 });
     expect(t.ancestors[0].epithet).toBeUndefined();
+  });
+});
+
+describe('SIMPLIF-4 — Archives de la maison et onglet Mémoire (0.5)', () => {
+  test('les Archives ouvrent à la génération 25, 5 niveaux ; niveau 2 : vocation +5 % ; 4 : usure −1 ; 5 : +6 ✦', async () => {
+    const { BUILDING, ARCHIVES } = await import('../../src/engine/data');
+    const { buildingCost, buyBuilding, transmissionChance } = await import('../../src/engine/game');
+    const s = newGame(0, 47);
+    const pay = () => { const c = buildingCost('archives', s.buildings.archives ?? 0); s.res.savoir = c.savoir!; s.res.or = c.or!; };
+    expect(BUILDING.archives.max).toBe(5);
+    expect(ARCHIVES).toHaveLength(5);
+    pay();
+    expect(buyBuilding(s, 'archives')).toBe(false); // génération 1
+    s.hero.gen = 25;
+    for (let i = 0; i < 3; i++) { pay(); expect(buyBuilding(s, 'archives')).toBe(true); }
+    s.hero.traits = ['robuste'];
+    s.hero.wear = { robuste: 3 };
+    const before = transmissionChance(s, s.hero, 'robuste');
+    pay(); buyBuilding(s, 'archives');
+    expect(s.hero.wear).toEqual({ robuste: 2 });
+    expect(transmissionChance(s, s.hero, 'robuste')).toBeGreaterThan(before);
+    const e0 = s.eclats;
+    pay(); buyBuilding(s, 'archives');
+    expect(s.eclats).toBe(e0 + 6);
+    pay();
+    expect(buyBuilding(s, 'archives')).toBe(false); // niveau max
   });
 });

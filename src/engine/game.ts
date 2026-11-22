@@ -1,6 +1,6 @@
 // Logique de la partie principale : vie, Échos, succession, événements.
 import {
-  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
+  ACTS, ACT_UNLOCK, ARCHIVES_ECLATS, ARCHIVES_VOC, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
   EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights,
 } from './data';
@@ -502,7 +502,7 @@ export function genHeirs(s: GameState, parent: Hero, rng: Rng, ripe: Record<stri
     const kept: Record<string, number> = {};
     for (const t of traits) if (!TRAIT[t]?.neg && wear[t]) kept[t] = wear[t];
     let vocation: Vocation | null = null;
-    const vocP = Math.min(0.95, 0.6 + 0.08 * up(s, 'transmission'));
+    const vocP = Math.min(0.95, 0.6 + 0.08 * up(s, 'transmission') + (bl(s, 'archives') >= 2 ? ARCHIVES_VOC : 0));
     if (parent.vocation && rng.chance(vocP)) {
       vocation = { ...parent.vocation };
       // Union de métier : deux parents du même métier le transmettent parfois d'un rang plus haut.
@@ -601,13 +601,40 @@ export function buyBuilding(s: GameState, id: string): boolean {
   const lvl = bl(s, id);
   const d = BUILDING[id];
   if (d.max !== undefined && lvl >= d.max) return false;
+  if (!buildingOpen(s, id)) return false;
   const cost = buildingCost(id, lvl);
   if (!canAfford(s, cost)) return false;
   for (const r in cost) s.res[r as ResId] -= cost[r as ResId]!;
   s.buildings[id] = lvl + 1;
   if (s.life) lifeStats(s.life).bd++;
   if (id === 'clepsydre' && s.life) s.life.dur += 4;
+  if (id === 'archives') archivesBought(s, lvl + 1);
   return true;
+}
+
+/** Le bâtiment peut-il être bâti à cette génération (Archives : génération 25) ? */
+export function buildingOpen(s: GameState, id: string): boolean {
+  const d = BUILDING[id];
+  return !!d && (!d.minGen || s.hero.gen >= d.minGen || bl(s, id) > 0);
+}
+
+/** Effets ponctuels des Archives : usure −1 sur les dons du héros (niveau 4), Éclats (niveau 5). */
+function archivesBought(s: GameState, lvl: number) {
+  if (lvl === 4) {
+    const w = { ...heroWear(s, s.hero) };
+    for (const t of Object.keys(w)) w[t] = Math.max(0, w[t] - 1);
+    s.hero.wear = w;
+  }
+  if (lvl === 5) s.eclats += ARCHIVES_ECLATS;
+}
+
+/** Chance qu'un don du héros passe à chacun de ses enfants (Archives, niveau 2). */
+export function transmissionChance(s: GameState, hero: Hero, t: string): number {
+  const def = TRAIT[t];
+  if (!def || def.nova) return 0;
+  if (def.neg) return 0.3;
+  const inherit = 0.5 + 0.08 * up(s, 'transmission') + sumMods(hero.traits).inherit;
+  return Math.min(0.95, inherit) * wearMult(heroWear(s, hero)[t] ?? 0);
 }
 
 export function buyLegacy(s: GameState, id: string): boolean {

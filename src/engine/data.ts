@@ -209,8 +209,28 @@ export interface BuildingDef {
   cost: Partial<Record<ResId, number>>;
   growth: number;
   max?: number;
+  /** génération à partir de laquelle le bâtiment peut être bâti (et apparaît) */
+  minGen?: number;
   effect: (lvl: number) => string;
 }
+
+/**
+ * Archives de la maison (0.5, SIMPLIF-4) : chaque niveau révèle une information cachée de la lignée, avec un
+ * petit effet de lignée et aucune puissance de production. Elles ouvrent à la génération 25 (≈ 35–45 min),
+ * dans le creux du milieu de partie (P18), et répondent au budget génétique invisible (P19).
+ */
+export const ARCHIVES_GEN = 25;
+export const ARCHIVES: { reveal: string; effect?: string }[] = [
+  { reveal: 'Le registre des records : la meilleure vie de la lignée et les seuils ×1,5 et ×2' },
+  { reveal: 'La chance de transmission de chaque don, usure comprise', effect: 'Transmission de la vocation +5 %' },
+  { reveal: 'Le poids génétique des dons et le budget du sang' },
+  { reveal: 'Les dons que la vie en cours est en train de mûrir', effect: 'Usure −1 sur les dons du héros, à l\'achat' },
+  { reveal: 'Le surnom que les Chroniques retiendraient si la vie s\'arrêtait maintenant', effect: '+6 ✦ (le prix d\'une Bénédiction Rare), une fois' },
+];
+/** Bonus de transmission de la vocation au niveau 2 des Archives. */
+export const ARCHIVES_VOC = 0.05;
+/** Éclats offerts au niveau 5 des Archives. */
+export const ARCHIVES_ECLATS = 6;
 
 export const BUILDINGS: BuildingDef[] = [
   { id: 'champs', name: 'Champs et garennes', icon: '🌾', desc: 'Récolter +25% / niv.', cost: { vivres: 25 }, growth: 1.9, effect: (l) => `Récolter ×${fmtMult(bMult(l, 0.25))}` },
@@ -218,6 +238,7 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
   { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
   { id: 'clepsydre', name: 'Clepsydre', icon: '⌛', desc: 'Durée de vie +4 s / niv.', cost: { savoir: 40, essence: 8 }, growth: 2.4, max: 15, effect: (l) => `Vie +${l * 4} s` },
+  { id: 'archives', name: 'Archives de la maison', icon: '🗄️', desc: 'Chaque niveau révèle un secret de la lignée (Mémoire › Archives)', cost: { savoir: 40, or: 120 }, growth: 2.6, max: 5, minGen: ARCHIVES_GEN, effect: (l) => `${l} secret${l > 1 ? 's' : ''} révélé${l > 1 ? 's' : ''} sur 5` },
 ];
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));
 export const BUILDING_FOR_ACT: Record<ActId, string> = {

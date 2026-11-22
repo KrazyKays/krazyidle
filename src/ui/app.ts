@@ -1,12 +1,12 @@
 import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, isJoestar, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
-  legacyCost, wearMult, xpToNext, type ActId, type ResId,
+  legacyCost, wearMult, xpToNext, type ActId, type ResId, ARCHIVES, ARCHIVES_GEN, ARCHIVES_VOC, GENOME_BUDGET, genomeWeight,
 } from '../engine/data';
 import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford,
-  VOCATION_SHARE, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
+  VOCATION_SHARE, buildingOpen, chroniclesUnlocked, confirmSuccession, lifeFacts, transmissionChance, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -15,7 +15,7 @@ import type { DailyRecord, Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
-import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName } from '../engine/epithets';
+import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName, pickEpithet } from '../engine/epithets';
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { evolutionsOf } from '../engine/evolution';
@@ -366,10 +366,11 @@ export class App {
       ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} travaille déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
       ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
       ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
-      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Domaine › Échos). Chaque génération ajoute une boucle !` : ''],
+      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Mémoire › Échos). Chaque génération ajoute une boucle !` : ''],
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
+      ['archives', s.hero.gen >= ARCHIVES_GEN && !(s.buildings.archives ?? 0), `Ta lignée compte ${s.hero.gen} générations : les Archives de la maison peuvent s'ouvrir (Améliorer › Bâtiments). Chaque niveau révèle un secret du sang (Mémoire › Archives).`],
       ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
     ];
     for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
@@ -610,6 +611,7 @@ export class App {
     const head = tab + '/' + sub + '/' + subsShown(s, tab, this.layout).map((x) => x.id).join() + '|';
     switch (sub) {
       case 'echos': return head + this.sigEchoNow();
+      case 'archives': return head + (s.buildings.archives ?? 0) + '|' + s.hero.id + '|' + !!s.life + '|' + (s.hero.gen >= ARCHIVES_GEN) + Object.keys(s.epithets).length + JSON.stringify(s.hero.wear ?? {});
       case 'batiments': return head + BUILDINGS.filter((x) => this.buildingVisible(x.id)).map((x) => x.id + (s.buildings[x.id] ?? 0)).join();
       case 'heritage': return head + JSON.stringify(s.upgrades);
       case 'bazar': return head + s.blessings.join() + s.partitions.join() + this.lineageSig() + !!s.life + s.life?.extended;
@@ -637,6 +639,7 @@ export class App {
     let el: HTMLElement | null = null;
     switch (sub) {
       case 'echos': el = this.panelEchoes(this.bTab); break;
+      case 'archives': el = this.panelArchives(); break;
       case 'batiments': el = this.panelBatiments(); break;
       case 'heritage': el = this.panelHeritage(); break;
       case 'bazar': el = this.panelBazar(); break;
@@ -709,9 +712,64 @@ export class App {
           h('button', { class: 'icon-btn sm', title: 'Libérer cet Écho', onclick: async () => { if (await confirmBox(`Libérer l'Écho de ${this.nm(e)} ? Il disparaîtra définitivement.`, 'Libérer', true)) { s.echoes = s.echoes.filter((x) => x !== e); refresh(); } } }, '🗑️'))));
   }
 
-  // --- Domaine --------------------------------------------------------------
+  // --- Mémoire : Archives de la maison ----------------------------------------
+  /** Chaque niveau des Archives révèle une information de la lignée (SIMPLIF-4). */
+  panelArchives() {
+    const s = this.s, b = this.bTab, hero = s.hero;
+    const lvl = s.buildings.archives ?? 0;
+    const intro = lvl > 0 ? 'Ce que la maison sait d\'elle-même. Chaque niveau des Archives lève un voile sur le sang.'
+      : hero.gen < ARCHIVES_GEN ? `Les Archives ouvriront à la génération ${ARCHIVES_GEN} (ta lignée en est à la ${hero.gen}ᵉ). Elles se bâtissent dans Améliorer › Bâtiments.`
+        : 'Bâtis les Archives (Améliorer › Bâtiments) pour révéler, niveau après niveau, les secrets de ta lignée.';
+    const head = h('div', { class: 'card panel-head' }, h('h2', null, '🗄️ Archives de la maison'), h('p', { class: 'muted' }, intro));
+    const facts = () => (s.life ? lifeFacts(s, s.life, null) : null);
+    const pct = (x: number) => `${Math.round(x * 100)} %`;
+    const own = hero.traits.filter((t) => TRAIT[t]);
+    const content = (i: number): HTMLElement => {
+      switch (i) {
+        case 0: {
+          const best = s.stats.bestLife;
+          return h('div', null,
+            h('div', { class: 'stats' }, stat('Meilleure vie', best > 0 ? fmt(best) : '—'), stat('Record (×1,5)', best > 0 ? fmt(1.5 * best) : '—'), stat('Gloire (×2)', best > 0 ? fmt(2 * best) : '—')),
+            b.text(h('p', { class: 'muted small' }), () => (s.life && best > 0 ? `Vie en cours : ${fmt(s.life.value)}, soit ${pct(s.life.value / best)} de la meilleure.` : '')));
+        }
+        case 1: {
+          const vocP = Math.min(0.95, 0.6 + 0.08 * (s.upgrades.transmission ?? 0) + ARCHIVES_VOC);
+          return h('div', null,
+            own.length ? h('ul', { class: 'small archive-list' }, own.map((t) => h('li', null, `${TRAIT[t].icon} ${traitName(TRAIT[t], hero)} : ${pct(transmissionChance(s, hero, t))} par enfant`))) : h('p', { class: 'muted small' }, 'Aucun don à transmettre.'),
+            hero.vocation ? h('p', { class: 'muted small' }, `Vocation : ${pct(vocP)} par enfant.`) : null);
+        }
+        case 2: {
+          const w = genomeWeight(own);
+          return h('p', { class: 'small' }, `Les dons de ${hero.name} pèsent ${w} sur ${GENOME_BUDGET}. Commun et Rare pèsent 1, Épique 2, Légendaire 3, Mythique 4 ; les mauvais présages ne pèsent rien. Un enfant ne porte jamais plus que le budget : au-delà, certains dons se taisent.`);
+        }
+        case 3: {
+          const evo = own.flatMap((t) => evolutionsOf(t).map((e) => ({ t, e })));
+          if (!evo.length) return h('p', { class: 'muted small' }, 'Aucun don du héros ne peut mûrir.');
+          return h('ul', { class: 'small archive-list' }, evo.map(({ t, e }) => b.text(h('li'), () => {
+            const f = facts();
+            const ok = !!f && e.test(f);
+            return `${ok ? '✅' : '⏳'} ${TRAIT[t].icon} ${traitName(TRAIT[t], hero)} → ${TRAIT[e.to].icon} ${traitName(TRAIT[e.to], hero)} : ${ok ? 'mûr pour l\'instant' : 'pas encore mûr'}`;
+          })));
+        }
+        default:
+          return b.text(h('p', { class: 'small' }), () => {
+            if (!chroniclesUnlocked(s)) return 'Les Chroniques ne sont pas encore ouvertes : aucune vie n\'entre dans la légende.';
+            const f = facts();
+            const ep = f ? pickEpithet(f) : null;
+            return ep ? `Si la vie s'arrêtait maintenant : ${ep.icon} ${epithetLabel(ep.id, hero)}, « ${ep.hint} »` : 'Si la vie s\'arrêtait maintenant, les Chroniques ne retiendraient rien.';
+          });
+      }
+    };
+    const levels = ARCHIVES.map((a, i) => h('div', { class: `card build ${i < lvl ? '' : 'locked'}` },
+      h('div', { class: 'build-n' }, `${i < lvl ? '📖' : '🔒'} Niveau ${i + 1} · ${a.reveal}`),
+      a.effect ? h('div', { class: 'muted small' }, a.effect) : null,
+      i < lvl ? content(i) : null));
+    return h('div', null, head, lvl > 0 || hero.gen >= ARCHIVES_GEN ? levels : null);
+  }
+
   buildingVisible(id: string) {
     const d = BUILDINGS.find((x) => x.id === id)!;
+    if (d.minGen) return buildingOpen(this.s, id);
     return Object.keys(d.cost).every((r) => this.s.totalEver[r as ResId] > 0) || (this.s.buildings[id] ?? 0) > 0;
   }
 

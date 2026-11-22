@@ -2,7 +2,7 @@
 //
 // Les onglets sont rangés par intention du joueur :
 //   ⏳ Vie       — jouer la vie en cours ;
-//   🌳 Domaine   — ce qui tourne sans toi (Échos) ;
+//   🏛️ Mémoire   — ce que la lignée garde d'elle-même (Échos, Archives) ;
 //   🔨 Améliorer — tout ce qui s'achète (Bâtiments en ressources, Héritage ⚜️, Bazar ✦) ;
 //   👑 Maison    — identité et collection (Lignée et blason, Alliances, Codex) ;
 //   🌠 Destin    — les rendez-vous (Aujourd'hui : événement et Commande ; Calendrier).
@@ -11,8 +11,8 @@ import { alliancesUnlocked } from '../engine/alliances';
 import { buildingCost, canAfford, chroniclesUnlocked } from '../engine/game';
 import type { GameState } from '../engine/state';
 
-export type Tab = 'vie' | 'domaine' | 'ameliorer' | 'maison' | 'destin';
-export type Sub = 'echos' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
+export type Tab = 'vie' | 'memoire' | 'ameliorer' | 'maison' | 'destin';
+export type Sub = 'echos' | 'archives' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
 /** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
 export type Layout = 'mobile' | 'two' | 'three';
 
@@ -21,7 +21,7 @@ export interface SubDef { id: Sub; icon: string; name: string }
 
 export const TABS: TabDef[] = [
   { id: 'vie', icon: '⏳', name: 'Vie' },
-  { id: 'domaine', icon: '🌳', name: 'Domaine' },
+  { id: 'memoire', icon: '🏛️', name: 'Mémoire' },
   { id: 'ameliorer', icon: '🔨', name: 'Améliorer' },
   { id: 'maison', icon: '👑', name: 'Maison' },
   { id: 'destin', icon: '🌠', name: 'Destin' },
@@ -29,7 +29,7 @@ export const TABS: TabDef[] = [
 
 export const SUBS: Record<Tab, SubDef[]> = {
   vie: [],
-  domaine: [{ id: 'echos', icon: '🌀', name: 'Échos' }],
+  memoire: [{ id: 'echos', icon: '🌀', name: 'Échos' }, { id: 'archives', icon: '🗄️', name: 'Archives' }],
   ameliorer: [{ id: 'batiments', icon: '🏠', name: 'Bâtiments' }, { id: 'heritage', icon: '⚜️', name: 'Héritage' }, { id: 'bazar', icon: '✦', name: 'Bazar' }],
   maison: [{ id: 'lignee', icon: '📜', name: 'Lignée' }, { id: 'alliances', icon: '💍', name: 'Alliances' }, { id: 'codex', icon: '📖', name: 'Codex' }],
   destin: [{ id: 'jour', icon: '☀️', name: 'Aujourd\'hui' }, { id: 'calendrier', icon: '📅', name: 'Calendrier' }],
@@ -47,7 +47,7 @@ export function bazarUnlocked(s: GameState): boolean {
 
 /**
  * Sous-onglets proposés : un sous-onglet n'apparaît qu'une fois sa mécanique débloquée (les menus restent courts
- * pour un nouveau joueur), et les Échos quittent le Domaine quand ils ont leur propre colonne (3 colonnes).
+ * pour un nouveau joueur), et les Échos quittent la Mémoire quand ils ont leur propre colonne (3 colonnes).
  */
 export function subsShown(s: GameState, tab: Tab, layout: Layout): SubDef[] {
   return SUBS[tab].filter((x) => {
@@ -77,7 +77,7 @@ export function tabsShown(layout: Layout): TabDef[] {
 
 /** Onglet effectivement affiché (la Vie n'est pas un onglet sur ordinateur). */
 export function normTab(t: Tab, layout: Layout): Tab {
-  return tabsShown(layout).some((x) => x.id === t) ? t : 'domaine';
+  return tabsShown(layout).some((x) => x.id === t) ? t : 'memoire';
 }
 
 /** Sous-onglet effectivement affiché : le dernier choisi s'il est proposé, sinon le premier. */
