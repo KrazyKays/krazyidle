@@ -1,9 +1,9 @@
 {
  "meta": {
   "id": "T04-lot-dt01",
-  "commit": "8191bb4",
+  "commit": "00219a1",
   "srcDirty": false,
-  "date": "2026-11-22T14:34:56.648Z",
+  "date": "2026-11-22T16:08:55.062Z",
   "profiles": [
    "experimente",
    "debutant",
@@ -16,7 +16,7 @@
   "events": false,
   "startOffsetMin": 0,
   "runs": 400,
-  "wallMs": 147239,
+  "wallMs": 184656,
   "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=T04-lot-dt01"
  },
  "summary": {

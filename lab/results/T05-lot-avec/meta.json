@@ -1,0 +1,20 @@
+{
+ "id": "T05-lot-avec",
+ "commit": "50cc4aa",
+ "srcDirty": false,
+ "date": "2026-11-22T16:02:57.041Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "occasionnel",
+  "evenementiel"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 800,
+ "wallMs": 94480,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=T05-lot-avec"
+}

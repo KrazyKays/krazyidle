@@ -4,7 +4,7 @@ Idle game dynastique (PWA) en TypeScript + Vite, sans framework. Tout le contenu
 
 ## Architecture
 
-- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `ecosystem.ts` (Domaine Flore/Gibier, Récolter et ses consignes) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `evolution.ts` (dons qui mûrissent) ; `feats.ts` (Hauts faits) ; `alliances.ts` ; `save.ts`.
+- `src/engine/` : moteur **pur et déterministe** (aucun DOM). `data.ts` centralise l'équilibrage ; `game.ts` (tick, Échos, succession, achats, hors-ligne, événements) ; `sim.ts` (activité, vie) ; `daily.ts` (Destin du jour : Commande du comté) ; `epithets.ts` (Chroniques) ; `evolution.ts` (dons qui mûrissent) ; `feats.ts` (Hauts faits) ; `alliances.ts` ; `save.ts`.
 - `src/ui/` : DOM natif ; `nav.ts` (onglets, sous-onglets, pastilles) est pur et testé. `src/main.ts` : boucle (pas fixe de 0,1 s), sauvegarde, rattrapage du temps.
 - `docs/GAME_DESIGN.md` : la spécification. La garder en accord avec le code (chiffres mesurés, pas supposés).
 - `tests/` : Vitest (unitaires + bot d'équilibrage) ; `tests/qa/` : invariants, déterminisme, sauvegarde, hors-ligne, codes, et **régressions de chaque correction** (`regressions.test.ts`) ; `tests/qa/e2e/` : parcours Playwright, lancés à la main.
@@ -38,8 +38,9 @@ Les scripts TypeScript de `lab/` s'exécutent sous Node avec `node --import ./la
 
 ## Pièges connus
 
-- **Destin du jour (Commande du comté)** : rendements = `ACT` de base (sans bonus de progression). Toucher à `ACT`, à l'écosystème ou au moteur de vie change les commandes et les paliers : recalibrer avec `lab/balance/commande/calibrage.ts`. Il n'y a plus de vérification de code (0.4) : le code `EL3` ne sert qu'au fantôme du record, stocké en local (les `EL1`/`EL2` ne se rejouent plus). Choix des codes : 0–3 = activités, 4 = Récolter en Semer, 5 = en Battue. La commande et l'Or sont calculés par un solveur au premier affichage du jour (~0,3 s sous Node, mis en cache).
-- **Récolter (0.4)** : l'identifiant reste `cultiver` (sauvegardes). La consigne (`s.posture`) ne vaut que pour le héros vivant (`runActivity(…, fromLife = true)`) ; les Échos, et le héros pendant `simulateOffline` (`rt.offline`), récoltent en Équilibre. Ne pas confondre `rt.online` (présence, événements : coupé par le simulateur sans événements) et `rt.offline` (rattrapage).
+- **Destin du jour (Commande du comté)** : rendements = `ACT` de base (sans bonus de progression). Toucher à `ACT`, aux modificateurs du jour ou au moteur de vie change les commandes et les paliers : recalibrer avec `lab/balance/commande/calibrage.ts`. Il n'y a plus de vérification de code (0.4) : le code `EL4` ne sert qu'au fantôme du record, stocké en local (les `EL1` à `EL3` ne se rejouent plus). Choix des codes : 0–3 = activités. La commande et l'Or sont calculés par un solveur au premier affichage du jour (~0,3 s sous Node, mis en cache).
+- **Plus de Domaine (0.5)** : Flore, Gibier, Harmonie, Garde forestier et consignes de Récolter sont retirés (SIMPLIF-1 à 5) ; l'identifiant de Récolter reste `cultiver` (sauvegardes). `migrate()` efface `eco`, `posture`, `life.post`, les statistiques d'Harmonie et rembourse le Garde forestier. Les conditions de dons et de surnoms lisent la lignée (usure du sang, parent, record), jamais la production. Ne pas confondre `rt.online` (présence, événements : coupé par le simulateur sans événements) et `rt.offline` (rattrapage).
+- **Archives de la maison** : bâtiment d'information (`minGen` 25, `buildingOpen`), effets ponctuels à l'achat (`archivesBought`). L'information de lignée (transmission, budget, usure exacte, seuils de record) est réservée aux Archives et aux titres futurs : ne pas l'afficher d'office.
 - **Codes d'alliance** : `AL2`, traits et vocation par identifiant (les `AL1` désignaient les rangs de la 0.3 et sont refusés). Retirer un trait ou une activité ne décale plus rien ; la migration des sauvegardes 0.3 est `mergeLandV04` (`save.ts`, sauvegarde v3).
 - **Sauvegardes** : ajouter un champ = le rendre optionnel ou le compléter dans `migrate()` (`save.ts`). L'import refuse une sauvegarde injouable (`isPlayable`), la sauvegarde locale n'est jamais écartée.
 - `state.lastTick` n'est avancé que par `tick` : ne pas le toucher dans `save()` (sinon le temps passé onglet masqué est perdu).
@@ -52,13 +53,12 @@ Cinq agents dans `.claude/agents/` : `qa-engineer`, `game-designer`, `game-balan
 
 Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.claude/hooks/audit-lock.mjs` interdit alors toute écriture sur `src/`, `public/`, configs et GDD), lancer les agents en parallèle sur un dossier `audits/<date>/`, confronter les divergences, synthétiser, puis supprimer le verrou après validation du propriétaire.
 
-## Références de simulation actuelles (0.4 « Récolter », 2026-11-22)
+## Références de simulation actuelles (0.5 « La Mémoire », 2026-11-22)
 
-- Sans événements : `T04-lot-sans` (8 profils × 200 graines × 6 h, dt 0,5 ; plus de `mono-chasser`).
-- Avec événements : `T04-lot-avec` (4 profils dont `evenementiel`).
-- Profils des consignes : `consignes`, `mono-consignes`, `mono-battue` (campagne `T04-5-consignes`).
-- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`. Les références EVO-lot-* (0.3) ne correspondent plus au jeu depuis la 0.4 (Prédateurs, Affût, Chasser retirés).
-- Calibrages du lot : `lab/balance/terre/RESULTATS.md` (partage champs/chasse, consignes), `lab/balance/commande/resultats.md` (Destin).
+- Sans événements : `T05-lot-sans` (8 profils × 200 graines × 6 h, dt 0,5).
+- Avec événements : `T05-lot-avec` (4 profils dont `evenementiel`). Pas fin : `T05-lot-dt01` (4 profils × 100 graines, dt 0,1).
+- Résumés figés dans `lab/baselines/`. Les `runs.jsonl` nécessaires à `sim:guard` se régénèrent avec la commande consignée dans `CAMPAIGNS.md`. Les références T04-lot-* (0.4) ne correspondent plus au jeu (Domaine retiré).
+- Simplification de la 0.5 : `lab/balance/simplif/RESULTATS.md` (compensation des rendements) ; inventaire des seuils et remplacements : `lab/design/SEUILS-inventaire.md` (§ 4 : mesures à lancer, § 5 : places réservées au contenu futur). Destin : `lab/balance/commande/resultats.md`.
 - Indicateurs de rareté des traits : `node lab/balance/evo/kpi.mjs <runs.jsonl>` ; résultats du lot : `lab/balance/evo/RESULTATS.md`.
 
 Points ouverts (fin de l'audit du 2026-11-14) : `audits/2026-11-14/SYNTHESE.md`, § 10.

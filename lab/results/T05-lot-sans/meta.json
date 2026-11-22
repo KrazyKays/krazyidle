@@ -1,0 +1,24 @@
+{
+ "id": "T05-lot-sans",
+ "commit": "50cc4aa",
+ "srcDirty": false,
+ "date": "2026-11-22T16:01:22.156Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1600,
+ "wallMs": 121500,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=T05-lot-sans"
+}

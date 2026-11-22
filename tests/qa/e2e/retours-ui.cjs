@@ -66,7 +66,7 @@ async function gotoTab(page, label, sub) {
 }
 
 async function lock(page, name) {
-  await gotoTab(page, 'Domaine', 'Échos');
+  await gotoTab(page, 'Mémoire', 'Échos');
   const card = page.locator('.echo-card').first();
   const btn = card.locator('.lock-btn');
   const off = await btn.evaluate((el) => ({ txt: el.textContent, op: getComputedStyle(el).opacity, bg: getComputedStyle(el).backgroundImage }));
@@ -93,7 +93,7 @@ async function legacyUnlock(page, name) {
 }
 
 async function topLife(page, name, mobile) {
-  await gotoTab(page, mobile ? 'Domaine' : 'Maison');
+  await gotoTab(page, mobile ? 'Mémoire' : 'Maison');
   await sleep(300);
   const strip = page.locator('.top-life');
   if (!mobile) { log(`${name} : pas de frise dans la barre (la Vie est déjà en colonne)`, !(await strip.isVisible())); return; }

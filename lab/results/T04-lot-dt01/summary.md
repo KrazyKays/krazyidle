@@ -1,8 +1,8 @@
 # Campagne T04-lot-dt01
 
-- Commit : `8191bb4`
+- Commit : `00219a1`
 - Commande : `npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=T04-lot-dt01`
-- 400 parties · 6 h · dt 0.1 s · événements non · 147.2 s
+- 400 parties · 6 h · dt 0.1 s · événements non · 184.7 s
 
 > Résultats **[SIMULÉS]** : profils automatiques, pas de vrais joueurs. `never.*` = part des parties sans déblocage ; `unlock.*` / `upgradeAt.*` ne portent que sur les parties qui débloquent (n). Décision avant/après : `npm run sim:guard` (pas `sim:compare`).
 
