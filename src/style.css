@@ -95,7 +95,7 @@ p { margin: 6px 0; }
 .icon-btn { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--card); border: 1px solid var(--line); font-size: 17px; flex: none; }
 .icon-btn.sm { width: 30px; height: 30px; font-size: 14px; }
 .icon-btn:hover { border-color: var(--violet); }
-.event-pill { --c: var(--gold); border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; background: color-mix(in srgb, var(--c) 12%, transparent); animation: glow 2s ease-in-out infinite; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+.event-pill { --c: var(--gold); font-variant-numeric: tabular-nums; border: 1px solid var(--c); color: var(--c); border-radius: 999px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; background: color-mix(in srgb, var(--c) 12%, transparent); animation: glow 2s ease-in-out infinite; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
 
 /* --- Disposition --------------------------------------------------------- */
 .layout { padding: 12px 12px calc(var(--dock-h, calc(72px + var(--safe-b))) + 16px); max-width: 1320px; margin: 0 auto; }
@@ -249,6 +249,8 @@ p { margin: 6px 0; }
 
 /* --- Destin ---------------------------------------------------------------- */
 .event-card { --c: var(--gold); border-color: var(--c); background: radial-gradient(500px 200px at 0% 0%, color-mix(in srgb, var(--c) 25%, transparent), transparent), linear-gradient(180deg, var(--card2), var(--card)); }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ev-prog { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: nowrap; }
 .bar-tiers { height: 16px; overflow: visible; margin: 16px 0 10px; }
 .tier-mark { position: absolute; top: -14px; transform: translateX(-100%); font-size: 14px; }
 .tier-mark::after { content: ''; position: absolute; right: 0; top: 14px; height: 16px; width: 2px; background: rgba(255, 255, 255, 0.5); }

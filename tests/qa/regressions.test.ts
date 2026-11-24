@@ -909,3 +909,17 @@ describe('SIMPLIF-5 — Destin du jour sans Domaine : nouveaux modificateurs (0.
     }
   });
 });
+
+describe('UX-EVT 1 — texte de l\'événement stable (0.6)', () => {
+  test('la ligne d\'objectif garde la même longueur quand le score varie', async () => {
+    const { eventGoalLine } = await import('../../src/ui/eventview');
+    const lens = new Set<number>();
+    for (let p = 0; p < 1000; p += 7) lens.add(eventGoalLine({ target: 1000, progress: p, tier: 0, v: 2 }).length);
+    // « Vers 🥉 : 0 % » à « Vers 🥉 : 99 % » : au plus deux chiffres, donc deux longueurs.
+    expect(lens.size).toBeLessThanOrEqual(2);
+    expect(eventGoalLine({ target: 1000, progress: 999, tier: 0, v: 2 })).toBe('Vers 🥉 : 99 %');
+    expect(eventGoalLine({ target: 1000, progress: 1500, tier: 1, v: 2 })).toBe('Vers 🥈 : 50 %');
+    expect(eventGoalLine({ target: 1000, progress: 9000, tier: 3, v: 2 })).toBe('🥇 Or atteint !');
+    expect(eventGoalLine(undefined)).toBe('Vers 🥉 : 0 %');
+  });
+});

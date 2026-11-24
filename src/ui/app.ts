@@ -21,6 +21,7 @@ import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { evolutionsOf } from '../engine/evolution';
 import { FEATS, FEAT_DEF } from '../engine/feats';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
+import { eventGoalLine } from './eventview';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
 const ANCESTORS_SHOWN = 12;
@@ -849,13 +850,19 @@ export class App {
       const ep = s.events[ev.key];
       const fill = b.width(h('div', { class: 'bar-fill', style: { background: ev.def.color } }), () => (ep ? ep.progress / (ep.target * EVENT_TIERS[2]) : 0));
       const marks = EVENT_TIERS.map((t, i) => h('div', { class: 'tier-mark', style: { left: (t / EVENT_TIERS[2] * 100) + '%' } }, h('span', null, ['🥉', '🥈', '🥇'][i])));
+      // Les parties qui bougent (durée, progression) ont chacune leur ligne, en chiffres à chasse fixe : la carte
+      // ne change plus de hauteur à chaque variation du score (une seule ligne passait parfois à deux).
       parts.push(h('div', { class: 'card event-card', style: { '--c': ev.def.color } },
         h('div', { class: 'label' }, 'Événement en cours'),
         h('h2', null, `${ev.def.icon} ${ev.def.name}`),
         h('p', null, ev.def.desc),
-        b.text(h('p', { class: 'muted' }), () => `Se termine dans ${fmtDur((ev.end - Date.now()) / 1000)} · Toute ta production compte, ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name} ×${ep?.v === 2 ? EVENT_GOAL_WEIGHT : 1}`),
+        h('p', { class: 'muted ev-line' }, 'Se termine dans ', b.text(h('span', { class: 'num' }), () => fmtDur((ev.end - Date.now()) / 1000))),
+        h('p', { class: 'muted small' }, `Toute ta production compte, ${RES_INFO[ev.def.goal].icon} ${RES_INFO[ev.def.goal].name} ×${ep?.v === 2 ? EVENT_GOAL_WEIGHT : 1}.`),
         h('div', { class: 'bar bar-tiers' }, fill, marks),
-        b.text(h('p', { class: 'small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}${ep.v === 2 ? ' (équivalent)' : ''} · Récompenses : ${EVENT_REWARDS.join(' / ')} ✦` : '')));
+        h('div', { class: 'ev-prog' },
+          b.text(h('strong', { class: 'num' }), () => eventGoalLine(ep)),
+          b.text(h('span', { class: 'num muted small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}` : '')),
+        h('p', { class: 'muted small' }, `Récompenses : ${EVENT_TIERS.map((_, i) => `${MEDALS[i]} ${EVENT_REWARDS[i]} ✦`).join(' · ')}`)));
     }
     if (!ev) {
       const next = upcomingEvents(now, 7)[0];
