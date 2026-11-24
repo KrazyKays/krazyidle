@@ -109,7 +109,15 @@ async function topLife(page, name, mobile) {
   log(`${name} : un toucher sur la frise ramène à la Vie`, (await page.locator('#panel-life').isVisible()) && !(await strip.isVisible()));
 }
 
-/** Destin du jour, Commande du comté : lignes de la commande, repères des médailles, fantôme du record (injecté). */
+/** Destin (0.6) : une seule page, sans Commande du comté, calendrier compris. */
+async function destinPage(page, name) {
+  await page.locator('.tab[data-tab="destin"]').click();
+  await sleep(300);
+  log(`${name} : Destin sans Commande du comté`, (await page.locator('.daily-card').count()) === 0);
+  log(`${name} : calendrier sur la page Événements`, (await page.locator('.ev-list li').count()) > 0);
+}
+
+/** (En réserve) Destin du jour, Commande du comté : lignes de la commande, repères des médailles, fantôme du record (injecté). */
 async function dailyGhost(page, name, withRecord) {
   await page.evaluate((withRecord) => {
     const s = window.krazy.state;
@@ -196,7 +204,8 @@ async function maisonSubs(page, name) {
     await legacyUnlock(page, name);
     await maisonSubs(page, name);
     await topLife(page, name, name === 'mobile');
-    await dailyGhost(page, name, name === 'mobile');
+    // Destin du jour en réserve depuis la 0.6 (DESTIN-0) : `dailyGhost` n'est plus lancé.
+    await destinPage(page, name);
     log(`${name} : aucune erreur JavaScript`, errors.length === 0, errors.join(' | '));
     await ctx.close();
   }
