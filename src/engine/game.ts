@@ -632,17 +632,8 @@ export function buyLegacy(s: GameState, id: string): boolean {
 export const SHOP = {
   temps: { cost: 2, name: 'Temps suspendu', icon: '⌛', desc: '+30 s à la vie actuelle (1 fois par vie)' },
   crest: { cost: 1, name: 'Nouveau blason', icon: '🛡️', desc: 'Change l\'emblème et la couleur de la lignée' },
-  partition: { cost: 3, name: 'Partition d\'écu', icon: '🛡️', desc: 'Divise l\'écu de la maison en deux teintes' },
 };
 
-/** Débloque une partition d'écu (Bazar céleste) et l'applique au blason. */
-export function buyPartition(s: GameState, id: string): boolean {
-  if (s.partitions.includes(id) || s.eclats < SHOP.partition.cost) return false;
-  s.eclats -= SHOP.partition.cost;
-  s.partitions.push(id);
-  s.lineage.partition = id;
-  return true;
-}
 export const BLESSING_COST = [0, 3, 6, 12, 15];
 /** Chaque Bénédiction légendaire ou mythique achetée renchérit les suivantes de 50 % (×3 au plus) : avec plus
  *  d'Éclats en circulation (0.3), le Bazar ne doit pas devenir le robinet à légendaires que les mutations ne sont plus. */

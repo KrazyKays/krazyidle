@@ -164,7 +164,17 @@ export interface GameState {
   seed: number;
   createdAt: number;
   lastTick: number;
-  lineage: { name: string; crest: string; color: string; partition?: string; /** nombre de chefs de la lignée ayant porté chaque prénom */ names?: Record<string, number> };
+  lineage: {
+    name: string; crest: string; color: string; partition?: string;
+    /** nombre de chefs de la lignée ayant porté chaque prénom */
+    names?: Record<string, number>;
+    /** écartelé d'alliance (0.6) : armes d'une maison alliée aux 2e et 3e quartiers (remplace la partition) */
+    quarter?: { name: string; crest: string; color: string };
+    /** bordure de l'écu (0.6, `BORDURES`) */
+    bordure?: string;
+    /** devise de la maison (0.6, `DEVISES`) */
+    devise?: string;
+  };
   /** Partitions d'écu débloquées au Bazar céleste ('plein' est offert). */
   partitions: string[];
   res: Record<ResId, number>;
@@ -202,6 +212,10 @@ export interface GameState {
   feats?: Record<string, number>;
   /** Codex (0.6) : entrées déjà vues par le joueur (`codexKeys`) ; le reste est signalé comme nouveau */
   codexSeen?: string[];
+  /** Veillée des ancêtres (0.6) : souvenirs recueillis, par piste (devises ou bordures) */
+  souvenirs?: { devise: number; bordure: number };
+  /** Veillée de l'événement en cours : souvenirs recueillis et perdus (plus de 3 en attente) */
+  veillee?: { key: string; taken: number; lost: number };
   stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; /** Bénédictions légendaires ou mythiques achetées (0.3) */ blessHigh?: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 

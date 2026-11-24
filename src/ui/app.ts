@@ -4,7 +4,7 @@ import {
 } from '../engine/data';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
-  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford,
+  blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford,
   VOCATION_SHARE, buildingOpen, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
@@ -13,7 +13,8 @@ import { heroActMult, lifePower } from '../engine/sim';
 import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
-import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
+import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg, timbreSvg, type ShieldOpts } from './heraldry';
+import { BORDURES, DEVISES, HOUSE_RANKS, PARTITION_UNLOCK, SOUVENIRS_PER_UNLOCK, announceRanks, borduresOpen, devisesOpen, houseRank, nextRankNeeds, partitionOpen, quarterChoices, souvenirsOf } from '../engine/maison';
 import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName } from '../engine/epithets';
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
@@ -206,6 +207,7 @@ export class App {
     if (now - this.lastNav > 250) {
       this.lastNav = now;
       if (!this.s.flags.bazar && bazarUnlocked(this.s)) this.s.flags.bazar = true;
+      for (const r of announceRanks(this.s)) toast(`👑 La maison ${this.s.lineage.name} s'élève : ${r.name} ! Nouveau timbre sur l'écu : ${r.timbre.toLowerCase()}.`, 'good', 6000);
       const sub = this.elTab.hidden ? null : this.sub();
       if (sub) this.markSeen(sub);
       // On quitte le Codex : ses nouveautés ont été vues, elles ne sont plus mises en avant.
@@ -231,7 +233,8 @@ export class App {
     const s = this.s, b = this.bTop;
     b.reset();
     const crest = this.crestEl('crest');
-    const genEl = b.text(h('span'), () => `Génération ${s.hero.gen}`);
+    // Titre de famille (0.6) : le rang de la maison précède la génération dès la Seigneurie.
+    const genEl = b.text(h('span'), () => { const r = houseRank(s); return r ? `${HOUSE_RANKS[r].name} · Gén. ${s.hero.gen}` : `Génération ${s.hero.gen}`; });
     const brand = h('button', { class: 'brand', onclick: () => this.setTab('lignee'), 'aria-label': 'Maison' }, crest, h('div', null, h('div', { class: 'brand-name' }, `Maison ${s.lineage.name}`), h('div', { class: 'brand-sub' }, genEl)));
     const chips = RES.filter((r) => s.totalEver[r] > 0 || r === 'vivres').map((r) => {
       const v = b.text(h('span', { class: 'chip-v' }), () => fmt(s.res[r]));
@@ -782,13 +785,13 @@ export class App {
   panelMaison() {
     const s = this.s;
     const head = h('div', { class: 'card panel-head' },
-      h('div', { class: 'row' }, this.crestEl('crest crest-lg'),
-        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`),
+      h('div', { class: 'row' }, this.armsEl(),
+        h('div', null, h('h2', null, `Maison ${s.lineage.name}`), this.rankLine(), h('div', { class: 'muted' }, `${s.ancestors.length} ancêtres · ${fmtInt(s.legacyTotal)} ⚜️ accumulés`),
           // Ornements : un par haut fait obtenu (cosmétique, 0.3).
           FEATS.some((d) => s.feats?.[d.id]) ? h('div', { class: 'ornaments', 'aria-label': 'Hauts faits' }, FEATS.filter((d) => s.feats?.[d.id]).map((d) => h('span', { title: d.name }, d.icon))) : null)),
       h('div', { class: 'row-wrap' },
         h('button', { class: 'btn btn-sm', onclick: () => this.openRename() }, '✏️ Renommer'),
-        h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason et partitions')));
+        h('button', { class: 'btn btn-sm', onclick: () => this.openCrest() }, '🛡️ Blason')));
     const anc = [...s.ancestors].reverse();
     const tree = this.ancestorTree(anc.slice(0, ANCESTORS_SHOWN));
     const more = anc.length > ANCESTORS_SHOWN
@@ -797,6 +800,16 @@ export class App {
     return h('div', null, head,
       h('h3', { class: 'section-t' }, 'Généalogie'),
       anc.length ? h('div', null, tree, more) : h('p', { class: 'card muted' }, 'Les ancêtres apparaîtront ici.'));
+  }
+
+  /** Titre de famille et ce qu'il faut pour le suivant (0.6). */
+  rankLine() {
+    const s = this.s;
+    const r = HOUSE_RANKS[houseRank(s)];
+    const next = nextRankNeeds(s);
+    return h('div', { class: 'rank-line small' },
+      h('strong', { class: 'accent' }, `👑 ${r.name}`),
+      next ? h('span', { class: 'muted' }, ` · ${next.rank.name} : ${next.parts.map((p) => `${p.label} ${Math.min(p.have, p.need)}/${p.need}`).join(', ')}`) : h('span', { class: 'muted' }, ' · le plus haut rang du comté'));
   }
 
   openGenealogy() {
@@ -889,8 +902,8 @@ export class App {
         h('h2', null, '✦ Autres usages des Éclats'),
         h('ul', { class: 'plain-list small' },
           h('li', null, `⌛ +30 s de vie (${SHOP.temps.cost} ✦), une fois par vie : bouton sous le sablier, dans la Vie.`),
-          h('li', null, `🛡️ Partitions de l'écu (${SHOP.partition.cost} ✦ chacune) et changement d'emblème : `,
-            h('button', { class: 'link-btn', onclick: () => this.openCrest() }, 'ouvrir le blason'), '.'))));
+          h('li', null, `🛡️ Changement d'emblème ou de couleur (${SHOP.crest.cost} ✦, le premier est offert) : `,
+            h('button', { class: 'link-btn', onclick: () => this.openCrest() }, 'ouvrir le blason'), '. Partitions, bordures et devises se gagnent en jouant.'))));
     return h('div', null, parts);
   }
 
@@ -1127,23 +1140,38 @@ export class App {
   }
 
   /** Écu héraldique (SVG) teinté de la couleur de la maison, meuble d'or au centre. */
-  shieldEl(crest: string, color: string, cls = '', partition = 'plein') {
+  shieldEl(crest: string, color: string, cls = '', partition = 'plein', opts: ShieldOpts = {}) {
     const el = h('div', { class: `shield ${cls}`, style: { '--c': color } });
-    el.innerHTML = shieldSvg(crest, partition);
+    el.innerHTML = shieldSvg(crest, partition, opts);
     return el;
+  }
+
+  /** Ornements de l'écu de la maison : bordure et écartelé d'alliance (0.6). */
+  lineageOpts(l = this.s.lineage): ShieldOpts {
+    return { bordure: BORDURES.find((b) => b.id === l.bordure)?.color, quarter: l.quarter };
   }
 
   /** Petit écu de la maison (barre du haut, avatar, Lignée). */
   crestEl(cls: string) {
     const l = this.s.lineage;
-    const el = h('div', { class: `crest-svg ${cls}`, style: { '--c': l.color }, title: `${chargeName(l.crest)} — Maison ${l.name}` });
-    el.innerHTML = shieldSvg(l.crest, l.partition ?? 'plein', { border: false });
+    const el = h('div', { class: `crest-svg ${cls}`, style: { '--c': l.color }, title: `${chargeName(l.crest)} — ${HOUSE_RANKS[houseRank(this.s)].name} ${l.name}` });
+    el.innerHTML = shieldSvg(l.crest, l.partition ?? 'plein', { border: false, ...this.lineageOpts() });
     return el;
+  }
+
+  /** Grand écu de la maison, timbré selon son rang, devise en dessous (Lignée). */
+  armsEl() {
+    const l = this.s.lineage;
+    const rank = houseRank(this.s);
+    const timbre = h('div', { class: 'timbre', title: HOUSE_RANKS[rank].timbre });
+    timbre.innerHTML = timbreSvg(rank);
+    return h('div', { class: 'arms' }, rank ? timbre : null, this.crestEl('crest crest-lg'),
+      l.devise ? h('div', { class: 'devise' }, `« ${l.devise} »`) : null);
   }
 
   lineageSig() {
     const l = this.s.lineage;
-    return [l.name, l.crest, l.color, l.partition].join('|');
+    return [l.name, l.crest, l.color, l.partition, l.bordure, l.devise, l.quarter?.name, houseRank(this.s)].join('|');
   }
 
   /** Pastille de choix d'un meuble. */
@@ -1163,14 +1191,21 @@ export class App {
   openCrest() {
     const s = this.s;
     let crest = s.lineage.crest, color = s.lineage.color, partition = s.lineage.partition ?? 'plein';
+    let quarter = s.lineage.quarter, bordure = s.lineage.bordure, devise = s.lineage.devise;
     const content = h('div', { class: 'crest-modal' });
     const m = modal(content);
     const render = () => {
       const free = !s.flags.crestChanged;
       const changedArms = crest !== s.lineage.crest || color !== s.lineage.color;
-      const changed = changedArms || partition !== (s.lineage.partition ?? 'plein');
+      const changed = changedArms || partition !== (s.lineage.partition ?? 'plein') || quarter?.name !== s.lineage.quarter?.name
+        || bordure !== s.lineage.bordure || devise !== s.lineage.devise;
       const cost = changedArms && !free ? SHOP.crest.cost : 0;
-      const preview = this.shieldEl(crest, color, 'crest-preview', partition);
+      const opts: ShieldOpts = { bordure: BORDURES.find((b) => b.id === bordure)?.color, quarter };
+      const rank = houseRank(s);
+      const timbre = h('div', { class: 'timbre' });
+      timbre.innerHTML = timbreSvg(rank);
+      const preview = h('div', { class: 'arms' }, rank ? timbre : null, this.shieldEl(crest, color, 'crest-preview', partition, opts),
+        devise ? h('div', { class: 'devise' }, `« ${devise} »`) : null);
       const crestRow = h('div', { class: 'pick-row' }, CHARGE_IDS.map((c) => {
         const b = this.chargePick(c, () => { crest = c; render(); });
         b.classList.toggle('on', c === crest);
@@ -1179,23 +1214,49 @@ export class App {
       const colorRow = h('div', { class: 'pick-row' }, CREST_COLORS.map((c) => h('button', {
         class: `pick pick-color ${c === color ? 'on' : ''}`, style: { background: c }, 'aria-label': 'Couleur', onclick: () => { color = c; render(); },
       })));
+      // Partitions (0.6) : gagnées par la lignée, plus vendues ; celles achetées avant restent acquises.
       const partRow = h('div', { class: 'pick-row' }, PARTITIONS.map((p) => {
-        const owned = s.partitions.includes(p.id);
+        const owned = partitionOpen(s, p.id);
+        const hint = PARTITION_UNLOCK[p.id]?.hint ?? '';
         const el = h('button', {
-          class: `pick pick-part ${p.id === partition ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? p.name : `${p.name} — ${SHOP.partition.cost} ✦`,
-          'aria-label': `Partition : ${p.name}`,
-          onclick: async () => {
-            if (owned) { partition = p.id; render(); return; }
-            if (s.eclats < SHOP.partition.cost) { toast(`${p.name} : ${SHOP.partition.cost} ✦ nécessaires (tu en as ${fmt(s.eclats, 0)}).`, 'bad'); return; }
-            if (await confirmBox(`Débloquer la partition « ${p.name} » pour ${SHOP.partition.cost} ✦ ?`, 'Débloquer')) {
-              if (buyPartition(s, p.id)) { partition = p.id; this.sigTop = ''; this.sigTab = ''; this.sigLife = ''; toast(`🛡️ Partition « ${p.name} » débloquée`, 'good'); }
-              render();
-            }
+          class: `pick pick-part ${p.id === partition && !quarter ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? p.name : `${p.name} — ${hint}`,
+          'aria-label': `Partition : ${p.name}${owned ? '' : ` (verrouillée : ${hint})`}`,
+          onclick: () => {
+            if (!owned) { toast(`🔒 ${p.name} : ${hint.charAt(0).toLowerCase()}${hint.slice(1)}.`, 'info'); return; }
+            partition = p.id; quarter = undefined; render();
           },
         });
         el.innerHTML = shieldSvg('', p.id, { border: false, charge: false }) + (owned ? '' : '<span class="pick-lock">🔒</span>');
         return el;
       }));
+      // Écartelé d'alliance : les armes d'une maison avec qui la lignée s'est unie.
+      const allies = quarterChoices(s);
+      const quarterRow = allies.length
+        ? h('div', { class: 'pick-row' }, allies.map((hs) => {
+          const on = quarter?.name === hs.name;
+          const el = h('button', { class: `pick pick-part ${on ? 'on' : ''}`, style: { '--c': color }, title: `Écartelé avec la Maison ${hs.name}`, 'aria-label': `Écarteler avec la Maison ${hs.name}`,
+            onclick: () => { quarter = on ? undefined : { name: hs.name, crest: hs.crest, color: hs.color }; render(); } });
+          el.innerHTML = shieldSvg(crest, 'plein', { border: false, quarter: { crest: hs.crest, color: hs.color } });
+          return el;
+        }))
+        : h('p', { class: 'muted small' }, 'Une union avec une autre maison (Maison › Alliances) permettra d\'écarteler ton écu avec ses armes.');
+      // Bordures et devises : souvenirs de la Veillée des ancêtres.
+      const bOpen = borduresOpen(s);
+      const bordureRow = h('div', { class: 'pick-row' },
+        h('button', { class: `pick pick-part ${!bordure ? 'on' : ''}`, style: { '--c': color }, title: 'Sans bordure', 'aria-label': 'Sans bordure', onclick: () => { bordure = undefined; render(); } }, '∅'),
+        BORDURES.map((bd) => {
+          const owned = bOpen.includes(bd);
+          const el = h('button', { class: `pick pick-part ${bd.id === bordure ? 'on' : ''} ${owned ? '' : 'locked'}`, style: { '--c': color }, title: owned ? bd.name : `${bd.name} — Veillée des ancêtres`, 'aria-label': bd.name,
+            onclick: () => { if (!owned) { toast('🕯️ Les bordures se gagnent pendant la Veillée des ancêtres, lors des événements.', 'info'); return; } bordure = bd.id; render(); } });
+          el.innerHTML = shieldSvg('', 'plein', { border: false, charge: false, bordure: bd.color }) + (owned ? '' : '<span class="pick-lock">🔒</span>');
+          return el;
+        }));
+      const dOpen = devisesOpen(s);
+      const deviseRow = h('div', { class: 'row-wrap devise-row' },
+        h('button', { class: `btn btn-sm ${!devise ? 'btn-primary' : 'btn-ghost'}`, onclick: () => { devise = undefined; render(); } }, 'Sans devise'),
+        dOpen.map((d) => h('button', { class: `btn btn-sm ${d === devise ? 'btn-primary' : 'btn-ghost'}`, onclick: () => { devise = d; render(); } }, `« ${d} »`)),
+        dOpen.length < DEVISES.length ? h('span', { class: 'muted small' }, `🔒 ${DEVISES.length - dOpen.length} à recueillir`) : null);
+      const left = (track: 'devise' | 'bordure') => SOUVENIRS_PER_UNLOCK - (souvenirsOf(s, track) % SOUVENIRS_PER_UNLOCK);
       const ok = h('button', { class: 'btn btn-primary', disabled: !changed || (cost > 0 && s.eclats < cost) || undefined, onclick: () => {
         if (changedArms) {
           if (!s.flags.crestChanged) s.flags.crestChanged = true;
@@ -1205,6 +1266,12 @@ export class App {
         s.lineage.crest = crest;
         s.lineage.color = color;
         s.lineage.partition = partition;
+        s.lineage.quarter = quarter;
+        s.lineage.bordure = bordure;
+        s.lineage.devise = devise;
+        if (!quarter) delete s.lineage.quarter;
+        if (!bordure) delete s.lineage.bordure;
+        if (!devise) delete s.lineage.devise;
         this.sigTop = '';
         this.sigTab = '';
         this.sigLife = '';
@@ -1213,11 +1280,15 @@ export class App {
       content.replaceChildren(
         h('h2', null, '🛡️ Blason de la maison'),
         preview,
-        h('p', { class: 'muted small center' }, `${chargeName(crest)} · ${PARTITIONS.find((p) => p.id === partition)?.name ?? ''}`),
+        h('p', { class: 'muted small center' }, [chargeName(crest), quarter ? `écartelé ${quarter.name}` : PARTITIONS.find((p) => p.id === partition)?.name, BORDURES.find((b) => b.id === bordure)?.name, rank ? HOUSE_RANKS[rank].timbre : ''].filter(Boolean).join(' · ')),
         h('label', { class: 'label' }, 'Emblème'), crestRow,
         h('label', { class: 'label' }, 'Couleur'), colorRow,
-        h('label', { class: 'label' }, `Partition (${SHOP.partition.cost} ✦ chacune, changement libre ensuite)`), partRow,
-        h('p', { class: 'muted small' }, free ? 'Le premier changement d\'emblème ou de couleur est gratuit.' : `Changer d'emblème ou de couleur : ${SHOP.crest.cost} ✦ (tu en as ${fmt(s.eclats, 0)}).`),
+        h('p', { class: 'muted small' }, free ? 'Le premier changement d\'emblème ou de couleur est gratuit.' : `Changer d'emblème ou de couleur : ${SHOP.crest.cost} ✦ (tu en as ${fmt(s.eclats, 0)}). Le reste est libre.`),
+        h('label', { class: 'label' }, 'Partition (se gagne avec la lignée)'), partRow,
+        h('label', { class: 'label' }, 'Écartelé d\'alliance'), quarterRow,
+        h('label', { class: 'label' }, `Bordure (Veillée : encore ${left('bordure')} souvenir${left('bordure') > 1 ? 's' : ''} pour la suivante)`), bordureRow,
+        h('label', { class: 'label' }, `Devise (Veillée : encore ${left('devise')} souvenir${left('devise') > 1 ? 's' : ''} pour la suivante)`), deviseRow,
+        h('p', { class: 'muted small' }, rank ? `Timbre : ${HOUSE_RANKS[rank].timbre}, rang de ${HOUSE_RANKS[rank].name}.` : 'Un timbre ornera l\'écu quand la maison s\'élèvera en Seigneurie.'),
         h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost', onclick: () => m.close() }, 'Annuler'), ok));
     };
     render();

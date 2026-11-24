@@ -92,19 +92,27 @@ const BOX: Record<string, [number, number, number, number]> = {
 /** Zone utile de l'écu (repère 120×140) : centre optique et taille maximale du meuble. */
 const FIELD = { cx: 60, cy: 64, w: 64, h: 68, maxScale: 0.8 };
 
-/** Transformation qui centre le meuble sur l'écu et l'ajuste à la zone utile. */
-function chargeTransform(id: string): string {
+/** Transformation qui centre le meuble sur une zone de l'écu (par défaut, toute la zone utile). */
+function chargeTransform(id: string, f: { cx: number; cy: number; w: number; h: number; maxScale: number } = FIELD): string {
   const [x, y, w, h] = BOX[id] ?? [0, 0, 100, 100];
-  const k = Math.min(FIELD.w / w, FIELD.h / h, FIELD.maxScale);
-  const tx = FIELD.cx - (x + w / 2) * k;
-  const ty = FIELD.cy - (y + h / 2) * k;
+  const k = Math.min(f.w / w, f.h / h, f.maxScale);
+  const tx = f.cx - (x + w / 2) * k;
+  const ty = f.cy - (y + h / 2) * k;
   return `translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${k.toFixed(4)})`;
 }
+
+/** Zones des quatre quartiers d'un écartelé (1 et 4 : la maison ; 2 et 3 : l'alliée), centres optiques. */
+const QUARTERS = [
+  { cx: 35, cy: 40, w: 32, h: 32, maxScale: 0.4 },
+  { cx: 85, cy: 40, w: 32, h: 32, maxScale: 0.4 },
+  { cx: 38, cy: 92, w: 28, h: 28, maxScale: 0.34 },
+  { cx: 82, cy: 92, w: 28, h: 28, maxScale: 0.34 },
+];
 
 export const CHARGE_IDS = Object.keys(CHARGES);
 export const chargeName = (id: string) => CHARGES[id]?.name ?? 'Emblème';
 
-/** Partitions de l'écu : « plein » est offert, les autres s'achètent au Bazar céleste. */
+/** Partitions de l'écu : « plein » est offert, les autres se gagnent (`PARTITION_UNLOCK`, 0.6). */
 export interface PartitionDef { id: string; name: string; path: string }
 const S = 'M60 5 L111 18 V64 C111 101 88 123 60 135 C32 123 9 101 9 64 V18 Z';
 export const PARTITIONS: PartitionDef[] = [
@@ -119,24 +127,73 @@ export const PARTITION: Record<string, PartitionDef> = Object.fromEntries(PARTIT
 
 let uid = 0;
 
+export interface ShieldOpts {
+  /** double filet d'or (grands écus) ; sinon simple filet épais (petits écus) */
+  border?: boolean;
+  charge?: boolean;
+  /** couleur d'une bordure (0.6), posée à l'intérieur du filet d'or */
+  bordure?: string;
+  /** écartelé d'alliance (0.6) : armes de la maison alliée aux 2e et 3e quartiers ; la partition est ignorée */
+  quarter?: { crest: string; color: string };
+}
+
 /**
- * Écu complet en SVG : champ de la couleur de la maison, partition en teinte assombrie,
- * bordure d'or et meuble d'or au centre.
+ * Écu complet en SVG : champ de la couleur de la maison, partition en teinte assombrie (ou écartelé d'alliance),
+ * bordure éventuelle, filet d'or et meuble d'or au centre.
  */
-export function shieldSvg(crest: string, partition = 'plein', opts: { border?: boolean; charge?: boolean } = {}): string {
+export function shieldSvg(crest: string, partition = 'plein', opts: ShieldOpts = {}): string {
   const id = `hd${++uid}`;
-  const part = PARTITION[partition]?.path;
+  const q = opts.quarter;
+  const part = q ? '' : PARTITION[partition]?.path;
   const border = opts.border !== false;
   const charge = CHARGES[crest];
+  const g = (c: string, f?: (typeof QUARTERS)[number], field?: string) => CHARGES[c]
+    ? `<g transform="${chargeTransform(c, f)}"><g class="hd-charge"${field ? ` style="--hd-field:${field}"` : ''}>${CHARGES[c].svg}</g></g>` : '';
+  const charges = opts.charge === false ? ''
+    : q ? g(crest, QUARTERS[0]) + g(q.crest, QUARTERS[1], q.color) + g(q.crest, QUARTERS[2], q.color) + g(crest, QUARTERS[3])
+      : charge ? g(crest) : '';
   return `<svg viewBox="0 0 120 140" aria-hidden="true" class="hd-svg">`
     + `<defs><clipPath id="${id}c"><path d="${S}"/></clipPath>`
     + `<linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>`
     + `<path class="shield-body" d="${S}"/>`
     + (part ? `<path class="shield-part" clip-path="url(#${id}c)" d="${part}"/>` : '')
+    + (q ? `<path clip-path="url(#${id}c)" fill="${q.color}" d="M60 0H120V70H60ZM0 70H60V140H0Z"/>` : '')
+    + (opts.bordure ? `<path d="${S}" fill="none" stroke="${opts.bordure}" stroke-width="${border ? 22 : 26}" clip-path="url(#${id}c)"/>` : '')
     + `<path d="${S}" fill="url(#${id}g)"/>`
     + (border ? `<path d="M60 13 L103 24 V64 C103 96 83 115 60 126 C37 115 17 96 17 64 V24 Z" fill="none" stroke="rgba(255,231,166,.5)" stroke-width="1.5"/><path d="${S}" fill="none" stroke="#f2c45a" stroke-width="5"/>` : `<path d="${S}" fill="none" stroke="#f2c45a" stroke-width="7"/>`)
-    + (opts.charge === false || !charge ? '' : `<g transform="${chargeTransform(crest)}"><g class="hd-charge">${charge.svg}</g></g>`)
+    + charges
     + `</svg>`;
+}
+
+/**
+ * Timbre (0.6) : l'ornement posé au-dessus de l'écu, selon le rang de la maison (1 à 5, voir `HOUSE_RANKS`).
+ * Repère 120×44, la base repose sur le chef de l'écu.
+ */
+export function timbreSvg(rank: number): string {
+  if (rank <= 0) return '';
+  const gold = 'fill="#f2c45a" stroke="#7a5a12" stroke-width="1.2"';
+  const band = `<rect x="26" y="30" width="68" height="11" rx="3" ${gold}/>`
+    + '<circle cx="42" cy="35.5" r="2.4" fill="#c62828"/><circle cx="60" cy="35.5" r="2.6" fill="#1565c0"/><circle cx="78" cy="35.5" r="2.4" fill="#2e7d32"/>';
+  const pearl = (x: number, y: number, r = 3.2) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#f4f1e6" stroke="#7a5a12" stroke-width="1"/>`;
+  const leaf = (x: number, top = 12) => `<path ${gold} d="M${x} 30 C${x - 9} 28 ${x - 10} ${top + 8} ${x - 4} ${top + 6} C${x - 4} ${top} ${x + 4} ${top} ${x + 4} ${top + 6} C${x + 10} ${top + 8} ${x + 9} 28 ${x} 30Z"/>`;
+  let top = '';
+  switch (rank) {
+    case 1: // heaume
+      return `<svg viewBox="0 0 120 44" aria-hidden="true" class="hd-svg"><path ${gold} d="M40 43 C38 24 46 6 60 5 C74 6 82 24 80 43Z"/>`
+        + '<path d="M46 22H74M46 27H74M46 32H74" stroke="#3a2a08" stroke-width="2"/><path d="M60 5V43" stroke="#7a5a12" stroke-width="1.2"/></svg>';
+    case 2: // tortil de baron : un rang de perles enroulé sur le cercle
+      top = [32, 42, 52, 62, 72, 82, 88].map((x) => pearl(x, 27, 2.6)).join('');
+      break;
+    case 3: // comte : perles sur pointes
+      top = [30, 45, 60, 75, 90].map((x) => `<path d="M${x} 30V16" stroke="#7a5a12" stroke-width="2.4"/>` + pearl(x, 14, 3.6)).join('');
+      break;
+    case 4: // marquis : fleurons et trios de perles
+      top = leaf(32, 14) + leaf(60, 10) + leaf(88, 14) + [46, 74].map((x) => pearl(x - 4, 24, 2.4) + pearl(x + 4, 24, 2.4) + pearl(x, 18, 2.6)).join('');
+      break;
+    default: // duc : grands fleurons
+      top = leaf(30, 10) + leaf(60, 4) + leaf(90, 10) + leaf(45, 14) + leaf(75, 14);
+  }
+  return `<svg viewBox="0 0 120 44" aria-hidden="true" class="hd-svg">${top}${band}</svg>`;
 }
 
 /** Meuble seul (pour les pastilles de choix). */

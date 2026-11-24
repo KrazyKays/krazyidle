@@ -101,11 +101,11 @@ describe('GDD 2.3 — la Lignée', () => {
 });
 
 describe('GDD 2.5 — le monde partagé', () => {
-  test('événements à 0/4/8/12/16/20 h UTC, 45 min ; Destin du jour 90 s ; Temps suspendu +30 s ; partition 3 ✦', () => {
+  test('événements à 0/4/8/12/16/20 h UTC, 45 min ; Destin du jour 90 s ; Temps suspendu +30 s ; partitions gagnées, plus vendues (0.6)', () => {
     expect(EVENT_HOURS_UTC).toEqual([0, 4, 8, 12, 16, 20]);
     expect(EVENT_DURATION_MIN).toBe(45);
     expect(DAILY_DUR).toBe(90);
-    expect(SHOP.partition.cost).toBe(3);
+    expect('partition' in SHOP).toBe(false);
     expect(SHOP.temps.desc).toMatch(/30 s/);
   });
 });

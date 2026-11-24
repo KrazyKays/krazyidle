@@ -965,3 +965,53 @@ describe('CODEX-NEW — nouveautés du Codex gardées dans la sauvegarde (0.6)',
     expect(codexFresh(deserialize(serialize(s))!)).toEqual([]);
   });
 });
+
+describe('MAISON-1 — titres de famille et blason gagné (0.6)', () => {
+  test('le rang monte avec la génération, les surnoms et les hauts faits, et s\'annonce une fois', async () => {
+    const { HOUSE_RANKS, announceRanks, houseRank, nextRankNeeds } = await import('../../src/engine/maison');
+    const s = newGame(0, 6);
+    expect(houseRank(s)).toBe(0);
+    s.hero.gen = 59;
+    expect(HOUSE_RANKS[houseRank(s)].id).toBe('seigneurie');
+    s.hero.gen = 400; // génération seule : bloqué faute de surnoms
+    expect(HOUSE_RANKS[houseRank(s)].id).toBe('seigneurie');
+    for (const id of ['a', 'b', 'c', 'd', 'e', 'f']) s.epithets[id] = 1;
+    s.feats = { x: 1 };
+    expect(HOUSE_RANKS[houseRank(s)].id).toBe('comte');
+    expect(nextRankNeeds(s)!.rank.id).toBe('marquisat');
+    expect(announceRanks(s).map((r) => r.id)).toEqual(['seigneurie', 'baronnie', 'comte']);
+    expect(announceRanks(s)).toEqual([]);
+  });
+  test('les partitions se gagnent ; celles achetées avant la 0.6 restent acquises', async () => {
+    const { partitionOpen } = await import('../../src/engine/maison');
+    const s = newGame(0, 7);
+    expect(partitionOpen(s, 'plein')).toBe(true);
+    expect(partitionOpen(s, 'parti')).toBe(false);
+    s.hero.gen = 5;
+    expect(partitionOpen(s, 'parti')).toBe(true);
+    expect(partitionOpen(s, 'ecartele')).toBe(false);
+    s.partitions.push('ecartele'); // achetée 3 ✦ en 0.5
+    expect(partitionOpen(s, 'ecartele')).toBe(true);
+    const game = await import('../../src/engine/game');
+    expect('buyPartition' in game).toBe(false);
+  });
+  test('écartelé d\'alliance et bordure dessinés dans l\'écu', async () => {
+    const { shieldSvg, timbreSvg } = await import('../../src/ui/heraldry');
+    const svg = shieldSvg('🦁', 'parti', { quarter: { crest: '🐺', color: '#123456' }, bordure: '#b3261e' });
+    expect(svg).toContain('fill="#123456"');
+    expect(svg).toContain('stroke="#b3261e"');
+    expect(svg).not.toContain('shield-part'); // l'écartelé remplace la partition
+    expect(svg.match(/class="hd-charge"/g)).toHaveLength(4);
+    expect(timbreSvg(0)).toBe('');
+    for (let r = 1; r <= 5; r++) expect(timbreSvg(r)).toMatch(/^<svg/);
+  });
+  test('seules les maisons unies par un mariage peuvent être écartelées', async () => {
+    const { quarterChoices } = await import('../../src/engine/maison');
+    const s = newGame(0, 8);
+    const house = { id: 'h1', name: 'Dubois', crest: '🐺', color: '#123456' };
+    s.alliances.h1 = { house, origin: 'pnj', count: 0, lastGen: 1 };
+    expect(quarterChoices(s)).toEqual([]);
+    s.alliances.h1.count = 1;
+    expect(quarterChoices(s)).toEqual([house]);
+  });
+});
