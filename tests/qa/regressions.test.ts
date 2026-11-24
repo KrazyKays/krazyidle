@@ -940,3 +940,28 @@ describe('DESTIN-0 — Destin du jour mis en réserve, une seule page d\'événe
     expect(typeof daily.dailySetup).toBe('function');
   });
 });
+
+describe('CODEX-NEW — nouveautés du Codex gardées dans la sauvegarde (0.6)', () => {
+  test('un surnom gagné avant un rechargement reste signalé jusqu\'à la visite', async () => {
+    const { codexFresh, markCodexSeen } = await import('../../src/engine/codex');
+    const { serialize, deserialize } = await import('../../src/engine/save');
+    const s = newGame(0, 4);
+    expect(codexFresh(s)).toEqual([]);
+    s.epithets.patient = 1;
+    s.feats = { lignee: 123 };
+    const back = deserialize(serialize(s))!; // rechargement (ou rattrapage hors ligne puis rechargement)
+    expect(codexFresh(back).sort()).toEqual(['e:patient', 'f:lignee']);
+    expect(markCodexSeen(back).length).toBe(2);
+    expect(codexFresh(back)).toEqual([]);
+    expect(codexFresh(deserialize(serialize(back))!)).toEqual([]);
+  });
+  test('une ancienne sauvegarde ne signale pas tout son Codex comme nouveau', async () => {
+    const { codexFresh } = await import('../../src/engine/codex');
+    const { serialize, deserialize } = await import('../../src/engine/save');
+    const s = newGame(0, 5);
+    s.epithets.patient = 2;
+    s.almanach = ['maree'];
+    delete s.codexSeen; // sauvegarde d'avant la 0.6
+    expect(codexFresh(deserialize(serialize(s))!)).toEqual([]);
+  });
+});

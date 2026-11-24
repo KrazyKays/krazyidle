@@ -566,3 +566,11 @@ p { margin: 6px 0; }
 /* Consignes de Récolter (0.4) */
 .act-wrap { display: flex; flex-direction: column; gap: 4px; }
 
+
+/* Codex : nouveautés depuis la dernière visite (0.6) */
+.codex-fresh { border-color: color-mix(in srgb, var(--gold) 60%, transparent); background: radial-gradient(400px 160px at 0% 0%, color-mix(in srgb, var(--gold) 16%, transparent), transparent), linear-gradient(180deg, var(--card2), var(--card)); }
+.codex-fresh li { padding: 2px 0; }
+.codex-tile.fresh, .codex-item.fresh { box-shadow: 0 0 0 2px var(--gold); }
+.codex-tile.fresh::after { content: ''; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--gold); }
+.codex-item.fresh::after { content: 'nouveau'; position: absolute; top: -7px; right: -4px; font-size: 0.6rem; font-weight: 700; padding: 0 4px; border-radius: 6px; background: var(--gold); color: #1a1408; }
+.codex-item.fresh { position: relative; }

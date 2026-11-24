@@ -239,10 +239,11 @@ export function codexSection(app: App): HTMLElement | null {
   };
   const list = [3, 2, 1, 0].flatMap((r) => EPITHETS.filter((e) => e.rarity === r))
     .filter((e) => codexFilter === 'tous' || (codexFilter === 'connus') === !!s.epithets[e.id]);
+  const fresh = app.codexVisit ?? new Set<string>();
   const grid = h('div', { class: 'codex-grid' }, list.map((e) => {
     const n = s.epithets[e.id] ?? 0;
     return h('button', {
-      class: `codex-tile ${n ? '' : 'locked'}`, 'data-id': e.id, style: { '--c': EPITHET_RARITY[e.rarity].color },
+      class: `codex-tile ${n ? '' : 'locked'} ${fresh.has(`e:${e.id}`) ? 'fresh' : ''}`, 'data-id': e.id, style: { '--c': EPITHET_RARITY[e.rarity].color },
       'aria-label': n ? epithetLabel(e.id, null) : 'Surnom à découvrir', title: n ? epithetLabel(e.id, null) : e.hint, onclick: () => show(e.id),
     }, h('span', { class: 'codex-i' }, n ? e.icon : '❔'), n > 1 ? h('span', { class: 'codex-n' }, `×${n}`) : null);
   }));
@@ -250,6 +251,7 @@ export function codexSection(app: App): HTMLElement | null {
     .map(([f, label]) => h('button', { class: `btn btn-sm ${codexFilter === f ? 'btn-primary' : 'btn-ghost'}`, onclick: () => { codexFilter = f; app.sigTab = ''; } }, label)));
   show(codexPick && list.some((e) => e.id === codexPick) ? codexPick : null);
   return h('div', null,
+    freshCard(app, fresh, show),
     h('div', { class: 'card' },
       h('div', { class: 'row-between' }, h('h2', null, '📖 Codex des surnoms'), h('span', { class: 'accent strong' }, `${found} / ${EPITHETS.length}`)),
       h('p', { class: 'muted small' }, 'À sa mort, une vie marquante reçoit un surnom : il suit son Écho pour toujours et le renforce. Le plus rare l\'emporte. Chaque première découverte offre des Éclats ✦.'),
@@ -264,6 +266,33 @@ export function codexSection(app: App): HTMLElement | null {
     almanachCard(app));
 }
 
+/**
+ * Nouveautés depuis la dernière visite (0.6) : un rappel pour la notification qu'on n'a pas eu le temps de lire.
+ * Chaque surnom nomme l'ancêtre qui l'a reçu le dernier : un nom marque plus qu'une icône.
+ */
+function freshCard(app: App, fresh: Set<string>, show: (id: string) => void): HTMLElement | null {
+  if (!fresh.size) return null;
+  const s = app.s;
+  const items = [...fresh].map((k) => {
+    const [kind, id] = [k.slice(0, 1), k.slice(2)];
+    if (kind === 'e' && EPITHET[id]) {
+      const e = EPITHET[id];
+      const who = [...s.ancestors].reverse().find((a) => a.epithet === id);
+      return h('li', null, h('button', { class: 'link-btn', onclick: () => show(id) }, `${e.icon} ${epithetLabel(id, null)}`),
+        h('span', { class: 'muted' }, who ? ` · ${fullName(who, s.lineage.names)}, ${EPITHET_RARITY[e.rarity].name.toLowerCase()}` : ` · ${EPITHET_RARITY[e.rarity].name.toLowerCase()}`));
+    }
+    const f = kind === 'f' ? FEATS.find((x) => x.id === id) : undefined;
+    if (f) return h('li', null, `🏆 ${f.icon} ${f.name}`, h('span', { class: 'muted' }, ' · haut fait'));
+    const a = kind === 'a' ? EVENTS.find((x) => x.id === id) : undefined;
+    if (a) return h('li', null, `📖 ${a.icon} ${a.name}`, h('span', { class: 'muted' }, ' · page d\'Almanach'));
+    return null;
+  }).filter((x): x is HTMLElement => !!x);
+  if (!items.length) return null;
+  return h('div', { class: 'card codex-fresh' },
+    h('div', { class: 'label' }, 'Depuis ta dernière visite'),
+    h('ul', { class: 'plain-list small' }, items));
+}
+
 /** Hauts faits (0.3), dans le Codex : des objectifs lisibles pour la fin de partie. */
 export function featsCard(app: App): HTMLElement {
   const s = app.s;
@@ -272,7 +301,7 @@ export function featsCard(app: App): HTMLElement {
   return h('div', { class: 'card' },
     h('div', { class: 'row-between' }, h('h2', null, '🏆 Hauts faits'), h('span', { class: 'accent strong' }, `${n} / ${FEATS.length}`)),
     h('p', { class: 'muted small' }, 'Des exploits de fin de partie, qui demandent de jouer autrement plutôt que plus longtemps. Chacun offre des Éclats ✦ une fois et orne le blason de la maison.'),
-    h('div', { class: 'feat-list' }, FEATS.map((d) => h('div', { class: `codex-item ${got[d.id] ? '' : 'locked'}`, style: { '--c': got[d.id] ? '#ffa726' : '#607d8b' } },
+    h('div', { class: 'feat-list' }, FEATS.map((d) => h('div', { class: `codex-item ${got[d.id] ? '' : 'locked'} ${app.codexVisit?.has(`f:${d.id}`) ? 'fresh' : ''}`, style: { '--c': got[d.id] ? '#ffa726' : '#607d8b' } },
       h('span', { class: 'codex-i' }, got[d.id] ? d.icon : '🔒'),
       h('div', null,
         h('div', { class: 'strong' }, d.name, h('span', { class: 'muted small' }, got[d.id] ? ` · obtenu le ${new Date(got[d.id]).toLocaleDateString('fr-FR')}` : ` · ${d.eclats} ✦`)),
@@ -287,6 +316,6 @@ export function almanachCard(app: App): HTMLElement {
     h('p', { class: 'muted small' }, `Le premier palier Or de chaque événement en offre la page (+${ALMANACH_ECLATS} ✦). Les six pages complètent un haut fait.`),
     h('div', { class: 'codex-grid' }, EVENTS.map((e) => {
       const on = alm.includes(e.id);
-      return h('div', { class: `codex-tile ${on ? '' : 'locked'}`, style: { '--c': e.color }, title: on ? `${e.name} — ${e.desc}` : `${e.name} : atteins le palier Or pour en gagner la page` }, h('span', { class: 'codex-i' }, on ? e.icon : '❔'));
+      return h('div', { class: `codex-tile ${on ? '' : 'locked'} ${app.codexVisit?.has(`a:${e.id}`) ? 'fresh' : ''}`, style: { '--c': e.color }, title: on ? `${e.name} — ${e.desc}` : `${e.name} : atteins le palier Or pour en gagner la page` }, h('span', { class: 'codex-i' }, on ? e.icon : '❔'));
     })));
 }

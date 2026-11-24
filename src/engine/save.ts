@@ -1,5 +1,6 @@
 import { ACT_INDEX_V03, TRAIT_RENAMED_V04, sexOf, type ResId } from './data';
 import { rebuildRanks } from './names';
+import { codexKeys } from './codex';
 import { newGame, SAVE_VERSION, type GameState } from './state';
 
 export const SAVE_KEY = 'echos-de-lignee-save';
@@ -51,6 +52,8 @@ function migrate(d: any): GameState {
   if (s.succession) { s.succession.heirs?.forEach(sexed); sexed(s.succession.newEcho); sexed(s.succession.ancestor); }
   // Numérotation dynastique : absente des sauvegardes d'avant, recalculée d'après la généalogie.
   if (!d.lineage?.names) rebuildRanks(s);
+  // Codex (0.6) : ce que la sauvegarde connaissait déjà n'est pas une nouveauté.
+  if (!Array.isArray(d.codexSeen)) s.codexSeen = codexKeys(s);
   s.v = SAVE_VERSION;
   return s;
 }

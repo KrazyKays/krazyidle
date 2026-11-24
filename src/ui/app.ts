@@ -21,6 +21,7 @@ import { evolutionsOf } from '../engine/evolution';
 import { FEATS, FEAT_DEF } from '../engine/feats';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 import { eventGoalLine } from './eventview';
+import { codexFresh, codexKeys, markCodexSeen } from '../engine/codex';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
 const ANCESTORS_SHOWN = 12;
@@ -47,6 +48,8 @@ export class App {
   /** Dernier sous-onglet choisi dans chaque onglet (mémoire de session). */
   subs: Partial<Record<Tab, Sub>> = {};
   seen = new SeenBadges();
+  /** Nouveautés du Codex montrées pendant la visite en cours (null hors du Codex). */
+  codexVisit: Set<string> | null = null;
   desktop = false;
   layout: Layout = 'mobile';
   bTop = new Binder();
@@ -78,8 +81,6 @@ export class App {
     this.rt = rt;
     this.hooks = hooks;
     setNotation(s.settings.notation);
-    // Les surnoms connus au lancement ne sont pas des nouveautés.
-    this.seen.primeOnce('codex', affordableKeys(s, 'codex'));
   }
 
   mount(root: HTMLElement) {
@@ -207,6 +208,8 @@ export class App {
       if (!this.s.flags.bazar && bazarUnlocked(this.s)) this.s.flags.bazar = true;
       const sub = this.elTab.hidden ? null : this.sub();
       if (sub) this.markSeen(sub);
+      // On quitte le Codex : ses nouveautés ont été vues, elles ne sont plus mises en avant.
+      if (sub !== 'codex') this.codexVisit = null;
       this.bNav.run();
     }
     if (!this.elLife.hidden) this.bLife.run();
@@ -328,7 +331,8 @@ export class App {
   subBadge(sub: Sub): number | boolean {
     const s = this.s;
     switch (sub) {
-      case 'batiments': case 'heritage': case 'codex': return this.seen.fresh(sub, this.subKeys(sub));
+      case 'batiments': case 'heritage': return this.seen.fresh(sub, this.subKeys(sub));
+      case 'codex': return this.codexVisit ? 0 : codexFresh(s).length;
       case 'jour': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
@@ -607,7 +611,7 @@ export class App {
       case 'bazar': return head + s.blessings.join() + s.partitions.join() + this.lineageSig() + !!s.life + s.life?.extended;
       case 'lignee': return head + s.ancestors.length + this.lineageSig() + '|' + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life;
       case 'alliances': return head + s.hero.id + (s.hero.spouse?.name ?? '') + !!s.life + '|' + s.cadets.length + JSON.stringify(s.alliances) + '|' + weekIndex(Date.now()) + this.lineageSig();
-      case 'codex': return head + Object.keys(s.epithets).length;
+      case 'codex': return head + codexKeys(s).length;
       case 'jour': {
         const ev = this.rt.event;
         return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + Math.floor(Date.now() / 60000);
@@ -626,6 +630,8 @@ export class App {
     const t = this.normTab(this.tab);
     const sub = this.sub();
     let el: HTMLElement | null = null;
+    // Vu avant d'être dessiné : le Codex a besoin de ses nouveautés pour les mettre en avant.
+    if (sub) this.markSeen(sub);
     switch (sub) {
       case 'echos': el = this.panelEchoes(this.bTab); break;
       case 'batiments': el = this.panelBatiments(); break;
@@ -643,13 +649,18 @@ export class App {
       if (bar) this.elSubDock.replaceChildren(bar); else this.elSubDock.replaceChildren();
     } else if (bar) root.append(bar);
     if (el) root.append(...Array.from(el.childNodes));
-    if (sub) this.markSeen(sub);
     this.elTab.replaceChildren(root);
   }
 
   /** Ce qui est affiché est vu : les pastilles « nouveau » de ce sous-onglet s'éteignent. */
   markSeen(sub: Sub) {
-    if (sub === 'batiments' || sub === 'heritage' || sub === 'codex') this.seen.mark(sub, this.subKeys(sub));
+    if (sub === 'batiments' || sub === 'heritage') this.seen.mark(sub, this.subKeys(sub));
+    if (sub === 'codex') {
+      // Les nouveautés sont enregistrées comme vues dès l'affichage (sauvegarde), mais restent en avant
+      // jusqu'à ce que le joueur quitte le Codex.
+      const fresh = markCodexSeen(this.s);
+      if (fresh.length || !this.codexVisit) this.codexVisit = new Set([...(this.codexVisit ?? []), ...fresh]);
+    }
   }
 
   // --- Échos ----------------------------------------------------------------

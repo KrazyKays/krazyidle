@@ -200,6 +200,8 @@ export interface GameState {
   almanach?: string[];
   /** Hauts faits (0.3) : identifiant → date d'obtention (ms) */
   feats?: Record<string, number>;
+  /** Codex (0.6) : entrées déjà vues par le joueur (`codexKeys`) ; le reste est signalé comme nouveau */
+  codexSeen?: string[];
   stats: { lives: number; playTime: number; eventsDone: number; bestLife: number; /** Bénédictions légendaires ou mythiques achetées (0.3) */ blessHigh?: number; sessions?: number; installAskAt?: number; /** débit de valeur (pts/s) au dernier pas, pour fixer l'objectif des événements */ valueRate?: number };
 }
 
@@ -250,6 +252,7 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     alliances: {},
     cadets: [],
     usedCodes: [],
+    codexSeen: [],
     settings: { notation: 'lettres', reducedMotion: false, keepAwake: false },
     stats: { lives: 0, playTime: 0, eventsDone: 0, bestLife: 0 },
   };
