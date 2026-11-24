@@ -127,7 +127,6 @@ function loop(t: number) {
       n++;
     }
     if (n >= 60) acc = 0;
-    app.dailyStep(dtReal);
   }
   app.frame(Date.now());
   requestAnimationFrame(loop);

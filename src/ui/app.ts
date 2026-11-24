@@ -2,7 +2,6 @@ import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, isJoestar, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
   legacyCost, wearMult, xpToNext, type ActId, type ResId,
 } from '../engine/data';
-import { DAILY_DUR, DailyRun, type DailyOrder, dailySetup, dailyTiers, dailyStrip, encodeRun, medalsOf, resultAge, traceFromCode } from '../engine/daily';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyPartition, buyTemps, canAfford,
@@ -11,7 +10,7 @@ import {
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
 import { heroActMult, lifePower } from '../engine/sim';
-import type { DailyRecord, Echo, GameState, Hero } from '../engine/state';
+import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg } from './heraldry';
@@ -27,7 +26,6 @@ import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, norm
 const ANCESTORS_SHOWN = 12;
 
 const MEDALS = ['🥉', '🥈', '🥇'];
-const GAME_URL = 'https://krazykays.github.io/krazyidle/';
 
 export interface AppHooks {
   save: () => void;
@@ -72,10 +70,6 @@ export class App {
   elSubDock!: HTMLElement;
   lastNav = 0;
   successionModal: ModalHandle | null = null;
-  daily: DailyRun | null = null;
-  dailyModal: ModalHandle | null = null;
-  dailyAcc = 0;
-  dailyBinder = new Binder();
   echoSel: Set<number> | null = null;
   hadSuccession = false;
 
@@ -175,9 +169,8 @@ export class App {
     const n = parseInt(e.key, 10);
     if (n >= 1 && n <= 5) {
       const a = ACTS[n - 1];
-      if (this.daily && !this.daily.done && this.dailyModal) this.daily.setAct(a);
-      else if (this.s.life && this.s.unlocked.includes(a)) setActivity(this.s, a);
-    } else if (e.key === ' ' && !this.daily && this.s.life && !document.querySelector('.modal-back')) {
+      if (this.s.life && this.s.unlocked.includes(a)) setActivity(this.s, a);
+    } else if (e.key === ' ' && this.s.life && !document.querySelector('.modal-back')) {
       e.preventDefault();
       this.togglePause();
     }
@@ -223,7 +216,6 @@ export class App {
       if (se !== this.sigEcho) { this.sigEcho = se; this.bEcho.reset(); this.elEcho.replaceChildren(this.panelEchoes(this.bEcho)); }
       this.bEcho.run();
     }
-    if (this.dailyModal) this.dailyBinder.run();
   }
 
   // =========================================================================
@@ -340,7 +332,7 @@ export class App {
       case 'jour': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
-        return evOpen || !this.dailyRec(utcDateStr(Date.now()));
+        return evOpen;
       }
       default: return false;
     }
@@ -371,7 +363,6 @@ export class App {
       ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
       ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
       ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
-      ['destin', s.hero.gen >= 3 && !this.dailyRec(utcDateStr(Date.now())), 'La Commande du comté t\'attend : la même vie pour tous les joueurs, livre-la le plus jeune possible !'],
     ];
     for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
     return null;
@@ -619,9 +610,8 @@ export class App {
       case 'codex': return head + Object.keys(s.epithets).length;
       case 'jour': {
         const ev = this.rt.event;
-        return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + JSON.stringify(this.dailyRec(utcDateStr(Date.now())) ?? null) + Math.floor(Date.now() / 60000);
+        return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + Math.floor(Date.now() / 60000);
       }
-      case 'calendrier': return head + (this.rt.event?.key ?? '') + Math.floor(Date.now() / 60000);
       default: return head;
     }
   }
@@ -645,7 +635,6 @@ export class App {
       case 'alliances': el = alliancesSection(this); break;
       case 'codex': el = codexSection(this); break;
       case 'jour': el = this.panelJour(); break;
-      case 'calendrier': el = this.panelCalendrier(); break;
     }
     // Les sous-onglets et le contenu sont frères : l'espacement du panneau s'applique à tous.
     const root = h('div', { 'data-sub': sub ?? '' });
@@ -819,32 +808,12 @@ export class App {
         spouseLine(a, a.spouse, true)))));
   }
 
-  // --- Destin : Aujourd'hui (Commande du jour, événement), Calendrier ----------
+  // --- Destin : l'événement en cours (et sa Veillée), puis le calendrier -------
+  // Le Destin du jour (Commande du comté) est en réserve depuis la 0.6 : son moteur (`daily.ts`) reste, sans interface.
   panelJour() {
     const s = this.s, b = this.bTab;
     const now = Date.now();
     const parts: HTMLElement[] = [];
-    // Défi du jour
-    const date = utcDateStr(now);
-    const setup = dailySetup(date);
-    const rec = this.dailyRec(date);
-    const nextDay = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate() + 1);
-    const tiers = dailyTiers(date);
-    parts.push(h('div', { class: 'card daily-card' },
-      h('div', { class: 'label' }, `Destin du jour · ${new Date(now).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`),
-      h('h2', null, `📜 La Commande du comté`),
-      h('p', { class: 'muted small' }, `La vie de ${setup.name}, identique pour tous les joueurs. Réunis la commande en stock, au même moment, le plus jeune possible, et partage ton résultat.`),
-      this.orderChips(setup.order),
-      this.traitChips(setup.traits, false, setup),
-      h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
-      h('div', { class: 'stats' },
-        stat('Ton record', rec ? `${(() => { const n = medalsOf(date, rec.best); return n ? MEDALS[n - 1] + ' ' : ''; })()}${fmtDailyResult(rec.best)}` : '—'),
-        stat('Médailles (âge de livraison)', `🥉 ${tiers[0]} · 🥈 ${tiers[1]} · 🥇 ${tiers[2]} ans`),
-        stat('Nouveau destin', b.text(h('span'), () => fmtDur((nextDay - Date.now()) / 1000)))),
-      h('div', { class: 'row-wrap' },
-        h('button', { class: 'btn btn-primary', onclick: () => this.openDaily() }, rec ? '🔁 Rejouer' : '▶️ Jouer'),
-        rec ? h('button', { class: 'btn', onclick: () => this.shareDaily(date, rec.best, rec.code) }, '📤 Partager') : null)));
-
     const ev = this.rt.event;
     if (ev) {
       const ep = s.events[ev.key];
@@ -864,20 +833,6 @@ export class App {
           b.text(h('span', { class: 'num muted small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}` : '')),
         h('p', { class: 'muted small' }, `Récompenses : ${EVENT_TIERS.map((_, i) => `${MEDALS[i]} ${EVENT_REWARDS[i]} ✦`).join(' · ')}`)));
     }
-    if (!ev) {
-      const next = upcomingEvents(now, 7)[0];
-      if (next) parts.push(h('button', { class: 'card next-ev', style: { '--c': next.def.color }, onclick: () => this.setTab('calendrier') },
-        h('span', { class: 'ev-i' }, next.def.icon),
-        h('div', null, h('div', { class: 'label' }, 'Prochain événement'), h('strong', null, next.def.name)),
-        b.text(h('span', { class: 'muted small right' }), () => `dans ${fmtDur((next.start - Date.now()) / 1000)} ›`)));
-    }
-    return h('div', null, parts);
-  }
-
-  panelCalendrier() {
-    const now = Date.now();
-    const ev = this.rt.event;
-    const parts: HTMLElement[] = [];
     const ups = upcomingEvents(now, 7).filter((w) => w.key !== ev?.key).slice(0, 12);
     parts.push(h('div', { class: 'card' },
       h('h2', null, '📅 Calendrier des événements'),
@@ -885,9 +840,8 @@ export class App {
       h('ul', { class: 'ev-list' }, ups.map((w) => h('li', null,
         h('span', { class: 'ev-i', style: { '--c': w.def.color } }, w.def.icon),
         h('div', null, h('strong', null, w.def.name), h('div', { class: 'muted small' }, w.def.desc)),
-        h('div', { class: 'right small' }, h('div', null, `${fmtDay(w.start)} ${fmtClock(w.start)}`), h('div', { class: 'muted' }, `dans ${fmtDur((w.start - now) / 1000)}`))))),
+        h('div', { class: 'right small' }, h('div', null, `${fmtDay(w.start)} ${fmtClock(w.start)}`), b.text(h('div', { class: 'muted num' }), () => `dans ${fmtDur((w.start - Date.now()) / 1000)}`))))),
       h('button', { class: 'btn btn-sm', onclick: () => { download('echos-de-lignee-evenements.ics', buildIcs(), 'text/calendar'); toast('📅 Calendrier téléchargé : ouvre-le pour l\'ajouter à ton agenda.', 'good'); } }, '📅 Ajouter à mon agenda')));
-
     return h('div', null, parts);
   }
 
@@ -1308,204 +1262,6 @@ export class App {
       h('p', { class: 'muted small center' }, `Échos de Lignée v${__APP_VERSION__} · `, h('a', { href: 'https://github.com/KrazyKays/krazyidle', target: '_blank', rel: 'noopener' }, 'Code source'))));
   }
 
-  // --- Défi du jour ------------------------------------------------------------
-  /** Record du jour sous les règles de la Commande (les records de l'ancien Destin à points sont ignorés). */
-  dailyRec(date: string): DailyRecord | undefined {
-    const r = this.s.daily[date];
-    return r && r.v === 2 ? r : undefined;
-  }
-
-  /** Lignes de la commande, sous forme de pastilles « 🌾 60 ». */
-  orderChips(order: DailyOrder) {
-    return h('div', { class: 'row-wrap daily-order-chips' }, RES.filter((r) => order[r] > 0).map((r) =>
-      h('span', { class: 'badge daily-order-chip', title: RES_INFO[r].name }, `${RES_INFO[r].icon} ${fmtInt(order[r])}`)));
-  }
-
-  openDaily() {
-    const date = utcDateStr(Date.now());
-    const setup = dailySetup(date);
-    const content = h('div', { class: 'daily' });
-    const b = this.dailyBinder;
-    const intro = () => {
-      b.reset();
-      const tiers = dailyTiers(date);
-      content.replaceChildren(
-        h('div', { class: 'center' }, h('div', { class: 'big-i' }, '📜'), h('h2', null, `La Commande du comté : ${setup.name}`)),
-        h('p', null, 'Le comté passe commande. Réunis tout en même temps, en stock, et la commande est livrée : plus tu la livres jeune, meilleure est ta médaille.'),
-        this.orderChips(setup.order),
-        h('p', { class: 'small' }, `🥉 livrée avant ${tiers[0]} ans · 🥈 avant ${tiers[1]} ans · 🥇 avant ${tiers[2]} ans`),
-        h('p', { class: 'muted small' }, `Même destin, même monde, mêmes règles pour tous ; les compétences repartent de zéro. Ce que tu dépenses (Vivres vendus, Or étudié) ne compte plus pour la commande. Le chrono démarre à ta première activité. Ta lignée principale est mise en pause (tes Échos continuent).`),
-        this.traitChips(setup.traits, false, setup),
-        h('div', { class: 'row-wrap' }, setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`))),
-        h('div', { class: 'row-end' }, h('button', { class: 'btn btn-primary btn-lg', onclick: start }, 'Commencer')));
-    };
-    const start = () => {
-      this.daily = new DailyRun(setup);
-      this.dailyAcc = 0;
-      this.rt.pauseLife = true;
-      const run = this.daily;
-      const rec = this.dailyRec(date);
-      const tiers = dailyTiers(date);
-      b.reset();
-      // Fantôme : la partie du record du jour, rejouée depuis son code (rien de plus n'est sauvegardé).
-      const ghost = rec?.code ? traceFromCode(rec.code) : null;
-
-      const tierText = b.text(h('div', { class: 'small daily-next' }), () => {
-        const age = run.tickN / 10;
-        const next = [2, 1, 0].find((i) => age < tiers[i]);
-        const goal = next === undefined ? 'Plus de médaille possible : livre quand même pour ton record !' : `${MEDALS[next]} si livrée avant ${tiers[next]} ans (encore ${fmtInt(tiers[next] - age)} ans)`;
-        return goal + (rec ? ` · Record : ${fmtDailyResult(rec.best)}` : '');
-      });
-
-      // Temps, ligne de vie et repères des médailles sur la barre du temps
-      const timeFill = b.width(h('div', { class: 'bar-fill' }), () => run.tickN / run.totalTicks);
-      b.cls(timeFill, 'late', () => run.tickN / run.totalTicks > 0.8);
-      const timeBar = h('div', { class: 'bar daily-timebar' }, timeFill,
-        ...[1, 2].map((i) => h('span', { class: 'daily-tier-mark', style: { left: (tiers[i] / DAILY_DUR * 100) + '%' }, title: `${MEDALS[i]} avant ${tiers[i]} ans` }, MEDALS[i])));
-      const strip = h('div', { class: 'strip' });
-      let lastLen = -1;
-      b.add(() => {
-        if (run.life.rec.length === lastLen) return;
-        lastLen = run.life.rec.length;
-        strip.style.background = stripGradient(run.life.rec, DAILY_DUR);
-      });
-      const idle = h('div', { class: 'daily-idle small' });
-      b.text(idle, () => run.started
-        ? '⏸️ Aucune activité : le temps passe sans rien produire ! Choisis une activité (touches 1 à 5).'
-        : '⏳ Prends ton temps : le chrono démarre à ta première activité (touches 1 à 5), puis ne s\'arrête plus.');
-      b.add(() => { idle.hidden = !!run.life.act || run.done; });
-
-      // La commande : une ligne par ressource demandée, avec l'âge auquel le record l'avait remplie.
-      const lines = h('div', { class: 'daily-order' }, RES.filter((r) => setup.order[r] > 0).map((r) => {
-        const need = setup.order[r];
-        const fill = b.width(h('div', { class: 'bar-fill', style: { background: RES_INFO[r].color } }), () => Math.min(1, run.res[r] / need));
-        const row = h('div', { class: 'daily-line' },
-          h('div', { class: 'row-between small' },
-            h('span', null, `${RES_INFO[r].icon} ${RES_INFO[r].name}`),
-            b.text(h('span', { class: 'daily-line-v' }), () => {
-              const t = run.lineTick[r];
-              return `${fmt(Math.min(run.res[r], 9999))} / ${fmtInt(need)}` + (run.res[r] >= need ? ' ✓' : t !== undefined ? ` (rempli à ${fmtAge(t)})` : '');
-            })),
-          h('div', { class: 'bar bar-thin' }, fill),
-          ghost ? h('div', { class: 'muted small daily-line-ghost' }, ghost.lineTick[r] !== undefined ? `┄ record : rempli à ${fmtAge(ghost.lineTick[r]!)}` : '┄ record : jamais rempli') : null);
-        b.cls(row, 'done', () => run.res[r] >= need);
-        return row;
-      }));
-
-      // Stock de chaque ressource (même non demandée : Vivres et Or servent à la chaîne)
-      const mini = (label: string, value: HTMLElement, sub: HTMLElement, title?: string) =>
-        h('div', { class: 'stat stat-mini', title }, h('div', { class: 'stat-l' }, label), value, sub);
-      const res = h('div', { class: 'stats stats-4' }, RES.map((r) => mini(`${RES_INFO[r].icon} ${RES_INFO[r].name}`,
-        b.text(h('div', { class: 'stat-v' }), () => fmt(run.res[r])),
-        h('div', { class: 'muted small' }, setup.order[r] > 0 ? `commande : ${fmtInt(setup.order[r])}` : 'hors commande'))));
-
-
-      // Activités
-      const acts = h('div', { class: 'acts acts-daily' }, ACTS.map((a, i) => {
-        const def = ACT[a];
-        const lvl = b.text(h('span', { class: 'lvl' }), () => `Niv. ${run.life.lvl[a]}`);
-        const xp = b.width(h('div', { class: 'bar-fill', style: { background: def.color } }), () => run.life.xp[a] / xpToNext(run.life.lvl[a]));
-        const rateEl = b.text(h('div', { class: 'act-rate' }), () => {
-          const p = lifePower(run.life, run.hero, a);
-          const m = run.ctx.prodMult(a) * p;
-          const o: string[] = [];
-          for (const r in def.produce) o.push(`+${fmt(def.produce[r as ResId]! * m)}${RES_INFO[r as ResId].icon}/s`);
-          for (const r in def.consume) o.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))}${RES_INFO[r as ResId].icon}/s`);
-          return o.join(' ');
-        });
-        const note = b.text(h('div', { class: 'act-note small' }), () => {
-          const out: string[] = [];
-          const lack = (Object.keys(def.consume) as ResId[]).filter((r) => run.res[r] < def.consume[r]! * Math.sqrt(lifePower(run.life, run.hero, a)) * 0.5);
-          if (lack.length) out.push(`⚠️ Manque de ${lack.map((r) => RES_INFO[r].icon).join('')}`);
-          const md = setup.mods.find((x) => x.act?.[a]);
-          if (md) out.push(`${md.icon} ×${md.act![a]}`);
-          return out.join(' · ');
-        });
-        b.cls(note, 'bad', () => note.textContent?.includes('⚠️') ?? false);
-        const btn = h('button', { class: 'act', style: { '--c': def.color }, onclick: () => run.setAct(run.life.act === a ? null : a) },
-          h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(i + 1))),
-          h('div', { class: 'act-body' }, h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl), h('div', { class: 'bar bar-thin' }, xp), rateEl, note));
-        b.cls(btn, 'active', () => run.life.act === a);
-        return btn;
-      }));
-
-      content.replaceChildren(
-        h('div', { class: 'row-between daily-head' }, h('h2', null, `📜 ${setup.name}`),
-          h('div', { class: 'right' }, b.text(h('div', { class: 'score' }), () => `${Math.floor(run.progress() * 100)} %`), h('div', { class: 'muted small' }, 'de la commande'))),
-        lines,
-        tierText,
-        h('div', { class: 'row-between small' }, b.text(h('span'), () => `Âge ${Math.floor(run.tickN / 10)} / ${DAILY_DUR} ans`), b.text(h('span', { class: 'muted' }), () => `${fmtDur(DAILY_DUR - run.tickN / 10)} restantes`)),
-        timeBar,
-        strip,
-        idle,
-        acts, res,
-        h('div', { class: 'row-wrap daily-ctx' }, this.traitChips(setup.traits, true, setup), setup.mods.map((m) => h('span', { class: 'badge' }, `${m.icon} ${m.name} — ${m.desc}`)),
-          run.xpMult !== 1 ? h('span', { class: 'badge' }, `⚡ Expérience ×${run.xpMult.toFixed(2)}`) : null),
-        h('div', { class: 'row-end' }, h('button', { class: 'btn btn-ghost btn-sm', onclick: () => { this.endDaily(false); this.dailyModal?.close(); } }, 'Abandonner')));
-    };
-    const finish = () => {
-      const run = this.daily!;
-      const result = run.score();
-      const code = encodeRun(date, run.actions, result);
-      const s = this.s;
-      const prev = this.dailyRec(date);
-      const rec: DailyRecord = prev ?? { best: -1, code: '', rewarded: 0, v: 2 };
-      const isBest = result > rec.best;
-      if (isBest) { rec.best = result; rec.code = code; }
-      const levels = 1 + medalsOf(date, rec.best);
-      const gain = Math.max(0, levels - rec.rewarded);
-      rec.rewarded = Math.max(rec.rewarded, levels);
-      s.daily[date] = rec;
-      s.eclats += gain;
-      this.endDaily(true);
-      this.hooks.save();
-      b.reset();
-      const n = medalsOf(date, result);
-      const miss = run.missing();
-      content.replaceChildren(
-        h('div', { class: 'center' },
-          h('div', { class: 'big-i' }, n ? MEDALS[n - 1] : '🎗️'),
-          h('h2', null, run.delivered ? `Commande livrée à ${fmtAge(run.deliveredTick!)}` : `Commande remplie à ${Math.floor(run.progress() * 100)} %`),
-          run.delivered ? null : h('p', { class: 'muted' }, `Il manquait ${RES.filter((r) => miss[r]).map((r) => `${fmt(Math.max(0.1, miss[r]!))} ${RES_INFO[r].icon}`).join(', ')}.`),
-          h('p', { class: 'muted' }, isBest ? 'Nouveau record personnel du jour !' : `Ton record du jour reste : ${fmtDailyResult(rec.best)}.`),
-          gain ? h('p', { class: 'accent' }, `+${gain} ✦ Éclats célestes`) : null),
-        h('div', { class: 'timeline', style: { background: stripGradient(run.life.rec, run.life.rec.length || 1) } }),
-        h('div', { class: 'row-wrap' },
-          h('button', { class: 'btn btn-primary', onclick: () => this.shareDaily(date, result, code) }, '📤 Partager'),
-          h('button', { class: 'btn', onclick: () => { intro(); } }, '🔁 Rejouer'),
-          h('button', { class: 'btn btn-ghost', onclick: () => this.dailyModal?.close() }, 'Fermer')));
-    };
-    this.dailyFinish = finish;
-    intro();
-    this.dailyModal = modal(content, { wide: true, dismissable: true, onClose: () => { this.endDaily(false); this.dailyModal = null; this.sigTab = ''; } });
-  }
-
-  dailyFinish: (() => void) | null = null;
-
-  /** Appelé par la boucle principale avec le temps réel écoulé. */
-  dailyStep(dtSec: number) {
-    const run = this.daily;
-    if (!run || run.done) return;
-    this.dailyAcc = run.advance(this.dailyAcc + dtSec);
-    if (run.done) this.dailyFinish?.();
-  }
-
-  endDaily(_finished: boolean) {
-    this.rt.pauseLife = false;
-    this.daily = null;
-  }
-
-  async shareDaily(date: string, result: number, code: string) {
-    const d = new Date(date + 'T12:00:00Z').toLocaleDateString('fr-FR');
-    const n = medalsOf(date, result);
-    const tr = traceFromCode(code);
-    const strip = tr ? `\n${dailyStrip(tr.rec)}` : '';
-    const text = `📜 Échos de Lignée — Commande du ${d}\n${n ? MEDALS[n - 1] : '🎗️'} ${fmtDailyResult(result)}${strip}\nFais mieux : ${GAME_URL}`;
-    try {
-      if (navigator.share) { await navigator.share({ text }); return; }
-    } catch { /* annulé */ }
-    toast((await copyText(text)) ? '📋 Résultat copié : colle-le où tu veux !' : 'Copie impossible', 'good');
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1532,16 +1288,6 @@ export function stripGradient(rec: number[], dur: number): string {
   }
   if (rec.length < total) stops.push(`var(--strip-empty) ${((rec.length / total) * 100).toFixed(2)}% 100%`);
   return `linear-gradient(90deg, ${stops.join(', ')})`;
-}
-
-/** Âge d'un tic du Destin, au dixième d'année (« 58,3 ans »). */
-function fmtAge(tick: number): string {
-  return `${(tick / 10).toFixed(1).replace('.', ',')} ans`;
-}
-/** Résultat du Destin en clair : « livrée à 58,3 ans » ou « remplie à 83 % ». */
-function fmtDailyResult(result: number): string {
-  const age = resultAge(result);
-  return age !== null ? `livrée à ${fmtAge(age * 10)}` : `remplie à ${Math.max(0, Math.floor(result / 10))} %`;
 }
 
 /** Ce qu'il faut accomplir pour qu'un don mûrisse (fiche du trait). */

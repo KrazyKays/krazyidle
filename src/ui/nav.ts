@@ -5,14 +5,14 @@
 //   🏛️ Mémoire   — ce que la lignée garde d'elle-même (Échos) ;
 //   🔨 Améliorer — tout ce qui s'achète (Bâtiments en ressources, Héritage ⚜️, Bazar ✦) ;
 //   👑 Maison    — identité et collection (Lignée et blason, Alliances, Codex) ;
-//   🌠 Destin    — les rendez-vous (Aujourd'hui : événement et Commande ; Calendrier).
+//   🌠 Destin    — les rendez-vous (l'événement en cours, sa Veillée et le calendrier, sur une seule page).
 import { BUILDINGS, LEGACY, legacyCost } from '../engine/data';
 import { alliancesUnlocked } from '../engine/alliances';
 import { buildingCost, canAfford, chroniclesUnlocked } from '../engine/game';
 import type { GameState } from '../engine/state';
 
 export type Tab = 'vie' | 'memoire' | 'ameliorer' | 'maison' | 'destin';
-export type Sub = 'echos' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour' | 'calendrier';
+export type Sub = 'echos' | 'batiments' | 'heritage' | 'bazar' | 'lignee' | 'alliances' | 'codex' | 'jour';
 /** mobile : un onglet à la fois · two : héros + onglet · three : héros + Échos + onglet */
 export type Layout = 'mobile' | 'two' | 'three';
 
@@ -32,7 +32,7 @@ export const SUBS: Record<Tab, SubDef[]> = {
   memoire: [{ id: 'echos', icon: '🌀', name: 'Échos' }],
   ameliorer: [{ id: 'batiments', icon: '🏠', name: 'Bâtiments' }, { id: 'heritage', icon: '⚜️', name: 'Héritage' }, { id: 'bazar', icon: '✦', name: 'Bazar' }],
   maison: [{ id: 'lignee', icon: '📜', name: 'Lignée' }, { id: 'alliances', icon: '💍', name: 'Alliances' }, { id: 'codex', icon: '📖', name: 'Codex' }],
-  destin: [{ id: 'jour', icon: '☀️', name: 'Aujourd\'hui' }, { id: 'calendrier', icon: '📅', name: 'Calendrier' }],
+  destin: [{ id: 'jour', icon: '🌠', name: 'Événements' }],
 };
 
 /** Onglet parent de chaque sous-onglet. */

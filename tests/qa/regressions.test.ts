@@ -923,3 +923,20 @@ describe('UX-EVT 1 — texte de l\'événement stable (0.6)', () => {
     expect(eventGoalLine(undefined)).toBe('Vers 🥉 : 0 %');
   });
 });
+
+describe('DESTIN-0 — Destin du jour mis en réserve, une seule page d\'événements (0.6)', () => {
+  test('le Destin n\'a plus qu\'un sous-onglet (événement, Veillée et calendrier)', async () => {
+    const { SUBS, SUB_TAB, subsShown } = await import('../../src/ui/nav');
+    expect(SUBS.destin.map((x) => x.id)).toEqual(['jour']);
+    expect(SUB_TAB.jour).toBe('destin');
+    expect(subsShown(newGame(0, 1), 'destin', 'mobile')).toHaveLength(1);
+  });
+  test('l\'interface ne lance plus la Commande du comté (le moteur reste)', async () => {
+    const fs = await import('node:fs');
+    const app = fs.readFileSync('src/ui/app.ts', 'utf8');
+    expect(app).not.toMatch(/engine\/daily/);
+    expect(app).not.toMatch(/dailyRec\(/);
+    const daily = await import('../../src/engine/daily');
+    expect(typeof daily.dailySetup).toBe('function');
+  });
+});
