@@ -278,7 +278,7 @@ function freshCard(app: App, fresh: Set<string>, show: (id: string) => void): HT
     if (kind === 'e' && EPITHET[id]) {
       const e = EPITHET[id];
       const who = [...s.ancestors].reverse().find((a) => a.epithet === id);
-      return h('li', null, h('button', { class: 'link-btn', onclick: () => show(id) }, `${e.icon} ${epithetLabel(id, null)}`),
+      return h('li', null, h('button', { class: 'link-btn', onclick: () => show(id) }, `${e.icon} ${epithetLabel(id, who ?? null)}`),
         h('span', { class: 'muted' }, who ? ` · ${fullName(who, s.lineage.names)}, ${EPITHET_RARITY[e.rarity].name.toLowerCase()}` : ` · ${EPITHET_RARITY[e.rarity].name.toLowerCase()}`));
     }
     const f = kind === 'f' ? FEATS.find((x) => x.id === id) : undefined;

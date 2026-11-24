@@ -584,3 +584,12 @@ p { margin: 6px 0; }
 .crest-modal .devise { font-size: 0.9rem; max-width: 220px; }
 .rank-line { margin: 2px 0; }
 .devise-row { gap: 6px; }
+
+/* Veillée des ancêtres (0.6) */
+.veillee-card { --c: var(--gold); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.candles { display: inline-flex; gap: 2px; font-size: 1.1rem; }
+.candles span { filter: grayscale(1) brightness(0.6); opacity: 0.5; }
+.candles span.lit { filter: drop-shadow(0 0 6px rgba(255, 200, 90, 0.8)); opacity: 1; }
+.veillee-scene p { margin: 6px 0 10px; line-height: 1.45; }
+.veillee-choices { display: flex; flex-direction: column; gap: 8px; }
+.veillee-choices .btn { text-align: left; justify-content: flex-start; white-space: normal; }

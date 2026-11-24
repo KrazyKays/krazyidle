@@ -23,6 +23,7 @@ import { FEATS, FEAT_DEF } from '../engine/feats';
 import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 import { eventGoalLine } from './eventview';
 import { codexFresh, codexKeys, markCodexSeen } from '../engine/codex';
+import { VEILLEE_MAX, VEILLEE_STEP_MIN, answerVeillee, observeVeillee, veilleeIndex, veilleeScene, veilleeSlots } from '../engine/veillee';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
 const ANCESTORS_SHOWN = 12;
@@ -207,7 +208,8 @@ export class App {
     if (now - this.lastNav > 250) {
       this.lastNav = now;
       if (!this.s.flags.bazar && bazarUnlocked(this.s)) this.s.flags.bazar = true;
-      for (const r of announceRanks(this.s)) toast(`👑 La maison ${this.s.lineage.name} s'élève : ${r.name} ! Nouveau timbre sur l'écu : ${r.timbre.toLowerCase()}.`, 'good', 6000);
+      // Plusieurs rangs d'un coup (ancienne sauvegarde) : seul le plus haut est annoncé.
+      for (const r of announceRanks(this.s).slice(-1)) toast(`👑 La maison ${this.s.lineage.name} s'élève : ${r.name} ! Nouveau timbre sur l'écu : ${r.timbre.toLowerCase()}.`, 'good', 6000);
       const sub = this.elTab.hidden ? null : this.sub();
       if (sub) this.markSeen(sub);
       // On quitte le Codex : ses nouveautés ont été vues, elles ne sont plus mises en avant.
@@ -249,7 +251,8 @@ export class App {
       const ev = this.rt.event;
       evPill.hidden = !ev;
       if (ev) {
-        const t = `${ev.def.icon} ${ev.def.name} · ${fmtDur((ev.end - Date.now()) / 1000)}`;
+        const n = observeVeillee(s, ev, Date.now());
+        const t = `${ev.def.icon} ${ev.def.name} · ${fmtDur((ev.end - Date.now()) / 1000)}${n ? ` · 🕯️ ${n}` : ''}`;
         if (evPill.textContent !== t) evPill.textContent = t;
         evPill.style.setProperty('--c', ev.def.color);
       }
@@ -339,7 +342,7 @@ export class App {
       case 'jour': {
         const ev = this.rt.event;
         const evOpen = !!ev && (s.events[ev.key]?.tier ?? 0) < 3;
-        return evOpen;
+        return evOpen || (!!ev && observeVeillee(s, ev, Date.now()) > 0);
       }
       default: return false;
     }
@@ -617,7 +620,7 @@ export class App {
       case 'codex': return head + codexKeys(s).length;
       case 'jour': {
         const ev = this.rt.event;
-        return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier : '') + Math.floor(Date.now() / 60000);
+        return head + (ev?.key ?? '') + (ev ? s.events[ev.key]?.tier + '/' + observeVeillee(s, ev, Date.now()) + '/' + veilleeIndex(s, ev) : '') + Math.floor(Date.now() / 60000);
       }
       default: return head;
     }
@@ -856,6 +859,7 @@ export class App {
           b.text(h('strong', { class: 'num' }), () => eventGoalLine(ep)),
           b.text(h('span', { class: 'num muted small' }), () => ep ? `${fmt(ep.progress)} / ${fmt(ep.target * EVENT_TIERS[Math.min(2, ep.tier)])} ${RES_INFO[ev.def.goal].icon}` : '')),
         h('p', { class: 'muted small' }, `Récompenses : ${EVENT_TIERS.map((_, i) => `${MEDALS[i]} ${EVENT_REWARDS[i]} ✦`).join(' · ')}`)));
+      parts.push(this.veilleeCard(ev));
     }
     const ups = upcomingEvents(now, 7).filter((w) => w.key !== ev?.key).slice(0, 12);
     parts.push(h('div', { class: 'card' },
@@ -867,6 +871,46 @@ export class App {
         h('div', { class: 'right small' }, h('div', null, `${fmtDay(w.start)} ${fmtClock(w.start)}`), b.text(h('div', { class: 'muted num' }), () => `dans ${fmtDur((w.start - Date.now()) / 1000)}`))))),
       h('button', { class: 'btn btn-sm', onclick: () => { download('echos-de-lignee-evenements.ics', buildIcs(), 'text/calendar'); toast('📅 Calendrier téléchargé : ouvre-le pour l\'ajouter à ton agenda.', 'good'); } }, '📅 Ajouter à mon agenda')));
     return h('div', null, parts);
+  }
+
+  /**
+   * Veillée des ancêtres (0.6) : un souvenir toutes les 5 minutes de l'événement, 3 en attente au plus.
+   * Les réponses font avancer les devises ou les bordures du blason ; rien ne touche à la production.
+   */
+  veilleeCard(ev: NonNullable<Runtime['event']>) {
+    const s = this.s, b = this.bTab;
+    const now = Date.now();
+    const pending = observeVeillee(s, ev, now);
+    const slots = veilleeSlots(ev, now);
+    const total = Math.floor((ev.end - ev.start) / (VEILLEE_STEP_MIN * 60_000));
+    const candles = h('span', { class: 'candles', 'aria-label': `${pending} souvenir${pending > 1 ? 's' : ''} en attente` },
+      Array.from({ length: VEILLEE_MAX }, (_, i) => h('span', { class: i < pending ? 'lit' : '' }, '🕯️')));
+    const nextAt = ev.start + slots * VEILLEE_STEP_MIN * 60_000;
+    const nextLine = slots < total
+      ? h('p', { class: 'muted small' }, pending >= VEILLEE_MAX ? 'Trois souvenirs attendent : le prochain effacera le plus ancien. ' : 'Prochain souvenir dans ', pending >= VEILLEE_MAX ? null : b.text(h('span', { class: 'num' }), () => fmtDur((nextAt - Date.now()) / 1000)))
+      : h('p', { class: 'muted small' }, 'C\'était le dernier souvenir de cet événement.');
+    let scene: HTMLElement;
+    if (pending > 0) {
+      const sc = veilleeScene(s, ev, veilleeIndex(s, ev));
+      scene = h('div', { class: 'veillee-scene' },
+        h('p', { class: 'italic' }, sc.text),
+        h('div', { class: 'veillee-choices' }, sc.choices.map((c) => h('button', { class: 'btn', onclick: () => {
+          const r = answerVeillee(s, ev, Date.now(), c.track);
+          if (!r) return;
+          toast(`🕯️ ${c.outcome}`, 'info', 5000);
+          if (r.unlocked) toast(`${c.track === 'devise' ? '📜' : '🛡️'} Souvenir gravé : ${r.unlocked} rejoint le blason (Maison › Lignée).`, 'good', 6000);
+          this.sigTab = '';
+        } }, h('span', null, c.label), h('span', { class: 'muted small' }, c.track === 'devise' ? ' · devise' : ' · bordure')))));
+    } else {
+      scene = h('p', { class: 'muted' }, 'Les ancêtres se taisent pour l\'instant. Reviens quand une bougie s\'allume.');
+    }
+    const sv = s.souvenirs ?? { devise: 0, bordure: 0 };
+    return h('div', { class: 'card veillee-card', style: { '--c': ev.def.color } },
+      h('div', { class: 'row-between' }, h('h2', null, '🕯️ Veillée des ancêtres'), candles),
+      scene,
+      nextLine,
+      h('p', { class: 'muted small' }, `Souvenirs recueillis : 📜 ${sv.devise} pour les devises · 🛡️ ${sv.bordure} pour les bordures. `,
+        h('button', { class: 'link-btn', onclick: () => this.openCrest() }, 'Ouvrir le blason')));
   }
 
   /** Dons mûris à la succession : lesquels se sont transcendés, et chez combien d'enfants. */

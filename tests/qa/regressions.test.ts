@@ -1015,3 +1015,62 @@ describe('MAISON-1 — titres de famille et blason gagné (0.6)', () => {
     expect(quarterChoices(s)).toEqual([house]);
   });
 });
+
+describe('VEILLEE — Veillée des ancêtres pendant les événements (0.6)', () => {
+  const mkEv = async () => {
+    const { activeEvent } = await import('../../src/engine/events');
+    const start = Date.UTC(2026, 10, 24, 8, 0, 0);
+    return { ev: activeEvent(start + 1000)!, start };
+  };
+  test('un souvenir toutes les 5 min, 9 par événement, 3 en attente au plus', async () => {
+    const { observeVeillee, veilleeSlots } = await import('../../src/engine/veillee');
+    const { ev, start } = await mkEv();
+    expect(ev).not.toBeNull();
+    expect(veilleeSlots(ev, start)).toBe(1);
+    expect(veilleeSlots(ev, start + 44 * 60_000)).toBe(9);
+    expect(veilleeSlots(ev, ev.end + 60_000)).toBe(9);
+    const s = newGame(0, 9);
+    expect(observeVeillee(s, ev, start + 11 * 60_000)).toBe(3);
+    expect(observeVeillee(s, ev, start + 21 * 60_000)).toBe(3); // 5 ouverts : 2 perdus
+    expect(s.veillee!.lost).toBe(2);
+  });
+  test('passer trois fois rapporte autant que rester ; le surplus se perd', async () => {
+    const { answerVeillee } = await import('../../src/engine/veillee');
+    const { ev, start } = await mkEv();
+    const assidu = newGame(0, 10), passant = newGame(0, 10);
+    for (let m = 0; m < 45; m++) answerVeillee(assidu, ev, start + m * 60_000, 'devise');
+    for (const m of [14, 29, 44]) for (let k = 0; k < 3; k++) answerVeillee(passant, ev, start + m * 60_000, 'devise');
+    expect(assidu.souvenirs!.devise).toBe(9);
+    expect(passant.souvenirs!.devise).toBe(9);
+    const absent = newGame(0, 10);
+    for (let k = 0; k < 5; k++) answerVeillee(absent, ev, start + 44 * 60_000, 'bordure');
+    expect(absent.souvenirs!.bordure).toBe(3);
+  });
+  test('les souvenirs débloquent bordures et devises, sans toucher à la production', async () => {
+    const { answerVeillee } = await import('../../src/engine/veillee');
+    const { borduresOpen, SOUVENIRS_PER_UNLOCK } = await import('../../src/engine/maison');
+    const { ev, start } = await mkEv();
+    const s = newGame(0, 11);
+    const res = JSON.stringify(s.res), eclats = s.eclats;
+    let unlocked: string | null = null;
+    for (let k = 0; k < SOUVENIRS_PER_UNLOCK; k++) unlocked = answerVeillee(s, ev, start + k * 5 * 60_000, 'bordure')!.unlocked;
+    expect(unlocked).toBe('la bordure de gueules');
+    expect(borduresOpen(s).map((b) => b.id)).toEqual(['gueules']);
+    expect(JSON.stringify(s.res)).toBe(res);
+    expect(s.eclats).toBe(eclats);
+  });
+  test('la scène nomme un ancêtre de la maison et reste la même pour un même souvenir', async () => {
+    const { veilleeScene } = await import('../../src/engine/veillee');
+    const { runBot } = await import('../bot');
+    const { ev } = await mkEv();
+    const { s } = runBot(1, 3);
+    const a = veilleeScene(s, ev, 2), b = veilleeScene(s, ev, 2);
+    expect(a).toEqual(b);
+    expect(a.who).not.toBeNull();
+    expect(a.text).toContain(a.who!.split(' ')[0]);
+    expect(a.text).not.toMatch(/\{/);
+    const fresh = veilleeScene(newGame(0, 12), ev, 0);
+    expect(fresh.who).toBeNull();
+    expect(fresh.text).toMatch(/^[A-ZÉÀ]/);
+  });
+});
