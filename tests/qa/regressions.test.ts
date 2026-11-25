@@ -1116,3 +1116,14 @@ describe('THEMES — thèmes de couleur (0.6)', () => {
     expect(css).not.toMatch(/rgba\(20, 17, 31/); // barres du haut et du bas : couleur du thème, plus en dur
   });
 });
+
+describe('THEMES 2 — thème clair : fonds pleins en or clair, creux teintés (0.6)', () => {
+  test('les boutons pleins et les creux passent par des variables que Parchemin redéfinit', async () => {
+    const fs = await import('node:fs');
+    const css = fs.readFileSync('src/style.css', 'utf8');
+    expect(css).toMatch(/\.btn-primary \{ background: linear-gradient\(180deg, var\(--fill1\), var\(--fill2\)\)/);
+    expect(css).not.toMatch(/background: rgba\(0, 0, 0, 0\.(2|22|25|35)\)/);
+    const parchemin = css.match(/:root\[data-theme="parchemin"\] \{([^}]*)\}/)![1];
+    for (const v of ['--fill1', '--fill2', '--well', '--well-strong']) expect(parchemin).toContain(v);
+  });
+});
