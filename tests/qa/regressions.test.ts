@@ -1074,3 +1074,45 @@ describe('VEILLEE — Veillée des ancêtres pendant les événements (0.6)', ()
     expect(fresh.text).toMatch(/^[A-ZÉÀ]/);
   });
 });
+
+describe('THEMES — thèmes de couleur (0.6)', () => {
+  test('Crépuscule et Parchemin d\'office ; un thème d\'événement après 3 médailles d\'or', async () => {
+    const { THEMES, announceThemes, themeOpen } = await import('../../src/engine/maison');
+    const s = newGame(0, 13);
+    expect(THEMES.filter((t) => themeOpen(s, t.id)).map((t) => t.id)).toEqual(['crepuscule', 'parchemin']);
+    s.eventGolds = { eclipse: 2 };
+    expect(themeOpen(s, 'eclipse')).toBe(false);
+    s.eventGolds.eclipse = 3;
+    expect(themeOpen(s, 'eclipse')).toBe(true);
+    expect(announceThemes(s).map((t) => t.id)).toEqual(['eclipse']);
+    expect(announceThemes(s)).toEqual([]);
+  });
+  test('l\'or d\'un événement est compté par type, sans rien changer d\'autre', async () => {
+    const { activeEvent } = await import('../../src/engine/events');
+    const { tick } = await import('../../src/engine/game');
+    const { newRuntime, startLife, setActivity } = await import('../../src/engine/game');
+    const t0 = Date.UTC(2026, 10, 24, 8, 1, 0);
+    const s = newGame(t0, 14); startLife(s); setActivity(s, 'cultiver');
+    const rt = newRuntime();
+    tick(s, rt, 0.1, t0);
+    const ev = activeEvent(t0)!;
+    s.events[ev.key].progress = s.events[ev.key].target * 100;
+    tick(s, rt, 0.1, t0 + 100);
+    expect(s.events[ev.key].tier).toBe(3);
+    expect(s.eventGolds).toEqual({ [ev.def.id]: 1 });
+  });
+  test('une ancienne sauvegarde compte un or par page d\'Almanach', async () => {
+    const { serialize, deserialize } = await import('../../src/engine/save');
+    const s = newGame(0, 15);
+    s.almanach = ['maree', 'comete'];
+    delete s.eventGolds;
+    expect(deserialize(serialize(s))!.eventGolds).toEqual({ maree: 1, comete: 1 });
+  });
+  test('chaque thème a son bloc de couleurs dans la feuille de style', async () => {
+    const fs = await import('node:fs');
+    const css = fs.readFileSync('src/style.css', 'utf8');
+    const { THEMES } = await import('../../src/engine/maison');
+    for (const t of THEMES.slice(1)) expect(css).toContain(`:root[data-theme="${t.id}"]`);
+    expect(css).not.toMatch(/rgba\(20, 17, 31/); // barres du haut et du bas : couleur du thème, plus en dur
+  });
+});

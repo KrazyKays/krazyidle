@@ -131,3 +131,49 @@ export function borduresOpen(s: GameState): Bordure[] {
 export function devisesOpen(s: GameState): string[] {
   return DEVISES.slice(0, Math.floor(souvenirsOf(s, 'devise') / SOUVENIRS_PER_UNLOCK));
 }
+
+// ---------------------------------------------------------------------------
+// Thèmes de couleur (0.6, validés par le propriétaire sur l'aperçu du 2026-11-24).
+
+export interface ThemeDef {
+  id: string;
+  name: string;
+  /** type d'événement dont il faut décrocher l'or `THEME_GOLDS` fois ; absent : offert */
+  event?: string;
+  /** couleur de fond (barre d'état du téléphone) et couleur d'accent (pastille de choix) */
+  bg: string;
+  gold: string;
+}
+
+export const THEME_GOLDS = 3;
+
+export const THEMES: ThemeDef[] = [
+  { id: 'crepuscule', name: 'Crépuscule', bg: '#14111f', gold: '#f2c45a' },
+  // Le thème clair est offert : c'est une question d'accessibilité, pas une récompense.
+  { id: 'parchemin', name: 'Parchemin', bg: '#efe6d2', gold: '#a8741a' },
+  { id: 'maree', name: 'Marée d\'or', event: 'maree', bg: '#0b1624', gold: '#f5c650' },
+  { id: 'moisson', name: 'Moisson dorée', event: 'moisson', bg: '#141a10', gold: '#f0c24b' },
+  { id: 'marche', name: 'Grand marché', event: 'migration', bg: '#1c120e', gold: '#ffbe55' },
+  { id: 'eclipse', name: 'Éclipse', event: 'eclipse', bg: '#07060b', gold: '#e8c26a' },
+  { id: 'comete', name: 'Comète savante', event: 'comete', bg: '#0c1220', gold: '#9fe3ff' },
+  { id: 'concile', name: 'Concile des ancêtres', event: 'concile', bg: '#151515', gold: '#e9c98d' },
+];
+
+export function themeDef(id: string | undefined): ThemeDef {
+  return THEMES.find((t) => t.id === id) ?? THEMES[0];
+}
+
+/** Médailles d'or décrochées sur ce type d'événement. */
+export function eventGolds(s: GameState, eventId: string): number {
+  return s.eventGolds?.[eventId] ?? 0;
+}
+
+export function themeOpen(s: GameState, id: string): boolean {
+  const t = THEMES.find((x) => x.id === id);
+  return !!t && (!t.event || eventGolds(s, t.event) >= THEME_GOLDS);
+}
+
+/** Thèmes d'événement débloqués mais pas encore annoncés (drapeaux `theme_<id>`) ; les marque annoncés. */
+export function announceThemes(s: GameState): ThemeDef[] {
+  return THEMES.filter((t) => t.event && themeOpen(s, t.id) && !s.flags[`theme_${t.id}`]).map((t) => { s.flags[`theme_${t.id}`] = true; return t; });
+}

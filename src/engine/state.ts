@@ -195,7 +195,7 @@ export interface GameState {
   daily: Record<string, DailyRecord>;
   ancestors: Ancestor[];
   flags: Record<string, boolean>;
-  settings: { notation: 'lettres' | 'scientifique'; reducedMotion: boolean; /** empêche la mise en veille de l'écran tant que le jeu est affiché */ keepAwake: boolean };
+  settings: { notation: 'lettres' | 'scientifique'; reducedMotion: boolean; /** empêche la mise en veille de l'écran tant que le jeu est affiché */ keepAwake: boolean; /** thème de couleur (0.6, `THEMES`) ; absent : Crépuscule */ theme?: string };
   /** identifiant stable de la maison (codes d'alliance) */
   houseId: string;
   /** surnoms découverts : nombre de fois portés */
@@ -212,6 +212,8 @@ export interface GameState {
   feats?: Record<string, number>;
   /** Codex (0.6) : entrées déjà vues par le joueur (`codexKeys`) ; le reste est signalé comme nouveau */
   codexSeen?: string[];
+  /** médailles d'or par type d'événement (0.6, thèmes de couleur) */
+  eventGolds?: Record<string, number>;
   /** Veillée des ancêtres (0.6) : souvenirs recueillis, par piste (devises ou bordures) */
   souvenirs?: { devise: number; bordure: number };
   /** Veillée de l'événement en cours : souvenirs recueillis et perdus (plus de 3 en attente) */
@@ -267,6 +269,7 @@ export function newGame(now = Date.now(), seed = (Math.random() * 2 ** 32) >>> 0
     cadets: [],
     usedCodes: [],
     codexSeen: [],
+    eventGolds: {},
     settings: { notation: 'lettres', reducedMotion: false, keepAwake: false },
     stats: { lives: 0, playTime: 0, eventsDone: 0, bestLife: 0 },
   };

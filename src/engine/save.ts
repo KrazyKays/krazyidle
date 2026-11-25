@@ -54,6 +54,8 @@ function migrate(d: any): GameState {
   if (!d.lineage?.names) rebuildRanks(s);
   // Codex (0.6) : ce que la sauvegarde connaissait déjà n'est pas une nouveauté.
   if (!Array.isArray(d.codexSeen)) s.codexSeen = codexKeys(s);
+  // Thèmes (0.6) : les médailles d'or par type n'étaient pas comptées ; l'Almanach en garantit une.
+  if (!d.eventGolds) s.eventGolds = Object.fromEntries((s.almanach ?? []).map((id) => [id, 1]));
   s.v = SAVE_VERSION;
   return s;
 }

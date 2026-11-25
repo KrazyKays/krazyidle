@@ -97,7 +97,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - **Partitions** gagnées : parti (génération V), coupé (premier surnom), tranché (premier palier Or d'un événement), chevronné (Seigneurie), écartelé (premier haut fait).
 - **Écartelé d'alliance** : après un mariage avec une maison, l'écu peut porter ses armes aux 2e et 3e quartiers (il remplace la partition). Les codes d'alliance ne transmettent pas ces ornements.
 - **Bordures et devises** : souvenirs de la Veillée des ancêtres (§ 2.5). La devise s'inscrit sous l'écu.
-- **Thèmes** (à venir) : palettes proposées au propriétaire pour validation avant intégration.
+- **Thèmes de couleur** (validés par le propriétaire sur aperçu) : Crépuscule (le thème d'origine) et **Parchemin** (clair) sont offerts : un thème clair relève de l'accessibilité, pas de la récompense. Six thèmes d'événement (Marée d'or, Moisson dorée, Grand marché, Éclipse, Comète savante, Concile des ancêtres) se débloquent après **3 médailles d'or** sur leur type d'événement ; une ancienne sauvegarde compte un or par page d'Almanach. Choix dans les Paramètres, annonce au déblocage, couleur de la barre d'état du téléphone assortie. Toutes les couleurs de l'interface passent par des variables (barres du haut et du bas, modales, notifications, champs de saisie compris).
 
 ## 3. Feuille de route
 
@@ -111,7 +111,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 | 0.3.x | Sons et musique d'ambiance, haptique mobile, statistiques détaillées. |
 | **0.4 (sortie)** | « Récolter » : plus de vérification des codes du Destin (partage en bande de couleurs), plus de Prédateurs ni d'Affût, Cultiver et Chasser fusionnés en Récolter avec trois consignes pour le héros (`lab/CHANGELOG-EQUILIBRAGE.md`, TERRE-1 à 5). |
 | **0.5 (sortie)** | « La Mémoire » : plus de Domaine ni de consignes, Récolter simple et rendements compensés ; conditions de lignée à la place de la santé du Domaine (dons, surnoms, haut fait, Harmonieux) ; Grand marché ; onglet Mémoire (les Archives de la maison, un temps prévues, sont retirées avant la sortie) ; Destin du jour recalibré (codes `EL4`) (`lab/CHANGELOG-EQUILIBRAGE.md`, SIMPLIF-1 à 5). |
-| **0.6 (sortie)** | « La Maison » : Destin du jour mis en réserve et page Événements unique, Veillée des ancêtres, titres de famille, blason gagné (partitions, écartelé d'alliance, bordures, devises, timbres), nouveautés du Codex sauvegardées, carte d'événement stable (`lab/CHANGELOG-EQUILIBRAGE.md`, UX-EVT 1 à VEILLEE). |
+| **0.6 (sortie)** | « La Maison » : Destin du jour mis en réserve et page Événements unique, Veillée des ancêtres, titres de famille, blason gagné (partitions, écartelé d'alliance, bordures, devises, timbres), thèmes de couleur, nouveautés du Codex sauvegardées, carte d'événement stable (`lab/CHANGELOG-EQUILIBRAGE.md`, UX-EVT 1 à VEILLEE). |
 | 0.7 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
 | 0.8 | Classement en ligne optionnel (backend léger) : il faudra alors une vérification côté serveur. |
 | 1.0 | Notifications push ; titres, hauts faits et mini-jeux de fin de partie (places réservées : `lab/design/SEUILS-inventaire.md` § 5). |

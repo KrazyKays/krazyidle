@@ -14,7 +14,7 @@ import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
 import { CHARGE_IDS, PARTITIONS, chargeName, chargeSvg, shieldSvg, timbreSvg, type ShieldOpts } from './heraldry';
-import { BORDURES, DEVISES, HOUSE_RANKS, PARTITION_UNLOCK, SOUVENIRS_PER_UNLOCK, announceRanks, borduresOpen, devisesOpen, houseRank, nextRankNeeds, partitionOpen, quarterChoices, souvenirsOf } from '../engine/maison';
+import { BORDURES, DEVISES, HOUSE_RANKS, PARTITION_UNLOCK, SOUVENIRS_PER_UNLOCK, announceRanks, borduresOpen, devisesOpen, houseRank, nextRankNeeds, partitionOpen, quarterChoices, souvenirsOf, THEMES, THEME_GOLDS, announceThemes, eventGolds, themeDef, themeOpen } from '../engine/maison';
 import { EPITHET, EPITHET_RARITY, epithetEffect, epithetLabel, epithetRevealKind, fullName } from '../engine/epithets';
 import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
@@ -126,7 +126,16 @@ export class App {
     mq3.addEventListener('change', apply);
     apply();
     document.body.classList.toggle('reduced-motion', this.s.settings.reducedMotion);
+    this.applyTheme();
     window.addEventListener('keydown', (e) => this.onKey(e));
+  }
+
+  /** Thème de couleur (0.6) : attribut `data-theme` de la page et couleur de la barre d'état du téléphone. */
+  applyTheme() {
+    const t = themeDef(this.s.settings.theme);
+    const root = document.documentElement;
+    if (t.id === 'crepuscule') delete root.dataset.theme; else root.dataset.theme = t.id;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.bg);
   }
 
   /** Onglets proposés : sur ordinateur la Vie est toujours visible, en colonne. */
@@ -209,6 +218,7 @@ export class App {
       this.lastNav = now;
       if (!this.s.flags.bazar && bazarUnlocked(this.s)) this.s.flags.bazar = true;
       // Plusieurs rangs d'un coup (ancienne sauvegarde) : seul le plus haut est annoncé.
+      for (const th of announceThemes(this.s)) toast(`🎨 Nouveau thème : ${th.name}. Choisis-le dans les Paramètres ⚙️.`, 'good', 6000);
       for (const r of announceRanks(this.s).slice(-1)) toast(`👑 La maison ${this.s.lineage.name} s'élève : ${r.name} ! Nouveau timbre sur l'écu : ${r.timbre.toLowerCase()}.`, 'good', 6000);
       const sub = this.elTab.hidden ? null : this.sub();
       if (sub) this.markSeen(sub);
@@ -1338,6 +1348,30 @@ export class App {
     render();
   }
 
+  /** Choix du thème (0.6) : Crépuscule et Parchemin d'office, un thème par type d'événement après 3 ors. */
+  themePicker() {
+    const s = this.s;
+    const row = h('div', { class: 'theme-row' });
+    const render = () => row.replaceChildren(...THEMES.map((t) => {
+      const open = themeOpen(s, t.id);
+      const on = themeDef(s.settings.theme).id === t.id;
+      const left = t.event ? Math.max(0, THEME_GOLDS - eventGolds(s, t.event)) : 0;
+      const hint = open ? t.name : `${t.name} — encore ${left} médaille${left > 1 ? 's' : ''} d'or à cet événement`;
+      return h('button', {
+        class: `theme-pick ${on ? 'on' : ''} ${open ? '' : 'locked'}`, title: hint, 'aria-label': hint, 'aria-pressed': on ? 'true' : 'false',
+        onclick: () => {
+          if (!open) { toast(`🔒 ${hint}.`, 'info'); return; }
+          s.settings.theme = t.id === 'crepuscule' ? undefined : t.id;
+          if (!s.settings.theme) delete s.settings.theme;
+          this.applyTheme();
+          render();
+        },
+      }, h('span', { class: 'theme-sw', style: { background: `linear-gradient(135deg, ${t.bg} 52%, ${t.gold} 52%)` } }), h('span', { class: 'theme-n' }, t.name), open ? null : h('span', { class: 'pick-lock' }, '🔒'));
+    }));
+    render();
+    return row;
+  }
+
   openSettings() {
     const s = this.s;
     const ta = h('textarea', { class: 'input mono', rows: 3, readonly: true }) as HTMLTextAreaElement;
@@ -1364,6 +1398,8 @@ export class App {
           (e.target as HTMLElement).textContent = on ? 'Oui' : 'Non';
         } }, s.settings.keepAwake ? 'Oui' : 'Non')),
       h('p', { class: 'muted small' }, 'Empêche l\'écran de s\'éteindre tant que le jeu est affiché (consomme davantage de batterie).'),
+      h('h3', { class: 'section-t' }, 'Thème'),
+      this.themePicker(),
       h('h3', { class: 'section-t' }, 'Sauvegarde'),
       h('p', { class: 'muted small' }, 'Sauvegarde automatique toutes les 10 s dans ce navigateur. Exporte-la pour la transférer (ex. ordinateur → téléphone).'),
       ta,

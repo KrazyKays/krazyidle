@@ -297,6 +297,9 @@ function checkEventTiers(s: GameState, rt: Runtime, w: EventWindow) {
     ep.tier++;
     if (ep.tier === 3) {
       s.stats.eventsDone++;
+      // Compteur cosmétique (thèmes de couleur, 0.6) : aucun effet sur la partie.
+      const golds = (s.eventGolds ??= {});
+      golds[w.def.id] = (golds[w.def.id] ?? 0) + 1;
       const alm = (s.almanach ??= []);
       if (!alm.includes(w.def.id)) {
         alm.push(w.def.id);
