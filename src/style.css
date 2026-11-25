@@ -167,6 +167,14 @@ p { margin: 6px 0; }
 .hint p { margin: 0; flex: 1; font-size: 0.88rem; }
 .hint-i { font-size: 20px; }
 .hint-x { background: rgba(179, 136, 255, 0.25); border-radius: 8px; padding: 6px 10px; font-weight: 700; font-size: 0.8rem; }
+/* Étape du tuto sur téléphone : collée au-dessus des onglets, toujours lisible sans faire défiler. */
+.hint-tuto { position: sticky; bottom: calc(var(--dock-h, calc(72px + var(--safe-b))) + 8px); z-index: 3; background-color: var(--bg2); box-shadow: 0 -8px 24px color-mix(in srgb, var(--bg) 85%, transparent); }
+.hint-btns { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.hint-skip { background: none; color: var(--muted); font-size: 0.72rem; padding: 2px 4px; text-decoration: underline; white-space: nowrap; }
+/* Halo du tuto (TUTO-1) : désigne l'élément dont parle la bulle, sans voile ni blocage. */
+.tuto-halo { position: relative; z-index: 2; outline: 2px solid var(--gold); outline-offset: 2px; animation: tutoHalo 1.6s ease-in-out infinite; }
+@keyframes tutoHalo { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 28%, transparent), 0 0 18px color-mix(in srgb, var(--gold) 45%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .tuto-halo { animation: none; box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 30%, transparent); } }
 
 /* Activités compactes (téléphone et ordinateur) : une liste de 5 lignes ; la description de l'activité en cours s'affiche dessous. */
 .panel-life .acts { grid-template-columns: 1fr; gap: 6px; }

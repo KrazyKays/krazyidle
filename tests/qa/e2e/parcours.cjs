@@ -37,10 +37,23 @@ async function ceremony(page) {
   await page.waitForSelector('.intro-screen', { state: 'detached' });
 }
 
+/** TUTO-1 : la première vie attend en pause, le halo désigne Récolter ; on le touche pour la lancer. */
+async function firstActivity(page, name) {
+  await page.waitForSelector('#panel-life .act.tuto-halo[data-act="cultiver"]', { timeout: 3000 }).catch(() => null);
+  const paused = await st(page, '!s.life.act && s.life.t === 0');
+  const halo = await page.locator('.act.tuto-halo[data-act="cultiver"]').count();
+  log(`${name} : tuto — vie en attente, halo sur Récolter`, paused && halo === 1, `pause=${paused}, halo=${halo}`);
+  await page.click('#panel-life .act[data-act="cultiver"]');
+  await sleep(300);
+  const after = await page.locator('.tuto-halo').count();
+  log(`${name} : tuto — l'activité choisie lance la vie et retire le halo`, (await st(page, 's.life.act')) === 'cultiver' && after === 0, `halos restants=${after}`);
+}
+
 async function journey(browser, name, opts) {
   const { ctx, page, errors } = await newPage(browser, name, opts);
   await ceremony(page);
   log(`${name} : cérémonie d'ouverture`, (await st(page, 's.flags.started && s.lineage.name')) === 'Testeval');
+  await firstActivity(page, name);
   await page.screenshot({ path: path.join(OUT, `${name}-1-vie.png`) });
   await sleep(3000);
   const t = await st(page, 's.life.t');
@@ -96,6 +109,7 @@ async function journey(browser, name, opts) {
 async function blessingDuringSuccession(browser) {
   const { ctx, page, errors } = await newPage(browser, 'qa01', { viewport: { width: 1440, height: 900 } });
   await ceremony(page);
+  await page.click('#panel-life .act[data-act="cultiver"]');
   await st(page, '(s.life.t = s.life.dur - 0.5, 1)');
   await page.waitForFunction(() => !!window.krazy.state.succession);
   await page.keyboard.press('Escape');
@@ -147,6 +161,7 @@ async function malformedSave(browser) {
 async function frozenThread(browser) {
   const { ctx, page } = await newPage(browser, 'qa06', { viewport: { width: 1440, height: 900 } });
   await ceremony(page);
+  await page.click('#panel-life .act[data-act="cultiver"]');
   await sleep(1500);
   const p0 = await st(page, 's.stats.playTime');
   const w0 = Date.now();

@@ -24,6 +24,8 @@ async function ceremony(page) {
   await page.waitForSelector('.intro-s3');
   await page.click('.intro-s3 .intro-next');
   await page.waitForSelector('.intro-screen', { state: 'detached' });
+  // TUTO-1 : la première vie attend le premier choix d'activité.
+  await page.click('#panel-life .act[data-act="cultiver"]');
 }
 
 /** Affiche une notification (clic sur un trait du héros). */

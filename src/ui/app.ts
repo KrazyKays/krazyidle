@@ -24,6 +24,7 @@ import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spous
 import { eventGoalLine } from './eventview';
 import { codexFresh, codexKeys, markCodexSeen } from '../engine/codex';
 import { VEILLEE_MAX, VEILLEE_STEP_MIN, answerVeillee, observeVeillee, veilleeIndex, veilleeScene, veilleeSlots } from '../engine/veillee';
+import { currentHint, dismissHint, skipTuto, tutoAutoDone, type Hint } from './tuto';
 import { SUB_TAB, SeenBadges, TABS, affordableKeys, bazarUnlocked, normSub, normTab, subBarPlace, subsShown, tabsShown, type Layout, type Sub, type Tab } from './nav';
 
 const ANCESTORS_SHOWN = 12;
@@ -233,6 +234,7 @@ export class App {
       if (se !== this.sigEcho) { this.sigEcho = se; this.bEcho.reset(); this.elEcho.replaceChildren(this.panelEchoes(this.bEcho)); }
       this.bEcho.run();
     }
+    this.applyHalo();
   }
 
   // =========================================================================
@@ -269,7 +271,7 @@ export class App {
     });
     const lifePill = h('button', { class: 'event-pill life-pill', onclick: () => { if (s.succession) this.openSuccession(); else resumeLife(s); } });
     b.add(() => {
-      const t = s.succession ? '🕯️ Succession en attente' : isPaused(s) ? '▶ Reprendre la vie' : '';
+      const t = s.succession ? '🕯️ Succession en attente' : isPaused(s) ? (s.life!.t === 0 ? '▶ Commencer sa vie' : '▶ Reprendre la vie') : '';
       lifePill.hidden = !t;
       if (lifePill.textContent !== t) lifePill.textContent = t;
     });
@@ -371,21 +373,18 @@ export class App {
     return [!!s.life, isPaused(s), s.hero.id, s.hero.spouse?.name, s.unlocked.join(), !!s.succession, s.life?.extended, s.life?.dur, this.hint()?.id, s.eclats >= SHOP.temps.cost, s.blessings.length, this.installOffer(), s.ancestors.length > 0].join('|');
   }
 
-  hint(): { id: string; text: string } | null {
-    const s = this.s, f = s.flags, hero = s.hero, n = hero.name;
-    const il = acc(hero, 'il', 'elle');
-    const last = s.ancestors[s.ancestors.length - 1];
-    const list: [string, boolean, string][] = [
-      ['start', s.hero.gen === 1 && !!s.life, `Bienvenue dans la Maison ${s.lineage.name} ! ${n} travaille déjà ses terres. Change d'activité quand tu veux, ou reclique dessus pour mettre sa vie en pause : son temps ne s'écoule que lorsqu'${il} agit.`],
-      ['pause', s.hero.gen <= 3 && isPaused(s), `Vie en pause : ${n} attend, tes Échos continuent de produire. Rien ne presse, mais ta lignée avance moins vite : on peut construire sans mettre en pause.`],
-      ['echo', s.hero.gen === 1 && !!s.life && s.life.t > 15, 'Chaque seconde de cette vie est enregistrée. À sa mort, elle deviendra un Écho qui rejouera tes choix en boucle, pour toujours.'],
-      ['echo2', s.hero.gen === 2 && s.echoes.length > 0, last ? `${last.name} est ${acc(last, 'devenu', 'devenue')} un Écho : ${acc(last, 'il', 'elle')} rejoue sa vie et produit pour toi (Mémoire › Échos). Chaque génération ajoute une boucle !` : ''],
-      ['build', s.res.vivres >= 25 && Object.keys(s.buildings).length === 0, 'Tu as assez de Vivres pour bâtir des Champs (Améliorer › Bâtiments) : ils boostent la vie en cours ET les Échos.'],
-      ['legacy', s.legacy >= 3 && Object.keys(s.upgrades).length === 0, 'Tu as de l\'Héritage ⚜️ ! Dépense-le dans Améliorer › Héritage pour des bonus permanents.'],
-      ['voc', s.hero.gen >= 2 && s.hero.gen <= 4 && !!s.hero.vocation, `${n} a hérité d'une Vocation : consacre au moins la moitié de sa vie à la même activité pour la faire monter de rang. La jauge sous le sablier te dit où tu en es.`],
-    ];
-    for (const [id, cond, text] of list) if (cond && !f['hint_' + id]) return { id, text };
-    return null;
+  hint(): Hint | null {
+    return currentHint(this.s, this.layout);
+  }
+
+  /** Halo du tuto : entoure les éléments que désigne la bulle en cours (TUTO-1). */
+  applyHalo() {
+    tutoAutoDone(this.s);
+    const want = this.hint()?.halo ?? [];
+    const key = want.join(',');
+    const on = key ? new Set(document.querySelectorAll(key)) : new Set<Element>();
+    for (const el of Array.from(document.querySelectorAll('.tuto-halo'))) if (!on.has(el)) el.classList.remove('tuto-halo');
+    for (const el of on) el.classList.add('tuto-halo');
   }
 
   renderLife() {
@@ -395,8 +394,10 @@ export class App {
     const hint = this.hint();
     let notice: HTMLElement | null = null;
     if (hint) {
-      notice = h('div', { class: 'hint' }, h('span', { class: 'hint-i' }, '💡'), h('p', null, hint.text),
-        h('button', { class: 'hint-x', 'aria-label': 'Compris', onclick: () => { s.flags['hint_' + hint.id] = true; this.sigLife = ''; } }, 'OK'));
+      notice = h('div', { class: `hint ${hint.tuto ? 'hint-tuto' : ''}` }, h('span', { class: 'hint-i' }, '💡'), h('p', null, hint.text),
+        h('div', { class: 'hint-btns' },
+          h('button', { class: 'hint-x', 'aria-label': 'Compris', onclick: () => { dismissHint(s, hint.id); this.sigLife = ''; } }, 'OK'),
+          hint.tuto ? h('button', { class: 'hint-skip', onclick: () => { skipTuto(s); this.sigLife = ''; } }, 'Passer le tuto') : null));
     } else if (this.installOffer()) {
       notice = this.installCard();
     }
@@ -416,7 +417,7 @@ export class App {
           ? 'Son histoire va rejoindre les Échos. Rien ne presse : tes Échos continuent de boucler. Choisis qui reprendra le flambeau quand tu le souhaites.'
           : 'Sa vie deviendra ton premier Écho et rejouera ses choix pour toujours. Rien ne presse : choisis qui reprendra le flambeau quand tu le souhaites.'),
         h('button', { class: 'btn btn-primary', onclick: () => this.openSuccession() }, 'Choisir la relève')));
-      if (notice && this.desktop) parts.push(notice);
+      if (notice) parts.push(notice);
       this.elLife.replaceChildren(...parts);
       return;
     }
@@ -427,11 +428,12 @@ export class App {
     const paused = isPaused(s);
     const tempsBtn = !life.extended && s.eclats >= SHOP.temps.cost
       ? h('button', { class: 'btn btn-sm btn-ghost', onclick: () => { if (buyTemps(s)) { toast('⌛ +30 s de vie', 'good'); this.sigLife = ''; } } }, `⌛ +30 s (${SHOP.temps.cost} ✦)`) : null;
+    const fresh = life.t === 0;
     const pauseBtn = paused
-      ? h('button', { class: 'btn btn-primary btn-resume', onclick: () => resumeLife(s) }, `▶ Reprendre${this.desktop ? ' (Espace)' : ''}`)
+      ? h('button', { class: 'btn btn-primary btn-resume', onclick: () => resumeLife(s) }, `▶ ${fresh ? 'Commencer' : 'Reprendre'}${this.desktop ? ' (Espace)' : ''}`)
       : h('button', { class: 'btn btn-sm btn-ghost btn-pause', 'aria-label': 'Pause', onclick: () => setActivity(s, null) }, this.desktop ? '⏸️ Pause (Espace)' : '⏸️');
     parts.push(h('div', { class: `card timer ${paused ? 'paused' : ''}` },
-      paused ? h('div', { class: 'pause-banner' }, h('strong', null, '⏸️ Vie en pause'), h('span', { class: 'muted small' }, ' · le sablier est figé, tes Échos continuent')) : null,
+      paused ? h('div', { class: 'pause-banner' }, h('strong', null, fresh ? '⏳ Sa vie n\'a pas commencé' : '⏸️ Vie en pause'), h('span', { class: 'muted small' }, s.echoes.length ? ' · le sablier est figé, tes Échos continuent' : ' · le sablier est figé')) : null,
       // Âge, temps restant et boutons sur une ligne : la rangée de boutons dédiée repoussait les activités.
       h('div', { class: 'row-between timer-head' },
         h('div', null,
@@ -450,7 +452,7 @@ export class App {
     // Les cartes ne portent plus leur description (une ligne chacune) : celle de l'activité en cours s'affiche dessous.
     const desc = b.text(h('p', { class: 'muted small act-now' }), () => {
       const a = s.life?.act;
-      return a ? `${ACT[a].icon} ${ACT[a].name} : ${ACT[a].desc}` : 'Touche une activité pour reprendre la vie.';
+      return a ? `${ACT[a].icon} ${ACT[a].name} : ${ACT[a].desc}` : s.life && s.life.t === 0 ? 'Touche une activité pour commencer sa vie.' : 'Touche une activité pour reprendre la vie.';
     });
     parts.push(h('h3', { class: 'section-t' }, 'Activités', h('span', { class: 'muted small' }, this.desktop ? ' — touches 1 à 5' : '')), grid, desc);
     if (notice && (this.desktop || noticeBelow)) parts.push(notice);
@@ -591,7 +593,7 @@ export class App {
     const lvl = b.text(h('span', { class: 'lvl' }), () => `Niv. ${s.life?.lvl[a] ?? 0}`);
     const xp = b.width(h('div', { class: 'bar-fill', style: { background: def.color } }), () => (s.life ? s.life.xp[a] / xpToNext(s.life.lvl[a]) : 0));
     const rate = b.text(h('div', { class: 'act-rate' }), () => this.actPreview(a));
-    const btn = h('button', { class: 'act', title: this.desktop ? def.desc : undefined, style: { '--c': def.color }, onclick: () => { setActivity(s, s.life?.act === a ? null : a); } },
+    const btn = h('button', { class: 'act', 'data-act': a, title: this.desktop ? def.desc : undefined, style: { '--c': def.color }, onclick: () => { setActivity(s, s.life?.act === a ? null : a); } },
       h('div', { class: 'act-i' }, def.icon, h('span', { class: 'act-key' }, String(idx + 1))),
       h('div', { class: 'act-body' },
         h('div', { class: 'act-head' }, h('span', { class: 'act-n' }, def.name), lvl),
@@ -747,7 +749,7 @@ export class App {
       }));
       const btn = h('button', { class: 'btn btn-primary btn-sm', disabled: maxed || undefined, onclick: () => { if (buyBuilding(s, d.id)) this.sigTab = ''; } }, maxed ? 'Max' : 'Bâtir');
       if (!maxed) b.add(() => { (btn as HTMLButtonElement).disabled = !canAfford(s, cost); });
-      return h('div', { class: 'card build' },
+      return h('div', { class: 'card build', 'data-bld': d.id },
         h('div', { class: 'build-head' }, h('span', { class: 'build-i' }, d.icon), h('div', null, h('div', { class: 'build-n' }, d.name, ' ', h('span', { class: 'lvl' }, `niv. ${lvl}${d.max ? '/' + d.max : ''}`)), h('div', { class: 'muted small' }, d.desc))),
         h('div', { class: 'small accent' }, lvl > 0 ? d.effect(lvl) : '—'),
         h('div', { class: 'row-between' }, costEl, btn));

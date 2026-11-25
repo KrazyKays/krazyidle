@@ -1135,3 +1135,100 @@ describe('DICTON — le « Dicton des anciens » quitte le Codex (0.6)', () => {
     expect(fs.readFileSync('src/style.css', 'utf8')).not.toContain('codex-lore');
   });
 });
+
+describe('TUTO-1 — tutoriel de la première partie (0.6)', () => {
+  const fresh = () => {
+    const s = newGame(0, 4);
+    s.flags.started = true;
+    startLife(s);
+    setActivity(s, null); // la première vie attend le joueur (main.ts)
+    return s;
+  };
+
+  test('rien pendant la cérémonie de fondation', async () => {
+    const { currentHint } = await import('../../src/ui/tuto');
+    const s = newGame(0, 4);
+    expect(currentHint(s, 'mobile')).toBeNull();
+  });
+
+  test('1. la première vie démarre en pause, le halo désigne Récolter, le choix coche l\'étape', async () => {
+    const { currentHint, tutoAutoDone, lifeWaitsForPlayer } = await import('../../src/ui/tuto');
+    const { isPaused } = await import('../../src/engine/game');
+    const s = fresh();
+    expect(isPaused(s)).toBe(true);
+    expect(lifeWaitsForPlayer(s)).toBe(true);
+    const h = currentHint(s, 'mobile')!;
+    expect(h.id).toBe('start');
+    expect(h.tuto).toBe(true);
+    expect(h.halo).toEqual(['.act[data-act="cultiver"]']);
+    setActivity(s, 'cultiver');
+    tutoAutoDone(s);
+    expect(s.flags.hint_start).toBe(true);
+    expect(lifeWaitsForPlayer(s)).toBe(false);
+    expect(currentHint(s, 'mobile')).toBeNull();
+  });
+
+  test('pas d\'astuce « pause » tant qu\'aucun Écho ne produit (la pause fige tout en génération 1)', async () => {
+    const { currentHint, tutoAutoDone } = await import('../../src/ui/tuto');
+    const s = fresh();
+    setActivity(s, 'cultiver'); tutoAutoDone(s);
+    setActivity(s, null);
+    expect(currentHint(s, 'mobile')?.id).not.toBe('pause');
+    s.echoes.push({} as never);
+    s.hero.gen = 2;
+    s.flags.hint_echo2 = true;
+    expect(currentHint(s, 'mobile')?.id).toBe('pause');
+  });
+
+  test('2. à 25 Vivres, le halo mène aux Champs ; bâtir coche l\'étape', async () => {
+    const { currentHint, tutoAutoDone } = await import('../../src/ui/tuto');
+    const { buyBuilding } = await import('../../src/engine/game');
+    const s = fresh();
+    setActivity(s, 'cultiver'); tutoAutoDone(s);
+    s.res.vivres = 25;
+    const h = currentHint(s, 'mobile')!;
+    expect(h.id).toBe('build');
+    expect(h.halo.some((x) => x.includes('data-tab="ameliorer"'))).toBe(true);
+    expect(h.halo.some((x) => x.includes('data-bld="champs"'))).toBe(true);
+    expect(buyBuilding(s, 'champs')).toBe(true);
+    tutoAutoDone(s);
+    expect(s.flags.hint_build).toBe(true);
+  });
+
+  test('3 à 6. Commercer, promesse de l\'Écho, mort, preuve de l\'Écho', async () => {
+    const { currentHint, dismissHint, tutoAutoDone } = await import('../../src/ui/tuto');
+    const { endLife, confirmSuccession } = await import('../../src/engine/game');
+    const s = fresh();
+    setActivity(s, 'cultiver'); tutoAutoDone(s);
+    s.unlocked.push('commercer');
+    expect(currentHint(s, 'mobile')?.id).toBe('commerce');
+    setActivity(s, 'commercer'); tutoAutoDone(s);
+    expect(s.flags.hint_commerce).toBe(true);
+    s.life!.t = 31;
+    expect(currentHint(s, 'mobile')?.id).toBe('echo');
+    dismissHint(s, 'echo');
+    endLife(s, 0);
+    const d = currentHint(s, 'mobile')!;
+    expect(d.id).toBe('death');
+    expect(d.halo).toEqual(['.death-card .btn-primary']);
+    confirmSuccession(s, 0, [s.succession!.newEcho.id]);
+    tutoAutoDone(s);
+    expect(s.flags.hint_death).toBe(true);
+    const p = currentHint(s, 'three')!;
+    expect(p.id).toBe('echo2');
+    expect(p.text).toContain('colonne des Échos');
+    expect(p.text).toContain('pause');
+    expect(currentHint(s, 'mobile')!.text).toContain('Mémoire › Échos');
+  });
+
+  test('« Passer le tuto » coche toutes les étapes et lance la vie', async () => {
+    const { currentHint, skipTuto, TUTO_STEPS } = await import('../../src/ui/tuto');
+    const { isPaused } = await import('../../src/engine/game');
+    const s = fresh();
+    skipTuto(s);
+    expect(isPaused(s)).toBe(false);
+    for (const id of TUTO_STEPS) expect(s.flags['hint_' + id]).toBe(true);
+    s.res.vivres = 25; s.unlocked.push('commercer'); s.life!.t = 31;
+    expect(currentHint(s, 'mobile')).toBeNull();
+  });
+});
