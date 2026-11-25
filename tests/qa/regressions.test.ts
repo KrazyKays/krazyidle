@@ -1127,3 +1127,11 @@ describe('THEMES 2 — thème clair : fonds pleins en or clair, creux teintés (
     for (const v of ['--fill1', '--fill2', '--well', '--well-strong']) expect(parchemin).toContain(v);
   });
 });
+
+describe('DICTON — le « Dicton des anciens » quitte le Codex (0.6)', () => {
+  test('plus de dicton ni de style associé', async () => {
+    const fs = await import('node:fs');
+    expect(fs.readFileSync('src/ui/legends.ts', 'utf8')).not.toContain('Dicton des anciens');
+    expect(fs.readFileSync('src/style.css', 'utf8')).not.toContain('codex-lore');
+  });
+});

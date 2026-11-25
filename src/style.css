@@ -511,7 +511,6 @@ p { margin: 6px 0; }
 .epithet-reveal { --c: var(--gold); text-align: center; border-color: var(--c); box-shadow: 0 0 22px color-mix(in srgb, var(--c) 25%, transparent); }
 .epithet-reveal h3 { font-family: var(--title); color: var(--c); margin-top: 4px; }
 @media (min-width: 700px) { .codex { grid-template-columns: 1fr 1fr; } }
-.codex-lore { margin-top: 10px; }
 
 /* --- Sous-onglets (Domaine, Améliorer, Maison, Destin) ------------------------------------------------ */
 /* Pilules dans un cadre arrondi : bien distinctes de la barre d'onglets pleine juste dessous. */
