@@ -1273,3 +1273,15 @@ describe('VIE-3 — Échos rejoués à 8 % (0.7)', () => {
     expect(echoPowerMult(s, newRuntime())).toBeCloseTo(0.08 * 1.3, 12);
   });
 });
+
+describe('VIE-4 — Mémoire du sang plafonnée à 3 niveaux (0.7)', () => {
+  test('on ne peut plus acheter de 4e niveau', async () => {
+    const { buyLegacy } = await import('../../src/engine/game');
+    const s = newGame(0, 1);
+    s.legacy = 1e9;
+    let n = 0;
+    while (buyLegacy(s, 'memoire') && n < 50) n++;
+    expect(n).toBe(3);
+    expect(s.upgrades.memoire).toBe(3);
+  });
+});
