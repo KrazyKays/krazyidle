@@ -1,0 +1,41 @@
+{
+ "price": 120,
+ "profiles": {
+  "experimente": {
+   "comp": 5.097361111111111,
+   "share": 1,
+   "chro": 4.215416666666667,
+   "after": true
+  },
+  "optimiseur": {
+   "comp": 3.1459722222222224,
+   "share": 1,
+   "chro": 2.6904166666666667,
+   "after": true
+  },
+  "debutant": {
+   "comp": 5.600138888888889,
+   "share": 0.9,
+   "chro": 4.737638888888889,
+   "after": true
+  },
+  "occasionnel": {
+   "comp": 99,
+   "share": 0,
+   "chro": 99,
+   "after": true
+  },
+  "mono-cultiver": {
+   "comp": 3.2668055555555555,
+   "share": 1,
+   "chro": 2.8431944444444444,
+   "after": true
+  },
+  "mono-etudier": {
+   "comp": 4.2820833333333335,
+   "share": 1,
+   "chro": 3.5181944444444446,
+   "after": true
+  }
+ }
+}

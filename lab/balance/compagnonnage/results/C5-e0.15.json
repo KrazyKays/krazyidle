@@ -1,0 +1,116 @@
+{
+ "tag": "C5-e0.15",
+ "echo": 0.15,
+ "seeds": "1-40",
+ "dt": 0.5,
+ "rows": [
+  {
+   "a": "cultiver",
+   "b": "commercer",
+   "naturel": true,
+   "ok": 0.989,
+   "dleg": 4,
+   "dlog": -0.078,
+   "echoComp": 0.87
+  },
+  {
+   "a": "cultiver",
+   "b": "etudier",
+   "naturel": false,
+   "ok": 0.988,
+   "dleg": 9.1,
+   "dlog": -0.095,
+   "echoComp": 0.86
+  },
+  {
+   "a": "cultiver",
+   "b": "mediter",
+   "naturel": false,
+   "ok": 0.987,
+   "dleg": 7.8,
+   "dlog": -0.078,
+   "echoComp": 0.86
+  },
+  {
+   "a": "commercer",
+   "b": "cultiver",
+   "naturel": true,
+   "ok": 0.991,
+   "dleg": 14.3,
+   "dlog": 0.078,
+   "echoComp": 0.96
+  },
+  {
+   "a": "commercer",
+   "b": "etudier",
+   "naturel": true,
+   "ok": 0.989,
+   "dleg": 8.6,
+   "dlog": -0.012,
+   "echoComp": 0.88
+  },
+  {
+   "a": "commercer",
+   "b": "mediter",
+   "naturel": false,
+   "ok": 0.99,
+   "dleg": 9.6,
+   "dlog": -0.059,
+   "echoComp": 0.78
+  },
+  {
+   "a": "etudier",
+   "b": "cultiver",
+   "naturel": false,
+   "ok": 0.989,
+   "dleg": -1.4,
+   "dlog": -0.137,
+   "echoComp": 0.96
+  },
+  {
+   "a": "etudier",
+   "b": "commercer",
+   "naturel": true,
+   "ok": 0.992,
+   "dleg": 1.8,
+   "dlog": 0.005,
+   "echoComp": 0.98
+  },
+  {
+   "a": "etudier",
+   "b": "mediter",
+   "naturel": false,
+   "ok": 0.987,
+   "dleg": -11.2,
+   "dlog": -0.172,
+   "echoComp": 0.95
+  },
+  {
+   "a": "mediter",
+   "b": "cultiver",
+   "naturel": false,
+   "ok": 0.988,
+   "dleg": 11.7,
+   "dlog": -0.051,
+   "echoComp": 0.7
+  },
+  {
+   "a": "mediter",
+   "b": "commercer",
+   "naturel": false,
+   "ok": 0.988,
+   "dleg": 11.4,
+   "dlog": -0.063,
+   "echoComp": 0.68
+  },
+  {
+   "a": "mediter",
+   "b": "etudier",
+   "naturel": false,
+   "ok": 0.987,
+   "dleg": 4.5,
+   "dlog": -0.08,
+   "echoComp": 0.67
+  }
+ ]
+}

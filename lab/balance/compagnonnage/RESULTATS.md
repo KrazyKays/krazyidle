@@ -113,3 +113,42 @@ Tableau complet : `results/C4-choix.md`. Paires formées : 99 à 100 % des vies 
 11 combinaisons sur 12 dans les bornes, écart 12,7 points ✓, K1 inchangé (Érudit 86 %, autres ≤ 0,3 %). Seule Érudit → Récolter
 dépasse : **+15,5 %** (dt 0,5 : +13,6 % sur 40 graines), soit 0,5 point au-dessus de la borne, sur deux fois moins de graines :
 dans le bruit, à surveiller au `sim:guard` après implémentation.
+
+## C5 — prix de l'amélioration et boost de l'Écho, avec le vrai moteur (COMP-1) : critères fixés AVANT les mesures
+
+Prix (grille 120 / 200 / 300 / 450 / 600 ⚜️, `prix.ts`, surcharge `BAL_OBJ=LEGACY.compagnonnage.base=…`) :
+- **P1 — milieu de partie** : l'expérimenté l'achète entre **h2 et h4** (médiane, parties de 6 h).
+- **P2 — après Chroniques** : pour chaque profil, achat médian après celui de Chroniques.
+- Règle : le prix le plus haut qui tient P1 et P2 (un objectif de milieu de partie se mérite). Occasionnel : information seule.
+
+Boost de l'Écho (grille 0 / 0,1 / 0,15 / 0,25, `reel.ts`, surcharge `BAL_PATCH` de `COMPAGNON_ECHO`), avec le prix retenu :
+- **E1** : visée réaliste avec le vrai moteur (Héritage ×k, lot, échange d'expérience, boost) : K2 et K3 de C4 tenus
+  (hors paires naturelles +3 à +15 %, paires naturelles 0 à +15 %, écart ≤ 20 points).
+- Règle : le boost le plus fort qui tient E1. Si même 0 ne tient pas : lot 30 → 10 s, puis signalement.
+- Tolérance de bruit déjà constatée (C4-dt01) : un dépassement ≤ 1 point est signalé, pas éliminatoire.
+
+## C5 — résultats [SIMULÉ]
+
+**Prix** (`results/C5-prix-*.md`, 6 profils × 40 graines × 6 h) :
+
+| prix | expérimenté (h, part) | optimiseur | débutant | mono-Récolter | mono-Étudier |
+|---|---|---|---|---|---|
+| 120 | 5,10 (100 %) | 3,15 | 5,60 (90 %) | 3,27 | 4,28 |
+| 150 | 5,83 (90 %) | 3,52 | jamais (23 %) | 3,61 | 4,85 |
+| 200 | jamais (0 %) | 4,05 | jamais | 4,23 | 5,76 |
+| ≥ 300 | jamais | 5,28 puis jamais | jamais | 5,41 puis jamais | jamais |
+
+- **P1 ✗ pour tout prix supérieur à Chroniques** : l'expérimenté n'achète Chroniques (90 ⚜️) qu'à 4,22 h, car ses achats gourmands
+  dépensent l'Héritage en Prospérité au fil de l'eau. P2 ✓ partout.
+- La règle fixée n'est donc pas applicable telle quelle. **Retenu : 120 ⚜️**, le seul prix que l'expérimenté atteint dans 100 % des
+  parties de 6 h (≈ 5 h, fin de partie), une heure environ après Chroniques pour tous les profils. Écart à la règle signalé.
+
+**Boost de l'Écho** (`results/C5-e*.md`, vrai moteur, amélioration offerte à h2 aux deux bras) :
+- Le boost ne change pas l'Héritage (moins de 0,5 point entre 0 et 0,25) : il touche les stocks, pas la production du héros.
+  L'Écho d'un compagnon est gardé dans la Crypte dans 66 à 98 % des cas (vie de forte valeur) : le boost est visible.
+- **E1 ✗ à tous les boosts, pour une raison indépendante du boost** : avec le vrai moteur, l'Érudit de référence forme déjà le Notaire
+  dans 87 % de ses vies et touche ×1,2. Viser une autre paire lui fait perdre ce Notaire : Érudit → Récolter −1,4 %, Érudit → Méditer
+  −11,2 % (C4 comparait à un Érudit sans ×1,2). Les 10 autres combinaisons : +1,8 à +14,3 %.
+- Lot réduit à 10 s (règle de repli) : sans effet (Érudit → Méditer −10 %). **Signalé** : chaque paire garde au moins une voie
+  rentable (Agronome par le Paysan +9 %, Alchimiste par le Mystique +4,5 %), mais pour l'Érudit le seul bon compagnonnage est le Notaire.
+- **Retenus** : boost de l'Écho 0,15 (valeur initiale : la règle ne départage pas), lot 30 s.

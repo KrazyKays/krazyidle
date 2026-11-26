@@ -1411,3 +1411,17 @@ describe('COMP-1 — Compagnonnage : second métier à 30 % (0.8)', () => {
     expect(s2.compagnons!['cultiver+etudier']).toBe(1);
   });
 });
+
+describe('COMP-2 — prix du Compagnonnage (0.8)', () => {
+  test('120 ⚜️, après Chroniques (90) : une fin de partie, achetée une fois', async () => {
+    const { LEGACY_DEF, legacyCost } = await import('../../src/engine/data');
+    const { buyLegacy } = await import('../../src/engine/game');
+    expect(legacyCost(LEGACY_DEF.compagnonnage, 0)).toBe(120);
+    expect(LEGACY_DEF.compagnonnage.base).toBeGreaterThan(LEGACY_DEF.chroniques.base);
+    const s = newGame(0, 1);
+    s.legacy = 1000;
+    expect(buyLegacy(s, 'compagnonnage')).toBe(true);
+    expect(buyLegacy(s, 'compagnonnage')).toBe(false);
+    expect(s.legacy).toBe(880);
+  });
+});
