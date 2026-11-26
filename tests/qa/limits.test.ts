@@ -28,15 +28,15 @@ describe('plafonds', () => {
     expect(lifeDuration(s, s.hero)).toBe(d0 + 60);
   });
 
-  test('Crypte : 6 niveaux, 8 emplacements ; confirmSuccession refuse un Écho de trop', () => {
+  test('Crypte : 2 niveaux (0.7), 4 emplacements ; confirmSuccession refuse un Écho de trop', () => {
     const s = fresh();
     s.legacy = s.legacyTotal = 1e9;
     let n = 0;
     while (buyLegacy(s, 'crypte')) n++;
-    expect(n).toBe(6);
-    expect(echoSlots(s)).toBe(8);
+    expect(n).toBe(2);
+    expect(echoSlots(s)).toBe(4);
     endLife(s, 0);
-    const fake = Array.from({ length: 8 }, (_, i) => ({ ...s.succession!.newEcho, id: 1000 + i }));
+    const fake = Array.from({ length: 4 }, (_, i) => ({ ...s.succession!.newEcho, id: 1000 + i }));
     s.echoes = fake;
     expect(confirmSuccession(s, 0, [...fake.map((e) => e.id), s.succession!.newEcho.id])).toBe(false);
     expect(confirmSuccession(s, 0, fake.map((e) => e.id))).toBe(true);

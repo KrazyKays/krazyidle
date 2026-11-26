@@ -1285,3 +1285,14 @@ describe('VIE-4 — Mémoire du sang plafonnée à 3 niveaux (0.7)', () => {
     expect(s.upgrades.memoire).toBe(3);
   });
 });
+
+describe('VIE-5 — Crypte ancestrale : 2 niveaux, 4 emplacements (0.7)', () => {
+  test('les emplacements d\'Écho plafonnent à 4', async () => {
+    const { buyLegacy, echoSlots } = await import('../../src/engine/game');
+    const s = newGame(0, 1);
+    s.legacy = 1e9;
+    while (buyLegacy(s, 'crypte'));
+    expect(s.upgrades.crypte).toBe(2);
+    expect(echoSlots(s)).toBe(4);
+  });
+});

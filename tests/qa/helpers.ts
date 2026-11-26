@@ -92,7 +92,7 @@ export function invariants(s: GameState): string[] {
   if (s.ancestors.length > 300) bad.push(`ancestors=${s.ancestors.length}`);
   if (s.cadets.length > 8) bad.push(`cadets=${s.cadets.length}`);
   if ((s.buildings.clepsydre ?? 0) > 15) bad.push('clepsydre>15');
-  if ((s.upgrades.crypte ?? 0) > 6) bad.push('crypte>6');
+  if ((s.upgrades.crypte ?? 0) > 2) bad.push('crypte>2');
   if (!!s.life === !!s.succession) bad.push(`life=${!!s.life} succession=${!!s.succession}`);
   if (s.hero.vocation && (s.hero.vocation.tier < 1 || s.hero.vocation.tier > 10)) bad.push(`vocation=${s.hero.vocation.tier}`);
   for (const t of s.hero.traits) if (!TRAIT[t]) bad.push(`trait inconnu ${t}`);
