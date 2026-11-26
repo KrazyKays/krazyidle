@@ -289,7 +289,7 @@ export const LEGACY: LegacyDef[] = [
   { id: 'prosperite', name: 'Prospérité', icon: '🌞', desc: 'Toute production ×1.12 / niv.', base: 3, growth: 1.45 },
   { id: 'longevite', name: 'Sève éternelle', icon: '🌳', desc: 'Durée de vie +8 s / niv.', base: 4, growth: 1.65, max: 12 },
   { id: 'memoire', name: 'Mémoire du sang', icon: '🌀', desc: 'Puissance des Échos +15% / niv.', base: 5, growth: 1.55, max: 3 },
-  { id: 'crypte', name: 'Crypte ancestrale', icon: '⚰️', desc: '+1 emplacement d\'Écho', base: 12, growth: 2.6, max: 2 },
+  { id: 'crypte', name: 'Crypte ancestrale', icon: '⚰️', desc: '+1 emplacement d\'Écho', base: 12, growth: 2.6, max: 3 },
   { id: 'eveil', name: 'Éveil précoce', icon: '🌅', desc: 'Toutes compétences niv. +1 au départ', base: 10, growth: 2.2, max: 6 },
   { id: 'transmission', name: 'Transmission', icon: '🧬', desc: 'Chance d\'hériter des traits +8%', base: 6, growth: 1.9, max: 5 },
   { id: 'sang', name: 'Sang fécond', icon: '👪', desc: '+1 enfant proposé', base: 9, growth: 2.8, max: 3 },
