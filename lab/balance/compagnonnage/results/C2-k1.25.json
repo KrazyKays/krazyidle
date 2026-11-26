@@ -1,0 +1,147 @@
+{
+ "tag": "C2-k1.25",
+ "toLegacy": false,
+ "xpSwap": false,
+ "kLeg": 1.25,
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "from": 2,
+ "Ns": [
+  0
+ ],
+ "rows": [
+  {
+   "base": "mono-cultiver",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.987708947885939,
+   "rewardShare": 0,
+   "dleg": 3.2,
+   "dlog": -0.153,
+   "dgen": -0.2,
+   "lvl": null
+  },
+  {
+   "base": "mono-cultiver",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.9884832148983093,
+   "rewardShare": 0,
+   "dleg": 1.9,
+   "dlog": -0.173,
+   "dgen": 0.1,
+   "lvl": null
+  },
+  {
+   "base": "mono-cultiver",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.9882141942095823,
+   "rewardShare": 0,
+   "dleg": 0,
+   "dlog": -0.165,
+   "dgen": -4.3,
+   "lvl": null
+  },
+  {
+   "base": "mono-commercer",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9914467253176931,
+   "rewardShare": 0,
+   "dleg": 15.1,
+   "dlog": 0.025,
+   "dgen": -0.9,
+   "lvl": null
+  },
+  {
+   "base": "mono-commercer",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.9899135446685879,
+   "rewardShare": 0,
+   "dleg": -8.5,
+   "dlog": -0.289,
+   "dgen": 0.9,
+   "lvl": null
+  },
+  {
+   "base": "mono-commercer",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.9909068567215532,
+   "rewardShare": 0,
+   "dleg": -13.9,
+   "dlog": -0.321,
+   "dgen": -1.5,
+   "lvl": null
+  },
+  {
+   "base": "mono-etudier",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9879125987912599,
+   "rewardShare": 0,
+   "dleg": -7.9,
+   "dlog": -0.26,
+   "dgen": 0.8,
+   "lvl": null
+  },
+  {
+   "base": "mono-etudier",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.9935110081112398,
+   "rewardShare": 0,
+   "dleg": -9.7,
+   "dlog": -0.252,
+   "dgen": 1.2,
+   "lvl": null
+  },
+  {
+   "base": "mono-etudier",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.9857807652533609,
+   "rewardShare": 0,
+   "dleg": -15.1,
+   "dlog": -0.283,
+   "dgen": -10,
+   "lvl": null
+  },
+  {
+   "base": "mono-mediter",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9880498347317569,
+   "rewardShare": 0,
+   "dleg": 4.3,
+   "dlog": -0.12,
+   "dgen": -0.5,
+   "lvl": null
+  },
+  {
+   "base": "mono-mediter",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.9878172588832488,
+   "rewardShare": 0,
+   "dleg": 2.2,
+   "dlog": -0.15,
+   "dgen": -0.3,
+   "lvl": null
+  },
+  {
+   "base": "mono-mediter",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.9875397667020148,
+   "rewardShare": 0,
+   "dleg": 0.1,
+   "dlog": -0.142,
+   "dgen": -4.5,
+   "lvl": null
+  }
+ ]
+}

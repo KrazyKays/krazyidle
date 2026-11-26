@@ -40,3 +40,16 @@ Récompense R-base : N s du débit de la vie en cours hors événements, à vale
 
 **Conclusion C1** : aucun N ne tient K2, K3 et K4 ensemble. Une récompense ponctuelle en ressources est le mauvais levier pour
 compenser un coût structurel (niveau de la 2e activité). Pistes à trancher par le propriétaire avant C2 : voir la discussion.
+
+## C2 — échange d'expérience (proposition du propriétaire) et Héritage ×k (piste E) [SIMULÉ]
+
+Mêmes graines et protocole que C1, N = 0 (pas de lot de ressources). `results/C2-xp.md`, `results/C2-k*.md`.
+k est approché en multipliant par k³ la valeur déjà produite au moment de la formation (les ≤ 20 % restants ne sont pas multipliés).
+
+- **Échange d'expérience : gain ≤ 1,4 point d'Héritage** (ex. mono-Récolter + Commercer −10,8 → −10,1 %). La courbe d'expérience est
+  exponentielle (`xpToNext` = 5·1,3ⁿ) : la vocation ne gagne que +0,6 à +1,7 niveau ; la 2e rattrape la vocation, mais il ne reste
+  que ≤ 20 % de la vie pour en profiter, et le niveau repart de zéro à la vie suivante. **Écarté.**
+- **Héritage ×k** : k = 1,15 / 1,25 / 1,35 → paires Récolter/Méditer entre −5 et +10 % ; mono-Commercer + Récolter +8,5 / +15 / +22 % ;
+  paires vers ou depuis Commercer/Étudier encore −4 à −19 %. K3 ✗ (écart de 30 à 37 points). L'écart vient des chaînes de consommation :
+  la visée naïve étudie ou commerce sans stock. **Avant de fixer k, mesurer une visée réaliste** (repli `feasible`, stocks préparés
+  pendant les 20 % libres).
