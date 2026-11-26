@@ -208,7 +208,7 @@ export const VOCATION_BONUS = 0.2; // par rang
 export const ECHO_BASE = 0.08;
 export const VOCATION_MAX = 10;
 
-// --- Compagnonnage (second métier, 0.8) --------------------------------------
+// --- Compagnonnage (second métier, 0.7.1) --------------------------------------
 // Calibrage : lab/balance/compagnonnage/RESULTATS.md (C0 à C4) ; décisions : lab/design/BACKLOG-compagnonnage.md.
 /** Part de la vie à passer dans un second métier, en plus des 50 % de la vocation. 50 + 30 + 30 > 100 : une seule paire par vie. */
 export const COMPAGNON_SHARE = 0.3;

@@ -343,7 +343,7 @@ p { margin: 6px 0; }
 .voc-txt { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 .voc-gauge[data-state='secured'] .voc-txt { color: var(--good); }
 .voc-gauge[data-state='lost'] .voc-txt { color: var(--bad); }
-/* Compagnonnage (0.8) : second repère de la jauge de vocation, pastille de compagnon */
+/* Compagnonnage (0.7.1) : second repère de la jauge de vocation, pastille de compagnon */
 .voc-second { margin-top: 6px; }
 .voc-second[data-state='secured'] .voc-txt { color: var(--good); }
 .voc-second[data-state='lost'] .voc-txt { color: var(--muted); opacity: 0.75; }
@@ -415,7 +415,7 @@ p { margin: 6px 0; }
 .intro-motes { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
 .intro-motes span { position: absolute; bottom: -10px; width: 3px; height: 3px; border-radius: 50%; background: rgba(242, 196, 90, 0.7); box-shadow: 0 0 6px rgba(242, 196, 90, 0.8); animation: moteRise 8s linear infinite; }
 @keyframes stageIn { from { opacity: 0; transform: translateY(10px); } }
-@keyframes glassFlip { 0% { transform: rotate(180deg) scale(0.8); opacity: 0; } 30% { opacity: 1; } 100% { transform: rotate(360deg) scale(1); } }
+@keyframes glassFlip { 0% { transform: rotate(180deg) scale(0.7.1); opacity: 0; } 30% { opacity: 1; } 100% { transform: rotate(360deg) scale(1); } }
 @keyframes glassGlow { 50% { filter: drop-shadow(0 0 18px rgba(242, 196, 90, 0.7)); } }
 @keyframes emblemDrop { from { transform: translateY(-120%) scale(1.4); opacity: 0; } }
 @keyframes sandFall { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(60px); } }

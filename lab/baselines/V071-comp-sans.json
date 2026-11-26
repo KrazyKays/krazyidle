@@ -1,6 +1,6 @@
 {
  "meta": {
-  "id": "V08-comp-sans",
+  "id": "V071-comp-sans",
   "commit": "0d761b6",
   "srcDirty": false,
   "date": "2026-11-26T13:51:17.093Z",
@@ -21,11 +21,11 @@
   "startOffsetMin": 0,
   "runs": 1600,
   "wallMs": 74302,
-  "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=V08-comp-sans"
+  "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=V071-comp-sans"
  },
  "summary": {
   "meta": {
-   "id": "V08-comp-sans",
+   "id": "V071-comp-sans",
    "commit": "0d761b6",
    "srcDirty": false,
    "date": "2026-11-26T13:51:17.093Z",
@@ -46,7 +46,7 @@
    "startOffsetMin": 0,
    "runs": 1600,
    "wallMs": 74302,
-   "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=V08-comp-sans"
+   "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=V071-comp-sans"
   },
   "summary": {
    "debutant": {

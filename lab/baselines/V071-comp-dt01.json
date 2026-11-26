@@ -1,6 +1,6 @@
 {
  "meta": {
-  "id": "V08-comp-dt01",
+  "id": "V071-comp-dt01",
   "commit": "0d761b6",
   "srcDirty": false,
   "date": "2026-11-26T13:53:49.683Z",
@@ -17,11 +17,11 @@
   "startOffsetMin": 0,
   "runs": 400,
   "wallMs": 92591,
-  "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V08-comp-dt01"
+  "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V071-comp-dt01"
  },
  "summary": {
   "meta": {
-   "id": "V08-comp-dt01",
+   "id": "V071-comp-dt01",
    "commit": "0d761b6",
    "srcDirty": false,
    "date": "2026-11-26T13:53:49.683Z",
@@ -38,7 +38,7 @@
    "startOffsetMin": 0,
    "runs": 400,
    "wallMs": 92591,
-   "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V08-comp-dt01"
+   "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V071-comp-dt01"
   },
   "summary": {
    "debutant": {

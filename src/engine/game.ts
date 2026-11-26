@@ -29,7 +29,7 @@ export interface Runtime {
   age: number;
   /** rattrapage du temps passé hors ligne en cours (`simulateOffline`) */
   offline?: boolean;
-  /** Compagnonnages formés pendant le rattrapage : annoncés au retour, dans le récapitulatif (0.8) */
+  /** Compagnonnages formés pendant le rattrapage : annoncés au retour, dans le récapitulatif (0.7.1) */
   offlineComp?: { name: string; pair: string }[];
 }
 
@@ -75,7 +75,7 @@ export function cryptBoost(s: GameState): number {
 }
 
 /**
- * Bonus de production d'un Écho pour une activité : son surnom, et son Compagnonnage (0.8) pour les deux métiers
+ * Bonus de production d'un Écho pour une activité : son surnom, et son Compagnonnage (0.7.1) pour les deux métiers
  * de sa paire. Il passe par `prodBonus` : il ne multiplie jamais la consommation (CLAUDE.md, « Vie active »).
  */
 export function echoActMult(e: Echo, a: ActId): number {
@@ -117,7 +117,7 @@ function totalXp(life: LifeState, a: ActId): number {
 }
 
 /**
- * Compagnonnage (0.8) : dès que la vie remplit une paire, une seule fois. Lot des deux ressources (hors événements,
+ * Compagnonnage (0.7.1) : dès que la vie remplit une paire, une seule fois. Lot des deux ressources (hors événements,
  * à valeur égale) et chaque métier reçoit l'expérience acquise dans l'autre (50 + 30 = 80 s pour les deux).
  * L'Héritage ×k est appliqué à la mort (`endLife`). Hors ligne, l'annonce attend le récapitulatif du retour.
  */
@@ -763,7 +763,7 @@ export interface OfflineReport {
   gains: Record<ResId, number>;
   died: boolean;
   loops: number;
-  /** Compagnonnages formés pendant l'absence (0.8) */
+  /** Compagnonnages formés pendant l'absence (0.7.1) */
   comp?: { name: string; pair: string }[];
 }
 

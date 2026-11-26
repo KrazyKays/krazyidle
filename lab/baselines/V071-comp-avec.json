@@ -1,6 +1,6 @@
 {
  "meta": {
-  "id": "V08-comp-avec",
+  "id": "V071-comp-avec",
   "commit": "0d761b6",
   "srcDirty": false,
   "date": "2026-11-26T13:52:16.735Z",
@@ -17,11 +17,11 @@
   "startOffsetMin": 50,
   "runs": 800,
   "wallMs": 59313,
-  "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V08-comp-avec"
+  "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V071-comp-avec"
  },
  "summary": {
   "meta": {
-   "id": "V08-comp-avec",
+   "id": "V071-comp-avec",
    "commit": "0d761b6",
    "srcDirty": false,
    "date": "2026-11-26T13:52:16.735Z",
@@ -38,7 +38,7 @@
    "startOffsetMin": 50,
    "runs": 800,
    "wallMs": 59313,
-   "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V08-comp-avec"
+   "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V071-comp-avec"
   },
   "summary": {
    "evenementiel": {

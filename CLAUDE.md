@@ -46,6 +46,7 @@ Les scripts TypeScript de `lab/` s'exécutent sous Node avec `node --import ./la
 - **Identité de la maison (0.6)** : tout est cosmétique et gagné (titres, partitions, écartelé d'alliance, bordures et devises de la Veillée) ; rien ne s'achète en Éclats sauf le changement d'emblème ou de couleur. La Veillée ne touche ni à la production ni à l'événement : le simulateur ne l'appelle pas. `codexSeen` est rempli à la migration pour qu'une ancienne sauvegarde ne signale pas tout son Codex. Thèmes de couleur : `THEMES` (`maison.ts`) + un bloc `:root[data-theme="…"]` par thème en fin de `style.css` ; toute nouvelle couleur d'interface passe par une variable (pas de `rgba(20, 17, 31, …)` en dur : un test le vérifie). `eventGolds` compte les ors par type d'événement (cosmétique).
 - **Tutoriel (0.6)** : `src/ui/tuto.ts` (pur, testé) remplace les astuces d'`app.ts`. La première vie démarre en pause (`main.ts`) et le reste après rechargement tant que `flags.hint_start` n'est pas posé (`lifeWaitsForPlayer`). Le halo vise des sélecteurs (`data-act`, `data-tab`, `data-sub`, `data-bld`) : renommer une classe ou un attribut casse le halo sans erreur. Les e2e touchent Récolter après la cérémonie.
 - **Vie active (0.7)** : le héros vivant fait 55 à 60 % de la production en ligne ; hors ligne, seuls les Échos produisent une fois le héros mort. Ne pas regonfler la Crypte (force de rejeu `ECHO_BASE`, plafonds de Mémoire du sang et de Crypte) sans remesurer le débit actif / hors ligne (cible ×2 à ×3). La consommation est proportionnelle à la puissance (`consumeScaleFor`) : un bonus réservé à la production (bâtiment, surnom d'Écho via `prodBonus`) ne doit jamais multiplier la consommation, sinon une vie rejouée se déséquilibre.
+- **Compagnonnage (0.7.1)** : `checkCompagnon` (appelé par `tick` après `lifeTick`) forme la paire une seule fois par vie (`life.comp`) ; l'Héritage ×k est appliqué dans `endLife`. Paires naturelles (Colporteur, Notaire) ×1,2, autres ×1,3 (`COMPAGNON_LEGACY*`, `data.ts`). Le boost de l'Écho passe par `echoActMult` (production seule). Les profils du simulateur **ne visent pas de paire** : les campagnes `sim:guard` mesurent l'effet sur un joueur qui ne s'en sert pas ; l'effet de la visée se mesure avec `lab/balance/compagnonnage/reel.ts`. Toucher aux rendements ou à `VOCATION_SHARE` : remesurer C5.
 - **Sauvegardes** : ajouter un champ = le rendre optionnel ou le compléter dans `migrate()` (`save.ts`). L'import refuse une sauvegarde injouable (`isPlayable`), la sauvegarde locale n'est jamais écartée.
 - `state.lastTick` n'est avancé que par `tick` : ne pas le toucher dans `save()` (sinon le temps passé onglet masqué est perdu).
 - Les événements gardent l'ancienne règle de progression pour une fenêtre ouverte avant une mise à jour (`EventProgress.v`).
@@ -57,7 +58,11 @@ Cinq agents dans `.claude/agents/` : `qa-engineer`, `game-designer`, `game-balan
 
 Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.claude/hooks/audit-lock.mjs` interdit alors toute écriture sur `src/`, `public/`, configs et GDD), lancer les agents en parallèle sur un dossier `audits/<date>/`, confronter les divergences, synthétiser, puis supprimer le verrou après validation du propriétaire.
 
-## Références de simulation actuelles (0.7 « La Vie active », 2026-11-26)
+## Références de simulation actuelles (0.7.1 « Compagnonnage », 2026-11-26)
+
+- 0.7.1 : `V071-comp-sans`, `V071-comp-avec`, `V071-comp-dt01` (mêmes commandes que les V07-lot-*, `lab/campaigns/CAMPAIGNS.md`) ; résumés dans `lab/baselines/`. Les références V07 restent valables pour comparer la 0.7.
+
+### 0.7 « La Vie active »
 
 - Sans événements : `V07-lot-sans` (8 profils × 200 graines × 6 h, dt 0,5).
 - Avec événements : `V07-lot-avec` (4 profils dont `evenementiel`). Pas fin : `V07-lot-dt01` (4 profils × 100 graines, dt 0,1).
@@ -68,4 +73,4 @@ Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.clau
 
 Points ouverts (fin de l'audit du 2026-11-14) : `audits/2026-11-14/SYNTHESE.md`, § 10.
 
-Fonctionnalités conçues en attente : **Compagnonnage** (double vocation 50 % + 30 %, la refacto « vie active » qui la précédait est faite en 0.7) : `lab/design/BACKLOG-compagnonnage.md`.
+Compagnonnage livré en 0.7.1 (`lab/design/BACKLOG-compagnonnage.md`, calibrage `lab/balance/compagnonnage/RESULTATS.md`). Chantier ouvert : **Récolter**, vocation AFK et dominante (`lab/design/CHANTIER-recolter.md`, aucune piste retenue).

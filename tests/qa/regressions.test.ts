@@ -1311,7 +1311,7 @@ describe('VIE-6 — le surnom d\'un Écho ne renforce que sa production (0.7)', 
   });
 });
 
-describe('COMP-1 — Compagnonnage : second métier à 30 % (0.8)', () => {
+describe('COMP-1 — Compagnonnage : second métier à 30 % (0.7.1)', () => {
   const setup = async (bought = true) => {
     const g = await import('../../src/engine/game');
     const s = newGame(0, 7);
@@ -1412,7 +1412,7 @@ describe('COMP-1 — Compagnonnage : second métier à 30 % (0.8)', () => {
   });
 });
 
-describe('COMP-2 — prix du Compagnonnage (0.8)', () => {
+describe('COMP-2 — prix du Compagnonnage (0.7.1)', () => {
   test('120 ⚜️, après Chroniques (90) : une fin de partie, achetée une fois', async () => {
     const { LEGACY_DEF, legacyCost } = await import('../../src/engine/data');
     const { buyLegacy } = await import('../../src/engine/game');
@@ -1426,7 +1426,7 @@ describe('COMP-2 — prix du Compagnonnage (0.8)', () => {
   });
 });
 
-describe('COMP-3 — Compagnonnage dans le Codex (0.8)', () => {
+describe('COMP-3 — Compagnonnage dans le Codex (0.7.1)', () => {
   test('une paire formée est une nouveauté du Codex, visible même sans Chroniques', async () => {
     const { codexFresh, markCodexSeen } = await import('../../src/engine/codex');
     const { subsShown } = await import('../../src/ui/nav');

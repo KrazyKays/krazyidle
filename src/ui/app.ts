@@ -513,7 +513,7 @@ export class App {
     const s = this.s;
     const fill = h('div', { class: 'voc-fill' });
     const txt = h('div', { class: 'voc-txt' });
-    // Compagnonnage (0.8) : second repère à 30 %, visible une fois l'amélioration achetée.
+    // Compagnonnage (0.7.1) : second repère à 30 %, visible une fois l'amélioration achetée.
     const fill2 = h('div', { class: 'voc-fill' });
     const txt2 = h('div', { class: 'voc-txt' });
     const second = h('div', { class: 'voc-second' },

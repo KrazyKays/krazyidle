@@ -84,7 +84,7 @@ export interface LifeState {
   baseValue?: number;
   extended: boolean; // bonus "Temps suspendu" utilisé
   st?: LifeStats;
-  /** Compagnonnage (0.8) : paire formée pendant cette vie (`PAIR_DEF`), une seule fois : un rechargement ne la redonne pas */
+  /** Compagnonnage (0.7.1) : paire formée pendant cette vie (`PAIR_DEF`), une seule fois : un rechargement ne la redonne pas */
   comp?: string;
 }
 
@@ -108,7 +108,7 @@ export interface Echo {
   value: number;
   /** surnom gagné à la mort (Chroniques) */
   epithet?: string;
-  /** paire de Compagnonnage de sa vie (0.8) : ses deux métiers rejoués plus fort (`COMPAGNON_ECHO`) */
+  /** paire de Compagnonnage de sa vie (0.7.1) : ses deux métiers rejoués plus fort (`COMPAGNON_ECHO`) */
   comp?: string;
 }
 
@@ -128,7 +128,7 @@ export interface Ancestor {
   diedAt: number;
   epithet?: string;
   spouse?: { name: string; sex: Sex; epithet?: string; house: HouseRef; origin: 'pnj' | 'joueur' };
-  /** paire de Compagnonnage formée par cette vie (0.8) */
+  /** paire de Compagnonnage formée par cette vie (0.7.1) */
   comp?: string;
 }
 
@@ -147,7 +147,7 @@ export interface Succession {
   ancestor: Ancestor;
   /** surnom attribué et Éclats gagnés s'il vient d'être découvert */
   epithet?: { id: string; isNew: boolean; eclats: number };
-  /** Compagnonnage (0.8) : paire formée, multiplicateur appliqué à `legacyGain` */
+  /** Compagnonnage (0.7.1) : paire formée, multiplicateur appliqué à `legacyGain` */
   comp?: { id: string; mult: number };
 }
 
@@ -218,7 +218,7 @@ export interface GameState {
   almanach?: string[];
   /** Hauts faits (0.3) : identifiant → date d'obtention (ms) */
   feats?: Record<string, number>;
-  /** Compagnonnage (0.8) : nombre de vies ayant formé chaque paire (Codex) */
+  /** Compagnonnage (0.7.1) : nombre de vies ayant formé chaque paire (Codex) */
   compagnons?: Record<string, number>;
   /** Codex (0.6) : entrées déjà vues par le joueur (`codexKeys`) ; le reste est signalé comme nouveau */
   codexSeen?: string[];

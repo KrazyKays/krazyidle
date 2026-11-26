@@ -36,7 +36,7 @@ export function epithetBadge(id: string | undefined, who: Named | null): HTMLEle
 
 const frMult = (x: number) => `×${x.toString().replace('.', ',')}`;
 
-/** Pastille de compagnon (0.8), qui explique le boost de l'Écho au toucher. */
+/** Pastille de compagnon (0.7.1), qui explique le boost de l'Écho au toucher. */
 export function compBadge(id: string | undefined, who: Named | null): HTMLElement | null {
   const d = id ? PAIR_DEF[id] : undefined;
   if (!d) return null;
@@ -308,7 +308,7 @@ function freshCard(app: App, fresh: Set<string>, show: (id: string) => void): HT
     h('ul', { class: 'plain-list small' }, items));
 }
 
-/** Compagnonnages (0.8) : une fiche par paire, découverte à sa première formation. */
+/** Compagnonnages (0.7.1) : une fiche par paire, découverte à sa première formation. */
 export function compagnonsCard(app: App): HTMLElement | null {
   const s = app.s;
   if (!compagnonnageUnlocked(s)) return null;

@@ -3,7 +3,7 @@
 > Statut : **ouvert, rien n'est modifié dans le jeu.** Origine : discussion de design sur le Compagnonnage
 > (`lab/design/BACKLOG-compagnonnage.md`, `lab/balance/etudier/RESULTATS.md` E1, `lab/balance/compagnonnage/RESULTATS.md`).
 
-## 1. Constat [SIMULÉ, 0.7 / 0.8]
+## 1. Constat [SIMULÉ, 0.7 / 0.7.1]
 
 - **Récolter domine** : mono-Récolter 4 026 ⚜️ à 6 h, contre 3 311 (Commercer), 3 363 (Érudit bien joué), 3 214 (Méditer) : +22 %.
 - **Récolter est la vocation AFK** : aucun changement d'activité n'est nécessaire (rien à consommer). L'Érudit, lui, s'effondre
