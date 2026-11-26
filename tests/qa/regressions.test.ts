@@ -1232,3 +1232,22 @@ describe('TUTO-1 — tutoriel de la première partie (0.6)', () => {
     expect(currentHint(s, 'mobile')).toBeNull();
   });
 });
+
+describe('VIE-1 — consommation proportionnelle (0.7)', () => {
+  test('une vie Récolter puis Commercer équilibrée reste équilibrée dans son Écho, à toute force de rejeu', async () => {
+    const { runActivity } = await import('../../src/engine/sim');
+    const { ACT } = await import('../../src/engine/data');
+    // Vie : t1 s de Récolter puis t2 s de Commercer, réglés pour consommer pile les Vivres récoltés.
+    const pr = ACT.cultiver.produce.vivres!, co = ACT.commercer.consume.vivres!;
+    const t1 = 10, t2 = (t1 * pr) / co;
+    for (const power of [1, 0.08, 0.35, 4, 20]) {
+      const res = { vivres: 0, or: 0, savoir: 0, essence: 0 };
+      const ctx = { res, prodMult: () => 1 };
+      runActivity(ctx, 'cultiver', power, t1, false);
+      const f = runActivity(ctx, 'commercer', power, t2, false);
+      expect(f).toBeCloseTo(1, 9);
+      expect(res.vivres).toBeCloseTo(0, 9);
+      expect(res.or).toBeCloseTo(ACT.commercer.produce.or! * power * t2, 9);
+    }
+  });
+});

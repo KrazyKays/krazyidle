@@ -10,9 +10,14 @@ export interface SimCtx {
   acts?: Record<ActId, ActDef>;
 }
 
-/** Facteur de consommation d'une activité pratiquée à une puissance donnée. */
+/**
+ * Facteur de consommation d'une activité pratiquée à une puissance donnée. Depuis la 0.7 (VIE-1), il est
+ * proportionnel à la puissance, comme la production (avant : racine carrée, qui rendait un producteur fort plus
+ * efficace et un Écho faible ruineux). Une vie qui consomme pile ce qu'elle a récolté reste ainsi exactement
+ * équilibrée dans son Écho, quelle que soit sa force de rejeu.
+ */
 export function consumeScaleFor(power: number): number {
-  return Math.sqrt(Math.max(power, 0.01));
+  return Math.max(power, 0);
 }
 
 /** Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées). */

@@ -14,6 +14,8 @@ export const RES_INFO: Record<ResId, { name: string; icon: string; value: number
  * champs et des bois (Cultiver et Chasser fusionnés, TERRE-4). L'identifiant est resté pour les sauvegardes.
  * 0.5 (SIMPLIF-2) : plus de Domaine ni d'Harmonie (×1,27 en moyenne sur toute la production, et jusqu'à ×1,6
  * sur Récolter) ; les rendements l'intègrent (variante V3-A, lab/balance/simplif/RESULTATS.md).
+ * 0.7 (VIE-1) : la consommation devient proportionnelle à la puissance ; Commercer consomme 1 Vivre (3 avant) et
+ * Étudier 1 Or (2 avant) par unité de puissance (lab/balance/vie-active/RESULTATS.md).
  */
 export type ActId = 'cultiver' | 'commercer' | 'etudier' | 'mediter';
 export const ACTS: ActId[] = ['cultiver', 'commercer', 'etudier', 'mediter'];
@@ -43,12 +45,12 @@ export const ACT: Record<ActId, ActDef> = {
   commercer: {
     id: 'commercer', name: 'Commercer', icon: '⚖️', color: '#f9a825',
     desc: 'Échange des Vivres contre de l\'Or. Plus rentable avec l\'expérience.',
-    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.58 }, consume: { vivres: 3 }, unlockText: 'Récolter 40 Vivres',
+    vocation: 'Marchand', vocationF: 'Marchande', produce: { or: 1.58 }, consume: { vivres: 1 }, unlockText: 'Récolter 40 Vivres',
   },
   etudier: {
     id: 'etudier', name: 'Étudier', icon: '📖', color: '#0288d1',
     desc: 'Investit de l\'Or dans le Savoir.',
-    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.76 }, consume: { or: 2 }, unlockText: 'Amasser 40 Or',
+    vocation: 'Érudit', vocationF: 'Érudite', produce: { savoir: 0.76 }, consume: { or: 1 }, unlockText: 'Amasser 40 Or',
   },
   mediter: {
     id: 'mediter', name: 'Méditer', icon: '🕯️', color: '#8e24aa',
