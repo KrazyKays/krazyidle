@@ -53,3 +53,18 @@ k est approché en multipliant par k³ la valeur déjà produite au moment de la
   paires vers ou depuis Commercer/Étudier encore −4 à −19 %. K3 ✗ (écart de 30 à 37 points). L'écart vient des chaînes de consommation :
   la visée naïve étudie ou commerce sans stock. **Avant de fixer k, mesurer une visée réaliste** (repli `feasible`, stocks préparés
   pendant les 20 % libres).
+
+## C3 — visée réaliste (`--smart=1`) [SIMULÉ]
+
+Le bot ne pratique une activité que si son intrant couvre 5 s ; sinon il passe à l'autre cible ou, s'il lui reste du temps libre,
+produit l'intrant manquant. Paires formées : 98 à 99 % des vies visées. `results/C3-*.md`.
+
+- **Coût réaliste sans récompense** : −10 à −14 % pour les vocations Récolter et Méditer (elles ne consomment rien, la 2e leur est
+  inutile) ; −4 à −10 % pour Commercer et Étudier (la 2e peut nourrir la vocation) ; mono-Commercer + Récolter ≈ 0.
+- **Anomalie hors Compagnonnage** : mono-Étudier + Commercer **+19 % sans aucune récompense**. Étudier seul manque d'Or : produire
+  son Or soi-même vaut mieux que la vocation pure. C'est un défaut préexistant de la chaîne Étudier ← Or, à traiter à part.
+- **Échange d'expérience (version du propriétaire : chaque métier reçoit l'expérience de l'autre, 50 + 30 = 80 s)** : +0,3 à +1 point
+  d'Héritage, avec ou sans lot de ressources. Confirmé écarté.
+- **Héritage ×k** : k = 1,25 → 10 paires sur 12 entre −0,6 et +16 % (Récolter et Méditer : 0 à +5 % ; Commercer et Étudier : +4 à
+  +16 %) ; mono-Étudier + Commercer +42 %. K2 tenu en grande partie, K3 ✗ (≈ 16 points hors anomalie).
+  Le coût dépend de la **vocation** (consomme-t-elle ?), pas de la paire : une règle symétrique ne peut pas l'égaliser exactement.

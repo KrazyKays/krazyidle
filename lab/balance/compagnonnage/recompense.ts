@@ -9,6 +9,7 @@ import { ACT, ACTS, RES_INFO, xpToNext, type ActId, type ResId } from '../../../
 import type { GameState, LifeState } from '../../../src/engine/state';
 import { PROFILES, arg, parseSeeds, runBal, stats, type BalResult } from '../lib';
 import type { Profile } from '../../sim/profiles';
+import { consumeScaleFor, lifePower } from '../../../src/engine/sim';
 
 const tag = arg('tag', 'C1')!;
 const seeds = parseSeeds(arg('seeds', '1-40')!);
@@ -24,6 +25,32 @@ const toLegacy = arg('legacy', '0') === '1';
 const xpSwap = arg('xpswap', '0') === '1';
 /** --k=1.25 : Héritage de la vie ×k (piste E), approché en multipliant par k³ la valeur déjà produite à la formation. */
 const kLeg = Number(arg('k', '1'));
+/**
+ * --smart=1 : visée réaliste. Le bot vise A (50 %) puis B (30 %), mais ne pratique une activité que si son stock d'intrant
+ * couvre au moins 5 s ; sinon il passe à l'autre cible, ou, s'il lui reste du temps libre (les 20 %), il produit l'intrant
+ * manquant (Vivres → Récolter, Or → Commercer ou Récolter). Sans temps libre, il pratique la cible quand même (le temps compte).
+ */
+const smart = arg('smart', '0') === '1';
+const INPUT: Partial<Record<ActId, ResId>> = { commercer: 'vivres', etudier: 'or' };
+function smartPick(s: GameState, L: LifeState, a: ActId, b: ActId): ActId | null {
+  const needA = Math.max(0, V * L.dur + 1 - L.timeIn[a]), needB = Math.max(0, S * L.dur + 1 - L.timeIn[b]); // +1 s de marge : franchir le seuil
+  if (needA <= 0.5 && needB <= 0.5) return null;
+  const free = L.dur - L.t - needA - needB;
+  const covered = (t: ActId) => {
+    const r = INPUT[t];
+    if (!r) return true;
+    const c = Object.values(ACT[t].consume)[0]! * consumeScaleFor(lifePower(L, s.hero, t));
+    return s.res[r] >= c * 5;
+  };
+  const targets = ([[a, needA], [b, needB]] as [ActId, number][]).filter(([, n]) => n > 0.5).map(([t]) => t);
+  for (const t of targets) if (covered(t)) return t;
+  if (free > 0.5) {
+    const r = INPUT[targets[0]]!;
+    if (r === 'vivres') return 'cultiver';
+    return s.res.vivres >= 5 && s.unlocked.includes('commercer') ? 'commercer' : 'cultiver';
+  }
+  return targets[0];
+}
 const totalXp = (L: LifeState, a: ActId) => { let x = L.xp[a]; for (let i = 0; i < L.lvl[a]; i++) x += xpToNext(i); return x; };
 function setXp(L: LifeState, a: ActId, x: number) { let l = 0; while (x >= xpToNext(l)) { x -= xpToNext(l); l++; } L.lvl[a] = l; L.xp[a] = x; }
 const resOf = (a: ActId) => Object.keys(ACT[a].produce)[0] as ResId;
@@ -51,6 +78,7 @@ function targeted(p: Profile, pair: [ActId, ActId], N: number, log: { ok: number
           }
           log.reward.push(R); log.lifeVal.push(L.baseValue ?? L.value);
         }
+        if (smart) { const x = smartPick(s, L, a, b); if (x) return x; return p.activity(s, c); }
         if (L.timeIn[a] < V * L.dur + 0.5) return a;
         if (L.timeIn[b] < S * L.dur + 0.5) return b;
       }
@@ -60,8 +88,8 @@ function targeted(p: Profile, pair: [ActId, ActId], N: number, log: { ok: number
 }
 
 const m = (xs: number[], d = 3) => Number(stats(xs).mean.toFixed(d));
-const out: Record<string, any> = { tag, toLegacy, xpSwap, kLeg, seeds: arg('seeds'), hours, dt, from: from / 3600, Ns, rows: [] };
-const md = [`# ${tag} — coût de la visée et récompense R-base (dt ${dt}, ${seeds.length} graines, ${hours} h, visée dès h${from / 3600}, 2e à ${S * 100} %${toLegacy ? ', récompense comptée dans l\'Héritage' : ''}${xpSwap ? ', échange d\'expérience' : ''}${kLeg !== 1 ? `, Héritage ×${kLeg}` : ''})`, '',
+const out: Record<string, any> = { tag, smart, toLegacy, xpSwap, kLeg, seeds: arg('seeds'), hours, dt, from: from / 3600, Ns, rows: [] };
+const md = [`# ${tag} — coût de la visée et récompense R-base (dt ${dt}, ${seeds.length} graines, ${hours} h, visée dès h${from / 3600}, 2e à ${S * 100} %${toLegacy ? ', récompense comptée dans l\'Héritage' : ''}${smart ? ', visée réaliste' : ''}${xpSwap ? ', échange d\'expérience' : ''}${kLeg !== 1 ? `, Héritage ×${kLeg}` : ''})`, '',
   '| base | 2e vocation | N (s) | vies visées réussies | récompense ÷ valeur de la vie | Δ ⚜️ (%) | Δ log10 valeur brute | Δ gén. |', '|---|---|---|---|---|---|---|---|'];
 for (const a of bases) {
   const pid = 'mono-' + a;
