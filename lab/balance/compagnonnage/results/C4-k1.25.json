@@ -1,0 +1,122 @@
+{
+ "tag": "C4-k1.25",
+ "k": 1.25,
+ "seeds": "1-40",
+ "dt": 0.5,
+ "refs": {
+  "cultiver": {
+   "legacy": 4026,
+   "passive": 0
+  },
+  "commercer": {
+   "legacy": 3311,
+   "passive": 0.005
+  },
+  "etudier": {
+   "legacy": 3363,
+   "passive": 0.87
+  },
+  "mediter": {
+   "legacy": 3214,
+   "passive": 0
+  }
+ },
+ "rows": [
+  {
+   "a": "cultiver",
+   "b": "commercer",
+   "notaire": false,
+   "ok": 0.996,
+   "dleg": 6.4,
+   "dgen": -0.3
+  },
+  {
+   "a": "cultiver",
+   "b": "etudier",
+   "notaire": false,
+   "ok": 0.996,
+   "dleg": 4.5,
+   "dgen": -0.2
+  },
+  {
+   "a": "cultiver",
+   "b": "mediter",
+   "notaire": false,
+   "ok": 0.995,
+   "dleg": 3.1,
+   "dgen": -4.6
+  },
+  {
+   "a": "commercer",
+   "b": "cultiver",
+   "notaire": false,
+   "ok": 0.999,
+   "dleg": 19,
+   "dgen": -1.5
+  },
+  {
+   "a": "commercer",
+   "b": "etudier",
+   "notaire": true,
+   "ok": 0.998,
+   "dleg": 14.1,
+   "dgen": -1.1
+  },
+  {
+   "a": "commercer",
+   "b": "mediter",
+   "notaire": false,
+   "ok": 0.998,
+   "dleg": 7.7,
+   "dgen": -3.5
+  },
+  {
+   "a": "etudier",
+   "b": "cultiver",
+   "notaire": false,
+   "ok": 0.997,
+   "dleg": 10,
+   "dgen": -1
+  },
+  {
+   "a": "etudier",
+   "b": "commercer",
+   "notaire": true,
+   "ok": 0.999,
+   "dleg": 18.9,
+   "dgen": -1.9
+  },
+  {
+   "a": "etudier",
+   "b": "mediter",
+   "notaire": false,
+   "ok": 0.996,
+   "dleg": 0.8,
+   "dgen": -13.1
+  },
+  {
+   "a": "mediter",
+   "b": "cultiver",
+   "notaire": false,
+   "ok": 0.996,
+   "dleg": 7,
+   "dgen": -0.9
+  },
+  {
+   "a": "mediter",
+   "b": "commercer",
+   "notaire": false,
+   "ok": 0.996,
+   "dleg": 6.8,
+   "dgen": -0.6
+  },
+  {
+   "a": "mediter",
+   "b": "etudier",
+   "notaire": false,
+   "ok": 0.995,
+   "dleg": 1.5,
+   "dgen": -8.3
+  }
+ ]
+}

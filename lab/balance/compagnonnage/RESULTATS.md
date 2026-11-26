@@ -76,3 +76,32 @@ améliorations). Vérification [CODE] + [SIMULÉ, 10 graines × 6 h] : les amél
 ne sert qu'au Sanctuaire et à la Clepsydre (`data.ts:229-230`). Le profil optimiseur joue Récolter 100 % du temps, n'achète que les Champs,
 ne produit ni Or ni Essence, achète les mêmes améliorations d'Héritage que mono-Récolter (Prospérité 14, Sève 10, Crypte 2…) et reste le
 profil le plus fort. Le besoin de diversifier n'existe donc pas aujourd'hui pour Récolter ; il existe pour Commercer (Vivres) et Étudier (Or).
+
+## C4 — calibrage de k (Héritage ×k) contre un Érudit bien joué : critères fixés AVANT les mesures
+
+Validé par le propriétaire : **K3 assoupli à 20 points**, Notaire (Commercer + Étudier) à multiplicateur réduit kN.
+Bases : mono-cultiver, mono-commercer, mono-mediter et **erudit** (Étudier 55 %, Or produit par blocs de 30 s : meilleur Érudit d'E1).
+Visée réaliste (C3). k appliqué **exactement** : l'Héritage versé à la succession de la vie qui a formé la paire est multiplié par k
+(C2-C3 l'approchaient par la valeur). Grille : k ∈ {1 ; 1,05 ; 1,1 ; 1,15 ; 1,2 ; 1,25 ; 1,3}, kN pris dans la même grille.
+
+- **K1** : sans viser, part des vies 50 + 30 ≤ 10 % ; exception admise pour le Notaire chez l'Érudit (paire naturelle, décision A).
+- **K2** : les 9 combinaisons hors Notaire entre **+3 % et +15 %** d'Héritage à 6 h ; les 3 combinaisons Notaire (Marchand → Étudier,
+  Érudit → Commercer) entre **0 % et +15 %** (pas un piège, pas un cadeau).
+- **K3** : écart entre la meilleure et la pire des 12 combinaisons ≤ **20 points**.
+- **K4** (relu pour ×k, la récompense n'étant plus un lot) : k ≤ 1,3, soit au plus un rang et demi de vocation (+20 % par rang).
+- **Règle de choix** : le plus petit k puis le plus petit kN qui tiennent K2 et K3. Si aucun couple ne les tient, celui qui minimise le
+  nombre de combinaisons hors bornes, signalé comme tel.
+
+## C4 — résultats (`calibrage.ts`, `choix.ts`, 4 bases × 3 × 7 valeurs de k × 40 graines × 6 h, dt 0,5) [SIMULÉ]
+
+Tableau complet : `results/C4-choix.md`. Paires formées : 99 à 100 % des vies visées.
+
+- **K1** : vies 50 + 30 sans viser = 0 à 0,5 % (Récolter, Commercer, Méditer) ; **87 % chez l'Érudit** (Notaire, exception admise).
+- **Règle de choix appliquée telle que fixée : aucun couple ne tient K2 et K3.** Couple le moins hors bornes : **k = 1,3, kN = 1,15**
+  (écart 18,5 points ✓), avec **1 combinaison hors bornes : Marchand → Récolter +22,9 %** (> 15 %, rouge de `sim:guard`).
+- Cause : Marchand → Récolter ne coûte rien sans récompense (−0,2 %), comme le Notaire chez l'Érudit. Commercer consomme des Vivres :
+  le **Colporteur** (Récolter + Commercer) est la paire naturelle du Marchand, de la même façon que le Notaire est celle de l'Érudit.
+- La paire la plus chère est l'**Alchimiste** (Étudier + Méditer : −14 à −15 % sans récompense) : c'est elle qui impose k = 1,3.
+- [PROPOSITION, non conforme à la règle fixée, à valider par le propriétaire] traiter le Colporteur comme le Notaire (kN). Avec
+  k = 1,3 et kN = 1,2 : 12 combinaisons sur 12 dans les bornes, de +2,8 % (Paysan → Commercer) à +14,9 % (Marchand → Récolter), écart 12,1 points.
+- À faire avant implémentation : revalider le couple retenu à dt 0,1 (règle 4) et le confronter à `sim:guard` sur les profils de référence.
