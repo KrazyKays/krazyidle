@@ -1,0 +1,100 @@
+{
+ "tag": "V9",
+ "patch": "[{\"file\":\"sim.ts\",\"from\":\"return Math.sqrt(Math.max(power, 0.01));\",\"to\":\"return Math.max(power, 0);\"},{\"file\":\"game.ts\",\"from\":\"0.4 * (1 + 0.15 * up(s, 'memoire')) * (1 + 0.1 * bl(s, 'sanctuaire'))\",\"to\":\"0.1 * (1 + 0.15 * up(s, 'memoire'))\"},{\"file\":\"data.ts\",\"from\":\"base: 5, growth: 1.55 }\",\"to\":\"base: 5, growth: 1.55, max: 5 }\"},{\"file\":\"data.ts\",\"from\":\"base: 12, growth: 2.6, max: 6\",\"to\":\"base: 12, growth: 2.6, max: 3\"}]",
+ "obj": "ACT.commercer.consume.vivres=1.5;ACT.etudier.consume.or=1",
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "profiles": {
+  "experimente": {
+   "heroShare": 0.407,
+   "legacy": 2081,
+   "log10Value": 7.41,
+   "gen": 165,
+   "alliancesH": 2.5,
+   "alliancesN": 1,
+   "chroniquesH": 4.52,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.18,
+    "commercer": 0.46,
+    "etudier": 0.18,
+    "mediter": 0.17
+   },
+   "crypte": 3,
+   "memoire": 5,
+   "prosperite": 11,
+   "anomalies": 0,
+   "ratio": {
+    "1": 6.13,
+    "3": 1.94,
+    "5": 1.82
+   }
+  },
+  "optimiseur": {
+   "heroShare": 0.453,
+   "legacy": 4142,
+   "log10Value": 8.16,
+   "gen": 162,
+   "alliancesH": 1.65,
+   "alliancesN": 1,
+   "chroniquesH": 2.8,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 1,
+    "commercer": 0,
+    "etudier": 0,
+    "mediter": 0
+   },
+   "crypte": 3,
+   "memoire": 5,
+   "prosperite": 13.8,
+   "anomalies": 0,
+   "ratio": {
+    "1": 3.56,
+    "3": 2.08,
+    "5": 1.7
+   }
+  },
+  "mono-commercer": {
+   "heroShare": 0.501,
+   "legacy": 3103,
+   "log10Value": 7.75,
+   "gen": 175,
+   "alliancesH": 2,
+   "alliancesN": 1,
+   "chroniquesH": 3.44,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.27,
+    "commercer": 0.7,
+    "etudier": 0.02,
+    "mediter": 0.01
+   },
+   "crypte": 3,
+   "memoire": 5,
+   "prosperite": 12.6,
+   "anomalies": 0
+  },
+  "mono-etudier": {
+   "heroShare": 0.505,
+   "legacy": 2486,
+   "log10Value": 7.41,
+   "gen": 179,
+   "alliancesH": 2.1,
+   "alliancesN": 1,
+   "chroniquesH": 3.85,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.05,
+    "commercer": 0.26,
+    "etudier": 0.68,
+    "mediter": 0.01
+   },
+   "crypte": 3,
+   "memoire": 5,
+   "prosperite": 12,
+   "anomalies": 0
+  }
+ }
+}

@@ -60,7 +60,7 @@ export const RULES: Rule[] = [
   { kpi: 'gen', kind: 'delta', profiles: ALL, rel: 0.05, dir: 'both', why: 'Tempo dynastique : ±5 % de générations.' },
   { kpi: 'legacyTotal', kind: 'delta', profiles: ALL, rel: 0.15, dir: 'both', why: 'Boucle longue : ±15 % d\'Héritage.' },
   // Piliers
-  { kpi: 'echoShare', kind: 'range', profiles: CONT, min: 0.6, max: 0.97, why: 'Pilier 1 : les Échos portent la production sans rendre le héros inutile (profils en continu uniquement).' },
+  { kpi: 'echoShare', kind: 'range', profiles: CONT, min: 0.3, max: 0.6, why: 'Pilier 1 (0.7, vie active) : le héros vivant fait 40 à 70 % de la production en ligne, les Échos le reste (profils en continu uniquement).' },
   { kpi: 'echoShare', kind: 'delta', profiles: CONT, abs: 0.03, dir: 'both', why: 'Part des Échos : ±3 points.' },
   { kpi: 'traitCombos60', kind: 'range', profiles: ['experimente', 'debutant'], min: 20, why: 'Budget génétique (GDD 2.3 : 27–30 à 8 h) : pas de retour à 2–5 combinaisons.' },
   { kpi: 'traitCombos60', kind: 'delta', profiles: ['experimente', 'optimiseur'], rel: 0.2, dir: 'down', why: 'Diversité génétique : −20 %.' },

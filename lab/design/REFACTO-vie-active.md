@@ -1,6 +1,6 @@
 # Refacto « vie active » — décisions de design
 
-> Statut : **décidée, non implémentée, non chiffrée**. Origine : discussion de design avec le propriétaire, 2026-11-26.
+> Statut : **appliquée en 0.7** (VIE-1 à VIE-6, variante V18 : rejeu 8 %, Mémoire du sang 3 niveaux, Crypte 2 niveaux, Commercer 1 Vivre, Étudier 1 Or). Chiffres et critères : `lab/balance/vie-active/RESULTATS.md`. Origine : discussion de design avec le propriétaire, 2026-11-26.
 > Préalable au Compagnonnage (`BACKLOG-compagnonnage.md`). Toute valeur ci-dessous est une piste à fixer par
 > simulation selon `lab/PROTOCOLE.md` (critères fixés avant les mesures, variantes en mémoire, `sim:guard`, dt 0,1).
 

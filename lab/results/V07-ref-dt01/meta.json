@@ -1,0 +1,20 @@
+{
+ "id": "V07-ref-dt01",
+ "commit": "7089cb2",
+ "srcDirty": false,
+ "date": "2026-11-26T11:17:27.924Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 115223,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V07-ref-dt01"
+}

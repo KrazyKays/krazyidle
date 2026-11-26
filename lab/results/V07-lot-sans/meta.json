@@ -1,0 +1,24 @@
+{
+ "id": "V07-lot-sans",
+ "commit": "dab13b8",
+ "srcDirty": false,
+ "date": "2026-11-26T11:13:43.555Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "occasionnel",
+  "optimiseur",
+  "mono-cultiver",
+  "mono-commercer",
+  "mono-etudier",
+  "mono-mediter"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 1600,
+ "wallMs": 83843,
+ "command": "npm run sim -- --profiles=experimente,debutant,occasionnel,optimiseur,mono-cultiver,mono-commercer,mono-etudier,mono-mediter --seeds=1-200 --hours=6 --id=V07-lot-sans"
+}

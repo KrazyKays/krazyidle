@@ -1,0 +1,160 @@
+{
+ "tag": "V2",
+ "patch": "[{\"file\":\"sim.ts\",\"from\":\"return Math.sqrt(Math.max(power, 0.01));\",\"to\":\"return Math.max(power, 0);\"}]",
+ "obj": "ACT.commercer.consume.vivres=1.5;ACT.etudier.consume.or=1",
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "profiles": {
+  "experimente": {
+   "heroShare": 0.071,
+   "legacy": 2152,
+   "log10Value": 8.22,
+   "gen": 164,
+   "alliancesH": 2.66,
+   "alliancesN": 1,
+   "chroniquesH": 4.69,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.19,
+    "commercer": 0.46,
+    "etudier": 0.18,
+    "mediter": 0.17
+   },
+   "crypte": 3,
+   "memoire": 8,
+   "prosperite": 11,
+   "anomalies": 0,
+   "ratio": {
+    "1": 3.57,
+    "3": 1.33,
+    "5": 1.24
+   }
+  },
+  "optimiseur": {
+   "heroShare": 0.13,
+   "legacy": 4381,
+   "log10Value": 8.75,
+   "gen": 163,
+   "alliancesH": 1.67,
+   "alliancesN": 1,
+   "chroniquesH": 2.73,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 1,
+    "commercer": 0,
+    "etudier": 0,
+    "mediter": 0
+   },
+   "crypte": 4,
+   "memoire": 10,
+   "prosperite": 13,
+   "anomalies": 0,
+   "ratio": {
+    "1": 4.46,
+    "3": 1.37,
+    "5": 1.32
+   }
+  },
+  "debutant": {
+   "heroShare": 0.094,
+   "legacy": 2243,
+   "log10Value": 8.36,
+   "gen": 139,
+   "alliancesH": 3.02,
+   "alliancesN": 1,
+   "chroniquesH": 4.86,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.88,
+    "commercer": 0.04,
+    "etudier": 0.04,
+    "mediter": 0.04
+   },
+   "crypte": 3,
+   "memoire": 8.2,
+   "prosperite": 11.2,
+   "anomalies": 0
+  },
+  "mono-cultiver": {
+   "heroShare": 0.103,
+   "legacy": 4276,
+   "log10Value": 8.9,
+   "gen": 171,
+   "alliancesH": 1.9,
+   "alliancesN": 1,
+   "chroniquesH": 2.89,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.94,
+    "commercer": 0.04,
+    "etudier": 0.02,
+    "mediter": 0.01
+   },
+   "crypte": 4,
+   "memoire": 10,
+   "prosperite": 13,
+   "anomalies": 0
+  },
+  "mono-commercer": {
+   "heroShare": 0.113,
+   "legacy": 3588,
+   "log10Value": 8.65,
+   "gen": 173,
+   "alliancesH": 2.1,
+   "alliancesN": 1,
+   "chroniquesH": 3.53,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.25,
+    "commercer": 0.72,
+    "etudier": 0.02,
+    "mediter": 0.01
+   },
+   "crypte": 4,
+   "memoire": 9.1,
+   "prosperite": 12.3,
+   "anomalies": 0
+  },
+  "mono-etudier": {
+   "heroShare": 0.134,
+   "legacy": 2386,
+   "log10Value": 7.94,
+   "gen": 179,
+   "alliancesH": 2.36,
+   "alliancesN": 1,
+   "chroniquesH": 4.29,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.05,
+    "commercer": 0.26,
+    "etudier": 0.67,
+    "mediter": 0.01
+   },
+   "crypte": 3,
+   "memoire": 8.6,
+   "prosperite": 11.1,
+   "anomalies": 0
+  },
+  "mono-mediter": {
+   "heroShare": 0.059,
+   "legacy": 3306,
+   "log10Value": 8.87,
+   "gen": 160,
+   "alliancesH": 2,
+   "alliancesN": 1,
+   "chroniquesH": 3.47,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.02,
+    "commercer": 0.04,
+    "etudier": 0.02,
+    "mediter": 0.93
+   },
+   "crypte": 3.9,
+   "memoire": 9,
+   "prosperite": 12.1,
+   "anomalies": 0
+  }
+ }
+}

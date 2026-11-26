@@ -1,4 +1,4 @@
-# Échos de Lignée — Game Design Document (0.6)
+# Échos de Lignée — Game Design Document (0.7)
 
 > *« Chaque héros ne vit qu'un instant… mais rien ne se perd. »*
 
@@ -24,6 +24,7 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 - Un héros vit **60 s** par défaut, durée allongée par les traits, l'Héritage et la Clepsydre.
 - À chaque instant, il pratique **une activité** : Récolter, Commercer, Étudier ou Méditer, une par ressource (0.4 : Cultiver et Chasser fusionnés en Récolter, métier de Paysan, voir 2.4).
   Commercer se débloque à 40 Vivres, Étudier à 40 Or, Méditer à 20 Savoir (0.2.2 : 50 Or et 25 Savoir auparavant). Rendements 0.2.2 : Commercer 1,25 Or (1,5 auparavant), Méditer 0,10 Essence (0,06) ; le Sanctuaire ne coûte plus de Savoir. Cultiver, Commercer et Méditer se valaient à quelques pour cent près en 0.2.2 ; Étudier reste la vocation la plus faible. **0.5** : plus de Domaine ; les rendements intègrent l'Harmonie qu'il donnait en moyenne (×1,265 sur tout, et ×1,265 de plus sur Récolter) : Récolter 1,92 Vivres, Commercer 1,58 Or, Étudier 0,76 Savoir, Méditer 0,127 Essence (`lab/balance/simplif/RESULTATS.md`, variante V3-A).
+- **Consommation proportionnelle (0.7, VIE-1)** : une activité consomme à proportion de sa puissance, comme elle produit (avant : en racine carrée de la puissance, ce qui rendait un producteur fort plus efficace et un Écho faible ruineux). Par unité de puissance, Commercer consomme **1 Vivre** pour 1,58 Or et Étudier **1 Or** pour 0,76 Savoir (3 et 2 avant). Seuls les bâtiments et Prospérité, qui ne jouent que sur la production, améliorent le rendement d'une conversion. Une vie qui consomme pile ce qu'elle a récolté reste exactement équilibrée dans son Écho, quelle que soit sa force de rejeu.
 - Le temps de jeu ne se perd plus quand le moteur ne tourne pas (onglet masqué, fil gelé) : tout écart de plus de 5 s est rattrapé par la simulation hors ligne (sans événements).
 - **Le temps du héros ne s'écoule que pendant une activité.** Recliquer sur l'activité en cours (ou la touche Espace) met la vie en pause : le sablier se fige et rien n'est enregistré, mais les Échos continuent de produire. La pause coûte du tempo dynastique (succession, Héritage et nouvel Écho retardés) et ne survit pas à la fermeture du jeu : au lancement, la vie reprend sur la dernière activité.
 - À sa naissance, le héros commence directement l'activité de sa **vocation** héritée (Récolter par défaut).
@@ -42,10 +43,11 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 
 ### 2.2 Les Échos (le cœur du jeu)
 - Chaque seconde de la vie est **enregistrée** (activité et puissance).
-- À la mort, la vie devient un **Écho** qui la rejoue **en boucle et pour toujours**, avec une puissance de base de 40 %. Les bonus d'événement ne sont pas enregistrés : l'Écho n'en profite que lorsqu'il rejoue pendant un événement, et sa valeur (qui guide le choix des Échos à garder) est calculée hors bonus.
+- À la mort, la vie devient un **Écho** qui la rejoue **en boucle et pour toujours**, avec une puissance de base de **8 %** (0.7, VIE-3 ; 40 % avant). Les bonus d'événement ne sont pas enregistrés : l'Écho n'en profite que lorsqu'il rejoue pendant un événement, et sa valeur (qui guide le choix des Échos à garder) est calculée hors bonus.
 - Les Échos profitent des bonus *actuels* (bâtiments, événements).
-- Emplacements limités : 2 au départ, +1 par niveau de Crypte ancestrale. On choisit à chaque succession quels Échos garder ; un Écho protégé (🔒, carte à cadre doré) est prioritaire.
-- **Un Écho se mesure en pts/s** : sa production attendue, soit la valeur de sa vie par seconde × sa puissance de rejeu (Mémoire du sang, Sanctuaire, ses traits d'Écho, son surnom), hors bonus d'événement. C'est ce qu'affichent sa carte et le choix des Échos, et c'est l'ordre de la présélection (0.2.2 : la présélection ignorait auparavant traits d'Écho et surnom ; la corriger rapporte ×1,15 mesuré). Un Écho court n'est pas meilleur parce qu'il boucle plus vite : il produit la moyenne des puissances de sa vie. Or les niveaux montent pendant la vie, donc une vie longue a en général une meilleure moyenne (≈ +50 % entre 60 s et 180 s sans niveau de départ).
+- **Le héros vivant porte la production (0.7, « vie active »)** : il fait 55 à 60 % de la production en ligne d'un joueur expérimenté ou optimiseur, les Échos le reste (avant : 7 à 13 % pour le héros) [SIMULÉ, V07-lot-sans]. Hors ligne, le héros finit sa vie puis la succession attend : seuls les Échos produisent. Une heure jouée rapporte donc **×2,2 à ×2,9** une heure d'absence, à partir de la 3ᵉ heure (avant : ×1,2 à ×1,4) [SIMULÉ, `lab/balance/vie-active/RESULTATS.md`]. Le rythme de la lignée ne change presque pas, puisque l'Héritage se calcule sur la vie du héros (Héritage en 6 h −4 à −5 %, Alliances et Chroniques à ±10 %).
+- Emplacements limités : 2 au départ, +1 par niveau de Crypte ancestrale (**2 niveaux au plus depuis la 0.7**, soit 4 emplacements ; 6 niveaux avant). Mémoire du sang : +15 % par niveau, **3 niveaux au plus** (sans plafond avant). Le Sanctuaire ne renforce plus les Échos (Méditer +25 % par niveau seulement, comme les trois autres bâtiments). On choisit à chaque succession quels Échos garder ; un Écho protégé (🔒, carte à cadre doré) est prioritaire.
+- **Un Écho se mesure en pts/s** : sa production attendue, soit la valeur de sa vie par seconde × sa puissance de rejeu (Mémoire du sang, ses traits d'Écho, son surnom), hors bonus d'événement. C'est ce qu'affichent sa carte et le choix des Échos, et c'est l'ordre de la présélection (0.2.2 : la présélection ignorait auparavant traits d'Écho et surnom ; la corriger rapporte ×1,15 mesuré). Un Écho court n'est pas meilleur parce qu'il boucle plus vite : il produit la moyenne des puissances de sa vie. Or les niveaux montent pendant la vie, donc une vie longue a en général une meilleure moyenne (≈ +50 % entre 60 s et 180 s sans niveau de départ).
 
 ### 2.3 La Lignée (génétique)
 - Les traits sont de rareté Commun, Rare, Épique, Légendaire ou Mythique, et certains sont négatifs.
@@ -120,8 +122,10 @@ Pour cadrer la 0.1, on a simulé un conseil avec les rôles clés d'un studio. C
 | **0.4 (sortie)** | « Récolter » : plus de vérification des codes du Destin (partage en bande de couleurs), plus de Prédateurs ni d'Affût, Cultiver et Chasser fusionnés en Récolter avec trois consignes pour le héros (`lab/CHANGELOG-EQUILIBRAGE.md`, TERRE-1 à 5). |
 | **0.5 (sortie)** | « La Mémoire » : plus de Domaine ni de consignes, Récolter simple et rendements compensés ; conditions de lignée à la place de la santé du Domaine (dons, surnoms, haut fait, Harmonieux) ; Grand marché ; onglet Mémoire (les Archives de la maison, un temps prévues, sont retirées avant la sortie) ; Destin du jour recalibré (codes `EL4`) (`lab/CHANGELOG-EQUILIBRAGE.md`, SIMPLIF-1 à 5). |
 | **0.6 (sortie)** | « La Maison » : Destin du jour mis en réserve et page Événements unique, Veillée des ancêtres, titres de famille, blason gagné (partitions, écartelé d'alliance, bordures, devises, timbres), thèmes de couleur, nouveautés du Codex sauvegardées, carte d'événement stable (`lab/CHANGELOG-EQUILIBRAGE.md`, UX-EVT 1 à VEILLEE). |
-| 0.7 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
-| 0.8 | Classement en ligne optionnel (backend léger) : il faudra alors une vérification côté serveur. |
+| **0.7 (sortie)** | « La Vie active » : le héros vivant porte la production (Échos rejoués à 8 %, Mémoire du sang et Crypte plafonnées, Sanctuaire sans effet sur les Échos), consommation proportionnelle à la puissance, surnoms d'Écho sans effet sur la consommation (`lab/CHANGELOG-EQUILIBRAGE.md`, VIE-1 à 6). |
+| 0.7.x | **Compagnonnage** (double vocation 50 % + 30 %) : `lab/design/BACKLOG-compagnonnage.md`. |
+| 0.8 | **Ère** : un méta-prestige qui réinitialise bâtiments et Échos contre des « Reliques » (des Échos légendaires permanents). |
+| 0.9 | Classement en ligne optionnel (backend léger) : il faudra alors une vérification côté serveur. |
 | 1.0 | Notifications push ; titres, hauts faits et mini-jeux de fin de partie (places réservées : `lab/design/SEUILS-inventaire.md` § 5). |
 
 ## 4. Architecture technique

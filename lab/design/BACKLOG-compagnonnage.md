@@ -1,6 +1,6 @@
 # Backlog — Compagnonnage (double vocation)
 
-> Statut : **conçu, non implémenté, non chiffré**. À reprendre **après la refacto « vie active »** (baisse des gains des Échos, hausse de ceux de la vie en cours). Rien ici n'a été simulé : toute valeur chiffrée reste à fixer à ce moment-là, selon le protocole habituel (`lab/PROTOCOLE.md`, critères fixés avant les mesures, `sim:guard`).
+> Statut : **conçu, non implémenté, non chiffré**. La refacto « vie active » qui devait la précéder est faite (0.7, `lab/design/REFACTO-vie-active.md`) : le Compagnonnage peut être chiffré. Rien ici n'a été simulé : toute valeur chiffrée reste à fixer à ce moment-là, selon le protocole habituel (`lab/PROTOCOLE.md`, critères fixés avant les mesures, `sim:guard`).
 >
 > Origine : discussion de design avec le propriétaire, 2026-11-26. Ce document consigne les décisions prises pour ne pas avoir à les réexpliquer.
 

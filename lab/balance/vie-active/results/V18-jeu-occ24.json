@@ -1,0 +1,30 @@
+{
+ "tag": "V18-jeu-occ24",
+ "patch": "",
+ "obj": "",
+ "seeds": "1-20",
+ "hours": 24,
+ "dt": 0.5,
+ "profiles": {
+  "occasionnel": {
+   "heroShare": 0.115,
+   "legacy": 579,
+   "log10Value": 7.14,
+   "gen": 68,
+   "alliancesH": 21.93,
+   "alliancesN": 0.1,
+   "chroniquesH": null,
+   "chroniquesN": 0,
+   "heroAct": {
+    "cultiver": 0.2,
+    "commercer": 0.44,
+    "etudier": 0.19,
+    "mediter": 0.16
+   },
+   "crypte": 2,
+   "memoire": 3,
+   "prosperite": 8,
+   "anomalies": 0
+  }
+ }
+}

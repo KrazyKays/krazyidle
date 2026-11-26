@@ -1,0 +1,30 @@
+{
+ "tag": "V0-occ24",
+ "patch": "[]",
+ "obj": "",
+ "seeds": "1-20",
+ "hours": 24,
+ "dt": 0.5,
+ "profiles": {
+  "occasionnel": {
+   "heroShare": 0.013,
+   "legacy": 622,
+   "log10Value": 8.21,
+   "gen": 66,
+   "alliancesH": null,
+   "alliancesN": 0,
+   "chroniquesH": null,
+   "chroniquesN": 0,
+   "heroAct": {
+    "cultiver": 0.23,
+    "commercer": 0.43,
+    "etudier": 0.18,
+    "mediter": 0.17
+   },
+   "crypte": 2,
+   "memoire": 5.4,
+   "prosperite": 8,
+   "anomalies": 0
+  }
+ }
+}

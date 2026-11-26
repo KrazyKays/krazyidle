@@ -1,0 +1,20 @@
+{
+ "id": "V07-ref-avec",
+ "commit": "7089cb2",
+ "srcDirty": false,
+ "date": "2026-11-26T11:12:14.907Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "occasionnel",
+  "evenementiel"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 800,
+ "wallMs": 74048,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V07-ref-avec"
+}
