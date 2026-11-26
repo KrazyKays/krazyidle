@@ -200,6 +200,12 @@ export const NOVA_CHANCE = 0.002;
 export const NOVA_LUCK = 0.0004;
 
 export const VOCATION_BONUS = 0.2; // par rang
+/**
+ * Force de rejeu de base d'un Écho (0.7, VIE-3 : 0,4 avant). La Crypte valait jusqu'à une dizaine de héros et
+ * les Échos faisaient 86 à 93 % de la production : le héros vivant, le seul que le joueur pilote, ne pesait
+ * presque rien. À 8 %, il fait 55 à 60 % de la production en ligne (lab/balance/vie-active/RESULTATS.md).
+ */
+export const ECHO_BASE = 0.08;
 export const VOCATION_MAX = 10;
 
 // --- Bâtiments du Domaine -----------------------------------------------

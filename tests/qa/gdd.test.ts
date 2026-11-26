@@ -35,9 +35,9 @@ describe('GDD 2.1 — la Vie', () => {
 });
 
 describe('GDD 2.2 — les Échos', () => {
-  test('puissance de base 40 % ; 2 emplacements +1 par Crypte', () => {
+  test('puissance de base 8 % (0.7) ; 2 emplacements +1 par Crypte', () => {
     const s = newGame(0, 1);
-    expect(echoPowerMult(s, newRuntime())).toBeCloseTo(0.4);
+    expect(echoPowerMult(s, newRuntime())).toBeCloseTo(0.08);
     expect(echoSlots(s)).toBe(2);
     s.upgrades.crypte = 3;
     expect(echoSlots(s)).toBe(5);

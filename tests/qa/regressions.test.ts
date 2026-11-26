@@ -1261,3 +1261,15 @@ describe('VIE-2 — le Sanctuaire ne renforce plus les Échos (0.7)', () => {
     expect(echoPowerMult(s, newRuntime())).toBeCloseTo(p0, 12);
   });
 });
+
+describe('VIE-3 — Échos rejoués à 8 % (0.7)', () => {
+  test('la puissance de base des Échos vaut ECHO_BASE, et Mémoire du sang l\'augmente de 15 % par niveau', async () => {
+    const { echoPowerMult } = await import('../../src/engine/game');
+    const { ECHO_BASE } = await import('../../src/engine/data');
+    expect(ECHO_BASE).toBe(0.08);
+    const s = newGame(0, 1);
+    expect(echoPowerMult(s, newRuntime())).toBeCloseTo(0.08, 12);
+    s.upgrades.memoire = 2;
+    expect(echoPowerMult(s, newRuntime())).toBeCloseTo(0.08 * 1.3, 12);
+  });
+});

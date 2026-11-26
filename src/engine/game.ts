@@ -2,7 +2,7 @@
 import {
   ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
-  EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights,
+  EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights, ECHO_BASE,
 } from './data';
 import { ripeTraits } from './evolution';
 import { FEAT_DEF, checkFeats } from './feats';
@@ -53,7 +53,7 @@ export function prodMult(s: GameState, rt: Runtime, a: ActId): number {
 
 /** 0.7 (VIE-2) : le Sanctuaire ne renforce plus les Échos (Méditer seulement, comme les trois autres bâtiments). */
 export function echoPowerMult(s: GameState, rt: Runtime): number {
-  let m = 0.4 * (1 + 0.15 * up(s, 'memoire'));
+  let m = ECHO_BASE * (1 + 0.15 * up(s, 'memoire'));
   const ev = rt.online ? rt.event?.def : undefined;
   if (ev?.echo) m *= ev.echo;
   return m;
