@@ -30,3 +30,10 @@ Le Comptoir (30 Or) et la Bibliothèque (40 Or + 15 Savoir) consomment l'Or dont
 **Lecture** : Étudier est une activité de **transformation** (Or → Savoir) dont le meilleur jeu est déjà ≈ 55 % Étudier / 45 % Commercer.
 L'Érudit est donc naturellement à moitié Marchand : la paire Notaire (Commercer + Étudier) se forme d'elle-même chez un Érudit bien joué
 (K1 du Compagnonnage ✗ pour cette paire).
+
+## Décision du propriétaire (2026-11-26)
+
+**Option A retenue** : Étudier garde son identité d'activité de transformation (meilleur jeu ≈ 55 % Étudier / 45 % production d'Or).
+Aucune modification des rendements, **aucun avertissement dans l'interface** : le joueur le comprend en voyant le Savoir cesser
+d'augmenter. Conséquence pour le Compagnonnage : la paire Notaire (Commercer + Étudier) est la paire « naturelle » de l'Érudit
+(voir `lab/design/BACKLOG-compagnonnage.md`).

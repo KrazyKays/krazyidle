@@ -48,6 +48,17 @@ Les noms servent à l'annonce (« Jehan devient Colporteur ! »), aux fiches du 
 - **Faisabilité comparée des paires** [HYPOTHÈSE] : avec des Échos plus faibles, les stocks seront moins alimentés et les chaînes de consommation (Commercer consomme des Vivres, Étudier de l'Or) plus contraignantes. Une paire comme Étudier + Méditer dépend de l'Or en stock. À mesurer ; piste préférée : laisser les 20 % libres servir à préparer les stocks (habileté) plutôt que compenser les paires difficiles.
 - **Part des vies qui remplissent déjà 50 % + 30 %** sans le viser, par profil (si elle est élevée, la récompense devient passive et le seuil est à revoir).
 
+## 4 bis. Calibrage en cours (2026-11-26)
+
+Mesures : `lab/balance/compagnonnage/RESULTATS.md` (C0 à C3), `lab/balance/etudier/RESULTATS.md` (E0).
+- [SIMULÉ] Former une paire coûte −4 à −14 % d'Héritage à un joueur concentré : un lot de ressources ne le compense pas (l'Héritage
+  vient de la production du héros), l'échange d'expérience (50 + 30 = 80 s pour les deux métiers) non plus (+0,3 à +1 point).
+  Seul levier efficace mesuré : **Héritage de la vie ×k** (k ≈ 1,2), gain de la vie en cours. Le lot de ressources et l'échange
+  d'expérience peuvent rester comme saveur de l'annonce.
+- [DÉCISION DU PROPRIÉTAIRE] Étudier garde son identité (meilleur jeu ≈ 55 % Étudier / 45 % Commercer), sans avertissement :
+  le **Notaire** (Commercer + Étudier) est la paire naturelle de l'Érudit et se forme presque sans effort. Son traitement (k réduit
+  ou nul) reste à fixer.
+
 ## 5. Points de vigilance pour l'implémentation [CODE]
 
 - **Sauvegarde** : champs optionnels (paire formée dans `LifeState`, paire de l'`Echo`), complétés ou ignorés dans `migrate()` (`save.ts`).
