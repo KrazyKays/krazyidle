@@ -1251,3 +1251,13 @@ describe('VIE-1 — consommation proportionnelle (0.7)', () => {
     }
   });
 });
+
+describe('VIE-2 — le Sanctuaire ne renforce plus les Échos (0.7)', () => {
+  test('la puissance des Échos ne dépend pas du niveau du Sanctuaire', async () => {
+    const { echoPowerMult } = await import('../../src/engine/game');
+    const s = newGame(0, 1);
+    const p0 = echoPowerMult(s, newRuntime());
+    s.buildings.sanctuaire = 12;
+    expect(echoPowerMult(s, newRuntime())).toBeCloseTo(p0, 12);
+  });
+});

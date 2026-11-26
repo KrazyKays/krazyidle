@@ -220,7 +220,7 @@ export const BUILDINGS: BuildingDef[] = [
   { id: 'champs', name: 'Champs et garennes', icon: '🌾', desc: 'Récolter +25% / niv.', cost: { vivres: 25 }, growth: 1.9, effect: (l) => `Récolter ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'comptoir', name: 'Comptoir', icon: '🏪', desc: 'Commercer +25% / niv.', cost: { or: 30 }, growth: 2.0, effect: (l) => `Commercer ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'bibliotheque', name: 'Bibliothèque', icon: '🏛️', desc: 'Étudier +25%, XP +10% / niv.', cost: { savoir: 15, or: 40 }, growth: 2.1, effect: (l) => `Étudier ×${fmtMult(bMult(l, 0.25))}, XP +${l * 10}%` },
-  { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25%, Échos +10% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}, Échos +${l * 10}%` },
+  { id: 'sanctuaire', name: 'Sanctuaire', icon: '⛩️', desc: 'Méditer +25% / niv.', cost: { essence: 5 }, growth: 2.2, effect: (l) => `Méditer ×${fmtMult(bMult(l, 0.25))}` },
   { id: 'clepsydre', name: 'Clepsydre', icon: '⌛', desc: 'Durée de vie +4 s / niv.', cost: { savoir: 40, essence: 8 }, growth: 2.4, max: 15, effect: (l) => `Vie +${l * 4} s` },
 ];
 export const BUILDING: Record<string, BuildingDef> = Object.fromEntries(BUILDINGS.map((b) => [b.id, b]));

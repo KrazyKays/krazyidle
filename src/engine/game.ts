@@ -51,8 +51,9 @@ export function prodMult(s: GameState, rt: Runtime, a: ActId): number {
   return m;
 }
 
+/** 0.7 (VIE-2) : le Sanctuaire ne renforce plus les Échos (Méditer seulement, comme les trois autres bâtiments). */
 export function echoPowerMult(s: GameState, rt: Runtime): number {
-  let m = 0.4 * (1 + 0.15 * up(s, 'memoire')) * (1 + 0.1 * bl(s, 'sanctuaire'));
+  let m = 0.4 * (1 + 0.15 * up(s, 'memoire'));
   const ev = rt.online ? rt.event?.def : undefined;
   if (ev?.echo) m *= ev.echo;
   return m;
@@ -722,7 +723,7 @@ export function echoValueRate(e: Pick<Echo, 'value' | 'acts'>): number {
 
 /**
  * Production attendue d'un Écho en pts/s, hors bonus d'événement : valeur de sa vie par seconde × sa puissance
- * de rejeu (Mémoire du sang, Sanctuaire, ses traits d'Écho, son surnom). C'est elle qui guide la présélection et
+ * de rejeu (Mémoire du sang, ses traits d'Écho, son surnom). C'est elle qui guide la présélection et
  * s'affiche sur les cartes : la valeur seule ignorait la force propre et le surnom de l'Écho (GD-02, PBA-14) et
  * affichait la puissance du héros vivant au lieu de celle de l'Écho (GD-09).
  */
