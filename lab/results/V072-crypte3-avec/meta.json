@@ -1,0 +1,20 @@
+{
+ "id": "V072-crypte3-avec",
+ "commit": "87cb59b",
+ "srcDirty": false,
+ "date": "2026-11-26T14:38:22.886Z",
+ "profiles": [
+  "experimente",
+  "optimiseur",
+  "occasionnel",
+  "evenementiel"
+ ],
+ "seeds": "1-200",
+ "hours": 6,
+ "dt": 0.5,
+ "events": true,
+ "startOffsetMin": 50,
+ "runs": 800,
+ "wallMs": 172811,
+ "command": "npm run sim -- --profiles=experimente,optimiseur,occasionnel,evenementiel --seeds=1-200 --hours=6 --events --id=V072-crypte3-avec"
+}

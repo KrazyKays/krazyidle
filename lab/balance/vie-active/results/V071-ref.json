@@ -1,0 +1,60 @@
+{
+ "tag": "V071-ref",
+ "patch": "",
+ "obj": "",
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "profiles": {
+  "experimente": {
+   "heroShare": 0.542,
+   "legacy": 2085,
+   "log10Value": 7.29,
+   "gen": 164,
+   "alliancesH": 2.42,
+   "alliancesN": 1,
+   "chroniquesH": 4.21,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 0.18,
+    "commercer": 0.47,
+    "etudier": 0.18,
+    "mediter": 0.17
+   },
+   "crypte": 2,
+   "memoire": 3,
+   "prosperite": 11,
+   "anomalies": 0,
+   "ratio": {
+    "1": 7.47,
+    "3": 2.33,
+    "5": 2.22
+   }
+  },
+  "optimiseur": {
+   "heroShare": 0.596,
+   "legacy": 4148,
+   "log10Value": 8.04,
+   "gen": 162,
+   "alliancesH": 1.54,
+   "alliancesN": 1,
+   "chroniquesH": 2.7,
+   "chroniquesN": 1,
+   "heroAct": {
+    "cultiver": 1,
+    "commercer": 0,
+    "etudier": 0,
+    "mediter": 0
+   },
+   "crypte": 2,
+   "memoire": 3,
+   "prosperite": 13.8,
+   "anomalies": 0,
+   "ratio": {
+    "1": 4.23,
+    "3": 2.66,
+    "5": 2.5
+   }
+  }
+ }
+}

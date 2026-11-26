@@ -1,0 +1,20 @@
+{
+ "id": "V072-crypte3-dt01",
+ "commit": "87cb59b",
+ "srcDirty": false,
+ "date": "2026-11-26T14:41:58.323Z",
+ "profiles": [
+  "experimente",
+  "debutant",
+  "optimiseur",
+  "mono-cultiver"
+ ],
+ "seeds": "1-100",
+ "hours": 6,
+ "dt": 0.1,
+ "events": false,
+ "startOffsetMin": 0,
+ "runs": 400,
+ "wallMs": 214876,
+ "command": "npm run sim -- --profiles=experimente,debutant,optimiseur,mono-cultiver --seeds=1-100 --hours=6 --dt=0.1 --id=V072-crypte3-dt01"
+}
