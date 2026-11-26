@@ -9,7 +9,7 @@ import {
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
-import { heroActMult, lifePower } from '../engine/sim';
+import { consumeScaleFor, heroActMult, lifePower } from '../engine/sim';
 import type { Echo, GameState, Hero } from '../engine/state';
 import { Binder, confirmBox, copyText, download, h, modal, toast, type ModalHandle } from './dom';
 import { fmt, fmtClock, fmtDay, fmtDur, fmtInt, setNotation } from './fmt';
@@ -612,7 +612,7 @@ export class App {
     const m = prodMult(s, this.rt, a) * p;
     const out: string[] = [];
     for (const r in def.produce) out.push(`+${fmt(def.produce[r as ResId]! * m)} ${RES_INFO[r as ResId].icon}/s`);
-    for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * Math.sqrt(p))} ${RES_INFO[r as ResId].icon}/s`);
+    for (const r in def.consume) out.push(`−${fmt(def.consume[r as ResId]! * consumeScaleFor(p))} ${RES_INFO[r as ResId].icon}/s`);
     return out.join('  ');
   }
 

@@ -6,7 +6,7 @@ import {
   type Runtime,
 } from '../../src/engine/game';
 import { canMarry, countyHouses, dowry, marry, suitorFor } from '../../src/engine/alliances';
-import { lifePower, sumMods } from '../../src/engine/sim';
+import { consumeScaleFor, lifePower, sumMods } from '../../src/engine/sim';
 import type { GameState, Hero } from '../../src/engine/state';
 import type { Rng } from '../../src/engine/rng';
 
@@ -104,7 +104,7 @@ export function actNetValue(s: GameState, rt: Runtime, a: ActId): number {
   let prod = 0, cons = 0;
   for (const r in def.produce) prod += def.produce[r as ResId]! * RES_INFO[r as ResId].value;
   for (const r in def.consume) cons += def.consume[r as ResId]! * RES_INFO[r as ResId].value;
-  return base * prod - cons * Math.sqrt(Math.max(p, 0.01));
+  return base * prod - cons * consumeScaleFor(p);
 }
 
 // ---------------------------------------------------------------------------

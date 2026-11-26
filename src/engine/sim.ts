@@ -10,11 +10,16 @@ export interface SimCtx {
   acts?: Record<ActId, ActDef>;
 }
 
+/** Facteur de consommation d'une activité pratiquée à une puissance donnée. */
+export function consumeScaleFor(power: number): number {
+  return Math.sqrt(Math.max(power, 0.01));
+}
+
 /** Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées). */
 export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, fromLife: boolean): number {
   const def = (ctx.acts ?? ACT)[act];
   let frac = 1;
-  const consumeScale = Math.sqrt(Math.max(power, 0.01));
+  const consumeScale = consumeScaleFor(power);
   for (const r in def.consume) {
     const need = def.consume[r as ResId]! * consumeScale * dt;
     if (need > 0) frac = Math.min(frac, ctx.res[r as ResId] / need);

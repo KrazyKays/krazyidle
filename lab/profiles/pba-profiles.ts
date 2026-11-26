@@ -12,7 +12,7 @@ import { acceptProposal, canMarry, countyHouses, dowry, encodeProposal, marry, s
 import { activeEvent } from '../../src/engine/events';
 import { ecoFactor, ecoHealth } from '../../src/engine/ecosystem';
 import { EPITHET } from '../../src/engine/epithets';
-import { lifePower, sumMods } from '../../src/engine/sim';
+import { consumeScaleFor, lifePower, sumMods } from '../../src/engine/sim';
 import { zeroRes, type GameState, type Hero } from '../../src/engine/state';
 import { PROFILES, feasible, type Ctx, type Profile } from '../sim/profiles';
 
@@ -24,7 +24,7 @@ function actNetValue(s: GameState, rt: Runtime, a: ActId): number {
   const base = prodMult(s, rt, a) * p * ecoFactor(a, s.eco);
   let v = 0;
   for (const r in ACT[a].produce) v += ACT[a].produce[r as ResId]! * RES_INFO[r as ResId].value * base;
-  for (const r in ACT[a].consume) v -= ACT[a].consume[r as ResId]! * RES_INFO[r as ResId].value * Math.sqrt(Math.max(p, 0.01));
+  for (const r in ACT[a].consume) v -= ACT[a].consume[r as ResId]! * RES_INFO[r as ResId].value * consumeScaleFor(p);
   return v;
 }
 /** Force réelle d'un Écho (GD-02) : pts/s × max(0,2 ; 1 + force) × (1 + surnom). */
