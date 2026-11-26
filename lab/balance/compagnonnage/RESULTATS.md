@@ -68,3 +68,11 @@ produit l'intrant manquant. Paires formées : 98 à 99 % des vies visées. `resu
 - **Héritage ×k** : k = 1,25 → 10 paires sur 12 entre −0,6 et +16 % (Récolter et Méditer : 0 à +5 % ; Commercer et Étudier : +4 à
   +16 %) ; mono-Étudier + Commercer +42 %. K2 tenu en grande partie, K3 ✗ (≈ 16 points hors anomalie).
   Le coût dépend de la **vocation** (consomme-t-elle ?), pas de la paire : une règle symétrique ne peut pas l'égaliser exactement.
+
+## Principe du propriétaire et vérification (2026-11-26)
+
+Principe : ne pas équilibrer les métiers à outrance, car le joueur aura toujours besoin de Vivres (pour Commercer) et d'Essence (pour les
+améliorations). Vérification [CODE] + [SIMULÉ, 10 graines × 6 h] : les améliorations d'Héritage se paient en ⚜️, pas en Essence ; l'Essence
+ne sert qu'au Sanctuaire et à la Clepsydre (`data.ts:229-230`). Le profil optimiseur joue Récolter 100 % du temps, n'achète que les Champs,
+ne produit ni Or ni Essence, achète les mêmes améliorations d'Héritage que mono-Récolter (Prospérité 14, Sève 10, Crypte 2…) et reste le
+profil le plus fort. Le besoin de diversifier n'existe donc pas aujourd'hui pour Récolter ; il existe pour Commercer (Vivres) et Étudier (Or).
