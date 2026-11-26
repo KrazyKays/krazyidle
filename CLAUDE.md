@@ -65,3 +65,5 @@ Pour une nouvelle campagne d'audit : créer `.claude/AUDIT_LOCK` (le hook `.clau
 - Indicateurs de rareté des traits : `node lab/balance/evo/kpi.mjs <runs.jsonl>` ; résultats du lot : `lab/balance/evo/RESULTATS.md`.
 
 Points ouverts (fin de l'audit du 2026-11-14) : `audits/2026-11-14/SYNTHESE.md`, § 10.
+
+Fonctionnalités conçues en attente : **Compagnonnage** (double vocation 50 % + 30 %, à reprendre après la refacto « vie active ») : `lab/design/BACKLOG-compagnonnage.md`.
