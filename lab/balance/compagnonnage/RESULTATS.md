@@ -105,3 +105,11 @@ Tableau complet : `results/C4-choix.md`. Paires formées : 99 à 100 % des vies 
 - [PROPOSITION, non conforme à la règle fixée, à valider par le propriétaire] traiter le Colporteur comme le Notaire (kN). Avec
   k = 1,3 et kN = 1,2 : 12 combinaisons sur 12 dans les bornes, de +2,8 % (Paysan → Commercer) à +14,9 % (Marchand → Récolter), écart 12,1 points.
 - À faire avant implémentation : revalider le couple retenu à dt 0,1 (règle 4) et le confronter à `sim:guard` sur les profils de référence.
+
+**Décision du propriétaire (2026-11-26)** : proposition validée — Colporteur et Notaire = paires naturelles à kN = 1,2, autres paires k = 1,3.
+
+## C4-dt01 — revalidation du couple retenu au pas réel (dt 0,1, 20 graines × 6 h ; `results/C4-dt01.md`) [SIMULÉ]
+
+11 combinaisons sur 12 dans les bornes, écart 12,7 points ✓, K1 inchangé (Érudit 86 %, autres ≤ 0,3 %). Seule Érudit → Récolter
+dépasse : **+15,5 %** (dt 0,5 : +13,6 % sur 40 graines), soit 0,5 point au-dessus de la borne, sur deux fois moins de graines :
+dans le bruit, à surveiller au `sim:guard` après implémentation.

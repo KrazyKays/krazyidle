@@ -58,6 +58,11 @@ Mesures : `lab/balance/compagnonnage/RESULTATS.md` (C0 à C3), `lab/balance/etud
 - [DÉCISION DU PROPRIÉTAIRE] Étudier garde son identité (meilleur jeu ≈ 55 % Étudier / 45 % Commercer), sans avertissement :
   le **Notaire** (Commercer + Étudier) est la paire naturelle de l'Érudit et se forme presque sans effort. Son traitement (k réduit
   ou nul) reste à fixer.
+- [DÉCISION DU PROPRIÉTAIRE, 2026-11-26] **Paires naturelles** : une vocation qui consomme + son fournisseur — **Colporteur**
+  (Récolter + Commercer) et **Notaire** (Commercer + Étudier) — reçoivent **Héritage ×1,2** ; les quatre autres paires **×1,3**
+  [SIMULÉ, C4, dt 0,5 : 12 combinaisons sur 12 entre +2,8 et +14,9 %]. Critère d'écart entre paires (K3) assoupli à 20 points.
+  Lot de ressources et échange d'expérience (50 + 30 = 80 s) : saveur de l'annonce seulement (effet mesuré ≤ 1 point).
+  À faire avant implémentation : revalidation à dt 0,1 (C4-dt01), puis `sim:guard` sur les profils de référence.
 
 ## 5. Points de vigilance pour l'implémentation [CODE]
 
