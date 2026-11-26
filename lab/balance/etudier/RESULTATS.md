@@ -37,3 +37,21 @@ L'Érudit est donc naturellement à moitié Marchand : la paire Notaire (Commerc
 Aucune modification des rendements, **aucun avertissement dans l'interface** : le joueur le comprend en voyant le Savoir cesser
 d'augmenter. Conséquence pour le Compagnonnage : la paire Notaire (Commercer + Étudier) est la paire « naturelle » de l'Érudit
 (voir `lab/design/BACKLOG-compagnonnage.md`).
+
+## E1 — coût en attention (`attention.ts`, 20 graines × 6 h, dt 0,5 ; `results/attention.md`) [SIMULÉ]
+
+Question du propriétaire : l'Érudit bien joué doit changer d'activité au bon moment, alors qu'un Érudit pur jouerait AFK entre deux successions.
+
+| façon de jouer | ⚜️ 6 h | changements par vie |
+|---|---|---|
+| Étudier sans jamais changer (AFK) | 231 | 0 |
+| mono-etudier (repli au coup par coup) | 2 545 | 64,7 |
+| blocs de Commerce de 5 / 15 / 30 s (quota d'Étude 55 %) | 3 326 / 3 345 / 3 368 | 3 / 1,7 / 1,3 |
+| mono-cultiver (référence AFK) | 4 030 | 0 |
+
+- **Étudier AFK n'existe pas** : sans changer d'activité, l'Or s'épuise et la lignée s'effondre (−91 % contre le repli). L'Érudit est par nature
+  la vocation **active** ; Récolter est la vocation AFK (aucun changement nécessaire, et la plus forte).
+- **Le coût en attention est faible** : un ou deux changements par vie (un bloc de Commerce) suffisent à atteindre le meilleur résultat ;
+  les petits blocs n'apportent rien de plus.
+- Le profil mono-etudier change 65 fois par vie : son « repli » n'est jouable par aucun humain, ses chiffres surestiment ce qu'obtiendrait
+  un joueur réel qui n'a pas compris le besoin d'Or.
