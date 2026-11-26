@@ -1310,3 +1310,104 @@ describe('VIE-6 — le surnom d\'un Écho ne renforce que sa production (0.7)', 
     expect(b.res.or).toBeCloseTo(a.res.or * 1.25, 12);
   });
 });
+
+describe('COMP-1 — Compagnonnage : second métier à 30 % (0.8)', () => {
+  const setup = async (bought = true) => {
+    const g = await import('../../src/engine/game');
+    const s = newGame(0, 7);
+    s.unlocked = ['cultiver', 'commercer', 'etudier', 'mediter'];
+    if (bought) s.upgrades.compagnonnage = 1;
+    s.res.vivres = 1e6; s.res.or = 1e6;
+    g.startLife(s);
+    s.life!.dur = 100;
+    return { g, s, rt: g.newRuntime() };
+  };
+  /** joue `sec` secondes de `act` par pas de 0,5 s */
+  const play = (g: any, s: any, rt: any, act: string, sec: number) => {
+    g.setActivity(s, act);
+    for (let i = 0; i < sec * 2 && s.life; i++) g.tick(s, rt, 0.5, 1000 * i);
+  };
+
+  test('A + B et B + A forment la même paire', async () => {
+    const { pairId } = await import('../../src/engine/game');
+    expect(pairId('etudier', 'commercer')).toBe(pairId('commercer', 'etudier'));
+    expect(pairId('etudier', 'commercer')).toBe('commercer+etudier');
+  });
+
+  test('sans l\'amélioration, rien ne se forme', async () => {
+    const { g, s, rt } = await setup(false);
+    play(g, s, rt, 'cultiver', 50); play(g, s, rt, 'commercer', 31);
+    expect(s.life!.comp).toBeUndefined();
+  });
+
+  test('50 % + 30 % forment la paire une seule fois : lot, expérience échangée, annonce', async () => {
+    const { g, s, rt } = await setup();
+    play(g, s, rt, 'commercer', 50);
+    play(g, s, rt, 'cultiver', 29);
+    expect(s.life!.comp).toBeUndefined();
+    const before = { ...s.res };
+    play(g, s, rt, 'cultiver', 1.5);
+    expect(s.life!.comp).toBe('cultiver+commercer');
+    expect(s.res.vivres).toBeGreaterThan(before.vivres);
+    expect(s.life!.lvl.cultiver).toBe(s.life!.lvl.commercer);
+    expect(rt.notices.some((n: any) => n.kind === 'comp' && n.text.includes('Colporteu'))).toBe(true);
+    expect(s.compagnons).toEqual({ 'cultiver+commercer': 1 });
+    play(g, s, rt, 'cultiver', 5);
+    expect(s.compagnons!['cultiver+commercer']).toBe(1);
+  });
+
+  test('30 % + 30 % ne forment rien : la vocation reste la condition', async () => {
+    const { g, s, rt } = await setup();
+    play(g, s, rt, 'cultiver', 31); play(g, s, rt, 'commercer', 31); play(g, s, rt, 'etudier', 31);
+    expect(s.life!.comp).toBeUndefined();
+  });
+
+  test('Héritage de la vie ×1,3 (×1,2 pour une paire naturelle), Écho et ancêtre marqués', async () => {
+    const { g, s, rt } = await setup();
+    const { COMPAGNON_LEGACY, COMPAGNON_LEGACY_NATUREL } = await import('../../src/engine/data');
+    play(g, s, rt, 'cultiver', 50); play(g, s, rt, 'mediter', 31);
+    const L = s.life!;
+    expect(L.comp).toBe('cultiver+mediter');
+    play(g, s, rt, 'mediter', 30);
+    expect(s.life).toBeNull();
+    const sc = s.succession!;
+    const ratio = L.dur / g.lifeDuration(s, { ...s.hero, traits: [] });
+    expect(sc.legacyGain).toBe(Math.floor(g.legacyFor(L.value, ratio) * COMPAGNON_LEGACY));
+    expect(sc.comp).toEqual({ id: 'cultiver+mediter', mult: COMPAGNON_LEGACY });
+    expect(sc.newEcho.comp).toBe('cultiver+mediter');
+    expect(sc.ancestor.comp).toBe('cultiver+mediter');
+    expect(g.pairLegacyMult('commercer+etudier')).toBe(COMPAGNON_LEGACY_NATUREL);
+    expect(g.pairLegacyMult('cultiver+commercer')).toBe(COMPAGNON_LEGACY_NATUREL);
+  });
+
+  test('l\'Écho d\'un compagnon rejoue ses deux métiers plus fort, sans consommer davantage', async () => {
+    const { echoActMult } = await import('../../src/engine/game');
+    const { COMPAGNON_ECHO } = await import('../../src/engine/data');
+    const e: any = { comp: 'commercer+etudier' };
+    expect(echoActMult(e, 'commercer')).toBeCloseTo(1 + COMPAGNON_ECHO, 12);
+    expect(echoActMult(e, 'etudier')).toBeCloseTo(1 + COMPAGNON_ECHO, 12);
+    expect(echoActMult(e, 'cultiver')).toBe(1);
+    expect(echoActMult({} as any, 'commercer')).toBe(1);
+  });
+
+  test('formé hors ligne : pas d\'annonce pendant le rattrapage, récapitulatif au retour', async () => {
+    const { g, s, rt } = await setup();
+    play(g, s, rt, 'etudier', 50);
+    g.setActivity(s, 'mediter');
+    rt.notices.length = 0;
+    const rep = g.simulateOffline(s, rt, 40, 40_000)!;
+    expect(rep.comp).toEqual([{ name: s.hero.name, pair: 'etudier+mediter' }]);
+    expect(rt.notices.some((n: any) => n.kind === 'comp')).toBe(false);
+  });
+
+  test('la paire survit à la sauvegarde : un rechargement ne la redonne pas', async () => {
+    const { g, s, rt } = await setup();
+    const { exportSave, importSave } = await import('../../src/engine/save');
+    play(g, s, rt, 'cultiver', 50); play(g, s, rt, 'etudier', 31);
+    const s2 = importSave(exportSave(s))!;
+    expect(s2.life!.comp).toBe('cultiver+etudier');
+    const rt2 = g.newRuntime();
+    play(g, s2, rt2, 'etudier', 2);
+    expect(s2.compagnons!['cultiver+etudier']).toBe(1);
+  });
+});

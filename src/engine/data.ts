@@ -208,6 +208,39 @@ export const VOCATION_BONUS = 0.2; // par rang
 export const ECHO_BASE = 0.08;
 export const VOCATION_MAX = 10;
 
+// --- Compagnonnage (second métier, 0.8) --------------------------------------
+// Calibrage : lab/balance/compagnonnage/RESULTATS.md (C0 à C4) ; décisions : lab/design/BACKLOG-compagnonnage.md.
+/** Part de la vie à passer dans un second métier, en plus des 50 % de la vocation. 50 + 30 + 30 > 100 : une seule paire par vie. */
+export const COMPAGNON_SHARE = 0.3;
+/** Héritage de la vie qui forme une paire : ×1,3, et ×1,2 pour une paire naturelle (vocation qui consomme + son fournisseur). */
+export const COMPAGNON_LEGACY = 1.3;
+export const COMPAGNON_LEGACY_NATUREL = 1.2;
+/** Lot versé à la formation : N s du débit de la vie hors événements, à valeur égale entre les deux ressources (saveur). */
+export const COMPAGNON_LOT_SEC = 30;
+/** Boost passif de l'Écho d'un compagnon : ses deux métiers rejoués plus fort (production seule, pas la consommation). */
+export const COMPAGNON_ECHO = 0.15;
+
+export interface PairDef {
+  /** identifiant stable : les deux activités dans l'ordre d'ACTS, jointes par « + » */
+  id: string;
+  acts: [ActId, ActId];
+  name: string;
+  nameF: string;
+  icon: string;
+  /** paire naturelle : la vocation qui consomme et son fournisseur (Héritage ×COMPAGNON_LEGACY_NATUREL) */
+  naturel?: boolean;
+  desc: string;
+}
+export const PAIRS: PairDef[] = [
+  { id: 'cultiver+commercer', acts: ['cultiver', 'commercer'], name: 'Colporteur', nameF: 'Colporteuse', icon: '🧺', naturel: true, desc: 'Des champs au marché : le Marchand récolte ce qu\'il vend.' },
+  { id: 'commercer+etudier', acts: ['commercer', 'etudier'], name: 'Notaire', nameF: 'Notaire', icon: '🖋️', naturel: true, desc: 'L\'Or paie l\'encre : l\'Érudit commerce pour étudier.' },
+  { id: 'cultiver+etudier', acts: ['cultiver', 'etudier'], name: 'Agronome', nameF: 'Agronome', icon: '🌱', desc: 'La terre se lit comme un livre.' },
+  { id: 'cultiver+mediter', acts: ['cultiver', 'mediter'], name: 'Rebouteux', nameF: 'Rebouteuse', icon: '🌿', desc: 'Les simples du jardin et les secrets de l\'âme.' },
+  { id: 'commercer+mediter', acts: ['commercer', 'mediter'], name: 'Pèlerin', nameF: 'Pèlerine', icon: '🥾', desc: 'Les routes du négoce mènent aux sanctuaires.' },
+  { id: 'etudier+mediter', acts: ['etudier', 'mediter'], name: 'Alchimiste', nameF: 'Alchimiste', icon: '⚗️', desc: 'Le savoir des grimoires au service de l\'essence.' },
+];
+export const PAIR_DEF: Record<string, PairDef> = Object.fromEntries(PAIRS.map((p) => [p.id, p]));
+
 // --- Bâtiments du Domaine -----------------------------------------------
 export interface BuildingDef {
   id: string;
@@ -264,6 +297,7 @@ export const LEGACY: LegacyDef[] = [
   { id: 'patience', name: 'Patience', icon: '🌙', desc: 'Temps hors-ligne max +2 h', base: 5, growth: 1.8, max: 9 },
   { id: 'alliances', name: 'Alliances', icon: '💍', desc: 'Débloque les mariages avec les maisons du comté et les lignées d\'autres joueurs', base: 45, growth: 1, max: 1 },
   { id: 'chroniques', name: 'Chroniques', icon: '📜', desc: 'Débloque les Surnoms : chaque vie marquante entre dans la légende et renforce son Écho', base: 90, growth: 1, max: 1 },
+  { id: 'compagnonnage', name: 'Compagnonnage', icon: '🤝', desc: 'Débloque le second métier : une vie passée à 50 % dans sa vocation et à 30 % dans un autre métier rapporte davantage d\'Héritage', base: 200, growth: 1, max: 1 },
 ];
 export const LEGACY_DEF: Record<string, LegacyDef> = Object.fromEntries(LEGACY.map((l) => [l.id, l]));
 export const legacyCost = (d: LegacyDef, lvl: number) => Math.ceil(d.base * Math.pow(d.growth, lvl));
@@ -347,6 +381,12 @@ export function traitName(t: TraitDef, p?: Named | null): string {
 export function vocationName(v: { act: ActId; tier: number }, p: Named, roman: (n: number) => string): string {
   const d = ACT[v.act];
   return `${d.vocationF ? acc(p, d.vocation, d.vocationF) : d.vocation} ${roman(v.tier)}`;
+}
+/** Titre de compagnon accordé (« Colporteuse »). */
+export function pairName(id: string, p?: Named | null): string {
+  const d = PAIR_DEF[id];
+  if (!d) return '';
+  return p ? acc(p, d.name, d.nameF) : d.name === d.nameF ? d.name : `${d.name} / ${d.nameF}`;
 }
 export const HOUSE_NAMES = [
   'Valombre', 'Hautecour', 'Dorval', 'Montfaucon', 'Bellerive', 'Aubépine', 'Grisemont', 'Ventadour', 'Châtelfort', 'Clairval',

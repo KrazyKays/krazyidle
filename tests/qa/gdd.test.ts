@@ -84,7 +84,7 @@ describe('GDD 2.3 — la Lignée', () => {
   test('3 héritiers, jusqu\'à 6 ; arbre d\'Héritage de 11 améliorations', () => {
     const s = newGame(0, 1);
     expect(genHeirs(s, s.hero, new Rng(1))).toHaveLength(3);
-    expect(LEGACY).toHaveLength(11);
+    expect(LEGACY).toHaveLength(12);
   });
 
   // QA-09 (Faible, ambiguïté du GDD) : « 4 traits au maximum » et « Bénédictions hors budget ».

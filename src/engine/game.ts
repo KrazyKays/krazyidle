@@ -1,8 +1,9 @@
 // Logique de la partie principale : vie, Échos, succession, événements.
 import {
-  ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
+  ACT, ACTS, ACT_UNLOCK, BUILDING, BUILDING_FOR_ACT, EVENT_DEF, FIRST_NAMES, JOJO_LINE, isJoestar, LEGACY_DEF, sexFor, sexOf, RES, RES_INFO, TRAIT, TRAITS,
   GENOME_BUDGET, VOCATION_MAX, bMult, traitWeight, wearMult, legacyCost, type ActId, type ResId,
   EVO_CHANCE, EVO_LEGENDARY, EVO_LUCK, NOVA_CHANCE, NOVA_LUCK, mutationWeights, ECHO_BASE,
+  COMPAGNON_ECHO, COMPAGNON_LEGACY, COMPAGNON_LEGACY_NATUREL, COMPAGNON_LOT_SEC, COMPAGNON_SHARE, PAIR_DEF, pairName, xpToNext,
 } from './data';
 import { ripeTraits } from './evolution';
 import { FEAT_DEF, checkFeats } from './feats';
@@ -28,6 +29,8 @@ export interface Runtime {
   age: number;
   /** rattrapage du temps passé hors ligne en cours (`simulateOffline`) */
   offline?: boolean;
+  /** Compagnonnages formés pendant le rattrapage : annoncés au retour, dans le récapitulatif (0.8) */
+  offlineComp?: { name: string; pair: string }[];
 }
 
 export function newRuntime(): Runtime {
@@ -71,9 +74,77 @@ export function cryptBoost(s: GameState): number {
   return s.life ? 1 + sumMods(s.hero.traits).crypt : 1;
 }
 
-/** Bonus de surnom d'un Écho pour une activité. */
+/**
+ * Bonus de production d'un Écho pour une activité : son surnom, et son Compagnonnage (0.8) pour les deux métiers
+ * de sa paire. Il passe par `prodBonus` : il ne multiplie jamais la consommation (CLAUDE.md, « Vie active »).
+ */
 export function echoActMult(e: Echo, a: ActId): number {
-  return 1 + (EPITHET[e.epithet ?? '']?.mods.act?.[a] ?? 0);
+  const comp = e.comp && PAIR_DEF[e.comp]?.acts.includes(a) ? COMPAGNON_ECHO : 0;
+  return (1 + (EPITHET[e.epithet ?? '']?.mods.act?.[a] ?? 0)) * (1 + comp);
+}
+
+export function compagnonnageUnlocked(s: GameState): boolean {
+  return up(s, 'compagnonnage') > 0;
+}
+
+/** Identifiant de paire (ordre d'ACTS) : la paire A + B est la même que B + A. */
+export function pairId(a: ActId, b: ActId): string {
+  return ACTS.indexOf(a) < ACTS.indexOf(b) ? `${a}+${b}` : `${b}+${a}`;
+}
+
+/** Multiplicateur d'Héritage d'une paire. */
+export function pairLegacyMult(id: string): number {
+  const d = PAIR_DEF[id];
+  return !d ? 1 : d.naturel ? COMPAGNON_LEGACY_NATUREL : COMPAGNON_LEGACY;
+}
+
+/**
+ * Paire que la vie remplit : 50 % dans une activité et 30 % dans une autre (parts rapportées à la durée de la vie,
+ * comme la vocation). 50 + 30 + 30 > 100 : il n'y en a jamais deux.
+ */
+export function lifePair(life: LifeState): { voc: ActId; second: ActId; id: string } | null {
+  const voc = ACTS.find((a) => life.timeIn[a] >= life.dur * VOCATION_SHARE - 1e-6);
+  if (!voc) return null;
+  const second = ACTS.find((a) => a !== voc && life.timeIn[a] >= life.dur * COMPAGNON_SHARE - 1e-6);
+  return second ? { voc, second, id: pairId(voc, second) } : null;
+}
+
+/** Expérience totale d'une activité (niveaux passés + expérience en cours). */
+function totalXp(life: LifeState, a: ActId): number {
+  let x = life.xp[a];
+  for (let i = 0; i < life.lvl[a]; i++) x += xpToNext(i);
+  return x;
+}
+
+/**
+ * Compagnonnage (0.8) : dès que la vie remplit une paire, une seule fois. Lot des deux ressources (hors événements,
+ * à valeur égale) et chaque métier reçoit l'expérience acquise dans l'autre (50 + 30 = 80 s pour les deux).
+ * L'Héritage ×k est appliqué à la mort (`endLife`). Hors ligne, l'annonce attend le récapitulatif du retour.
+ */
+export function checkCompagnon(s: GameState, rt: Runtime) {
+  const life = s.life;
+  if (!life || life.comp || !compagnonnageUnlocked(s)) return;
+  const p = lifePair(life);
+  if (!p) return;
+  life.comp = p.id;
+  const lot = COMPAGNON_LOT_SEC * (life.baseValue ?? life.value) / Math.max(1, life.t);
+  for (const a of [p.voc, p.second]) {
+    const r = Object.keys(ACT[a].produce)[0] as ResId;
+    const q = lot / 2 / RES_INFO[r].value;
+    s.res[r] += q;
+    s.totalEver[r] += q;
+  }
+  const xv = totalXp(life, p.voc), xs = totalXp(life, p.second);
+  for (const a of [p.voc, p.second]) {
+    let x = xv + xs, l = 0;
+    while (x >= xpToNext(l)) { x -= xpToNext(l); l++; }
+    life.lvl[a] = l;
+    life.xp[a] = x;
+  }
+  (s.compagnons ??= {})[p.id] = (s.compagnons[p.id] ?? 0) + 1;
+  const title = pairName(p.id, s.hero);
+  if (rt.offline) (rt.offlineComp ??= []).push({ name: s.hero.name, pair: p.id });
+  else rt.notices.push({ kind: 'comp', text: `${PAIR_DEF[p.id].icon} ${s.hero.name} devient ${title} ! Héritage de sa vie ×${pairLegacyMult(p.id).toString().replace('.', ',')}` });
 }
 
 export function chroniclesUnlocked(s: GameState): boolean {
@@ -219,6 +290,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
   // Vie : le temps du héros ne s'écoule que pendant une activité
   if (s.life && s.life.act && !rt.pauseLife) {
     lifeTick(ctx, s.life, s.hero, xpMult(s, rt), dt);
+    checkCompagnon(s, rt);
     if (s.life.t >= s.life.dur - 1e-9) endLife(s, now);
   }
 
@@ -380,7 +452,8 @@ export function endLife(s: GameState, now: number) {
   // Seuls les traits allongent la « durée relative » : ni les bonus communs, ni Temps suspendu (Bazar),
   // qui faisait gonfler l'Héritage de qui l'achète à chaque vie (+15,9 %, garde-fou rouge en C075).
   const normalDur = lifeDuration(s, { ...hero, traits: [] }) + (life.extended ? 30 : 0);
-  const legacyGain = legacyFor(life.value, life.dur / normalDur);
+  const compMult = life.comp ? pairLegacyMult(life.comp) : 1;
+  const legacyGain = Math.floor(legacyFor(life.value, life.dur / normalDur) * compMult);
   const m = sumMods(hero.traits);
   const facts = lifeFacts(s, life, voc);
   const ep = chroniclesUnlocked(s) ? pickEpithet(facts) : null;
@@ -392,9 +465,10 @@ export function endLife(s: GameState, now: number) {
     acts: life.rec.slice(), pow: life.pow.slice(), strength: m.echo, pos: 0, loops: 0, pinned: false, value: life.baseValue ?? life.value,
     epithet: ep?.id,
   };
+  if (life.comp) echo.comp = life.comp;
   const ancestor: Ancestor = {
     id: hero.id, name: hero.name, sex: sexOf(hero), ord: hero.ord, gen: hero.gen, traits: [...hero.traits], vocation: voc ?? hero.vocation,
-    value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now, epithet: ep?.id,
+    value: life.value, legacy: legacyGain, dominant: dom.act, diedAt: now, epithet: ep?.id, ...(life.comp ? { comp: life.comp } : {}),
     spouse: hero.spouse ? { name: hero.spouse.name, sex: hero.spouse.sex, epithet: hero.spouse.epithet, house: hero.spouse.house, origin: hero.spouse.origin } : undefined,
   };
   let epInfo: Succession['epithet'];
@@ -413,6 +487,7 @@ export function endLife(s: GameState, now: number) {
   s.seed = rng.s;
   s.succession = { heirs, newEcho: echo, legacyGain, vocationEarned: voc, ancestor, epithet: epInfo };
   if (noEcho) s.succession.noEcho = true;
+  if (life.comp) s.succession.comp = { id: life.comp, mult: compMult };
   const feats = checkFeats(s, now, facts);
   if (feats.length) s.succession.feats = feats;
   if (Object.keys(ripe).length) s.succession.ripe = ripe;
@@ -688,6 +763,8 @@ export interface OfflineReport {
   gains: Record<ResId, number>;
   died: boolean;
   loops: number;
+  /** Compagnonnages formés pendant l'absence (0.8) */
+  comp?: { name: string; pair: string }[];
 }
 
 /** Écart minimal (s) rattrapé par simulation : la relance du jeu et le retour d'un onglet en arrière-plan. */
@@ -705,6 +782,7 @@ export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, n
   const hadLife = !!s.life;
   rt.online = false;
   rt.offline = true;
+  rt.offlineComp = [];
   const start = now - sec * 1000;
   const steps = Math.floor(sec);
   for (let i = 0; i < steps; i++) tick(s, rt, 1, start + i * 1000);
@@ -712,7 +790,9 @@ export function simulateOffline(s: GameState, rt: Runtime, elapsedSec: number, n
   rt.offline = false;
   const gains = zeroRes();
   for (const r of RES) gains[r] = s.res[r] - before[r];
-  return { seconds: sec, gains, died: hadLife && !s.life, loops: s.echoes.reduce((a, e) => a + e.loops, 0) - loops0 };
+  const comp = rt.offlineComp;
+  rt.offlineComp = undefined;
+  return { seconds: sec, gains, died: hadLife && !s.life, loops: s.echoes.reduce((a, e) => a + e.loops, 0) - loops0, ...(comp.length ? { comp } : {}) };
 }
 
 
