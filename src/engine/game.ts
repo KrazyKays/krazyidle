@@ -204,7 +204,7 @@ export function tick(s: GameState, rt: Runtime, dt: number, now: number) {
       const a = e.acts[idx];
       if (a >= 0) {
         const g0 = sumValue(rt.tickGross);
-        runActivity(ctx, ACTS[a], e.pow[idx] * p * echoActMult(e, ACTS[a]), step, false);
+        runActivity(ctx, ACTS[a], e.pow[idx] * p, step, false, echoActMult(e, ACTS[a]));
         echoGross += sumValue(rt.tickGross) - g0;
       }
       e.pos += step;

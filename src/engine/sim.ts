@@ -20,8 +20,11 @@ export function consumeScaleFor(power: number): number {
   return Math.max(power, 0);
 }
 
-/** Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées). */
-export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, fromLife: boolean): number {
+/**
+ * Exécute une activité pendant dt. Retourne la fraction effectivement réalisée (ressources consommées).
+ * prodBonus ne multiplie que la production (surnom d'un Écho, VIE-6) : il ne doit pas déséquilibrer la vie rejouée.
+ */
+export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, fromLife: boolean, prodBonus = 1): number {
   const def = (ctx.acts ?? ACT)[act];
   let frac = 1;
   const consumeScale = consumeScaleFor(power);
@@ -35,7 +38,7 @@ export function runActivity(ctx: SimCtx, act: ActId, power: number, dt: number, 
     const need = def.consume[r as ResId]! * consumeScale * dt * frac;
     ctx.res[r as ResId] = Math.max(0, ctx.res[r as ResId] - need);
   }
-  const mult = ctx.prodMult(act) * power * frac * dt;
+  const mult = ctx.prodMult(act) * power * prodBonus * frac * dt;
   for (const r in def.produce) {
     const amt = def.produce[r as ResId]! * mult;
     ctx.res[r as ResId] += amt;

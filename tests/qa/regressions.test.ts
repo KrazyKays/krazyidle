@@ -1296,3 +1296,17 @@ describe('VIE-5 — Crypte ancestrale : 2 niveaux, 4 emplacements (0.7)', () => 
     expect(echoSlots(s)).toBe(4);
   });
 });
+
+describe('VIE-6 — le surnom d\'un Écho ne renforce que sa production (0.7)', () => {
+  test('un bonus de production ne change pas la consommation', async () => {
+    const { runActivity } = await import('../../src/engine/sim');
+    const { ACT } = await import('../../src/engine/data');
+    const a = { res: { vivres: 100, or: 0, savoir: 0, essence: 0 }, prodMult: () => 1 };
+    const b = { res: { vivres: 100, or: 0, savoir: 0, essence: 0 }, prodMult: () => 1 };
+    runActivity(a, 'commercer', 0.5, 4, false);
+    runActivity(b, 'commercer', 0.5, 4, false, 1.25);
+    expect(b.res.vivres).toBeCloseTo(a.res.vivres, 12);
+    expect(a.res.vivres).toBeCloseTo(100 - ACT.commercer.consume.vivres! * 0.5 * 4, 12);
+    expect(b.res.or).toBeCloseTo(a.res.or * 1.25, 12);
+  });
+});
