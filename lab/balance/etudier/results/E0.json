@@ -1,0 +1,132 @@
+{
+ "tag": "E0",
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "variants": {
+  "base": {
+   "legacy": 2552,
+   "dleg": 0,
+   "log10": 7.36,
+   "gen": 176,
+   "etu": 0.69,
+   "starved": 0.43,
+   "comptoir": 7.5,
+   "biblio": 6.9
+  },
+  "reserve-30": {
+   "legacy": 2559,
+   "dleg": 0.3,
+   "log10": 7.36,
+   "gen": 177,
+   "etu": 0.69,
+   "starved": 0.43,
+   "comptoir": 7.5,
+   "biblio": 6.8
+  },
+  "reserve-60": {
+   "legacy": 2570,
+   "dleg": 0.8,
+   "log10": 7.36,
+   "gen": 177,
+   "etu": 0.69,
+   "starved": 0.44,
+   "comptoir": 7.5,
+   "biblio": 6.9
+  },
+  "reserve-120": {
+   "legacy": 2542,
+   "dleg": -0.3,
+   "log10": 7.35,
+   "gen": 177,
+   "etu": 0.69,
+   "starved": 0.44,
+   "comptoir": 7.3,
+   "biblio": 6.7
+  },
+  "part-50": {
+   "legacy": 3316,
+   "dleg": 30,
+   "log10": 7.78,
+   "gen": 174,
+   "etu": 0.48,
+   "starved": 0,
+   "comptoir": 15,
+   "biblio": 14
+  },
+  "part-60": {
+   "legacy": 3322,
+   "dleg": 30.2,
+   "log10": 7.81,
+   "gen": 175,
+   "etu": 0.58,
+   "starved": 0.01,
+   "comptoir": 14.9,
+   "biblio": 13
+  },
+  "part-70": {
+   "legacy": 2686,
+   "dleg": 5.2,
+   "log10": 7.47,
+   "gen": 177,
+   "etu": 0.67,
+   "starved": 0.26,
+   "comptoir": 11.3,
+   "biblio": 10
+  },
+  "part-80": {
+   "legacy": 2125,
+   "dleg": -16.7,
+   "log10": 7.13,
+   "gen": 179,
+   "etu": 0.76,
+   "starved": 0.63,
+   "comptoir": 7.5,
+   "biblio": 6.9
+  },
+  "part-90": {
+   "legacy": 1494,
+   "dleg": -41.5,
+   "log10": 6.63,
+   "gen": 185,
+   "etu": 0.85,
+   "starved": 0.87,
+   "comptoir": 7.5,
+   "biblio": 6.9
+  },
+  "part-50+res": {
+   "legacy": 3340,
+   "dleg": 31,
+   "log10": 7.79,
+   "gen": 175,
+   "etu": 0.48,
+   "starved": 0,
+   "comptoir": 15,
+   "biblio": 14
+  },
+  "part-70+res": {
+   "legacy": 2672,
+   "dleg": 4.7,
+   "log10": 7.46,
+   "gen": 178,
+   "etu": 0.67,
+   "starved": 0.26,
+   "comptoir": 11.1,
+   "biblio": 9.8
+  }
+ },
+ "others": {
+  "cultiver": {
+   "legacy": 4026,
+   "log10": 8.07
+  },
+  "commercer": {
+   "legacy": 3311,
+   "log10": 7.74
+  },
+  "mediter": {
+   "legacy": 3214,
+   "log10": 7.77
+  }
+ }
+}
