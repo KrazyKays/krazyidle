@@ -1,11 +1,11 @@
 import {
   ACT, ACTS, ACT_UNLOCK, BUILDINGS, CREST_COLORS, FIRST_NAMES, HOUSE_NAMES, acc, isJoestar, traitName, vocationName, type Named, LEGACY, RARITY, RES, RES_INFO, TRAIT, TRAITS,
-  legacyCost, wearMult, xpToNext, type ActId, type ResId,
+  legacyCost, wearMult, xpToNext, type ActId, type ResId, COMPAGNON_SHARE, PAIR_DEF, pairName,
 } from '../engine/data';
 import { buildIcs, upcomingEvents, utcDateStr } from '../engine/events';
 import {
   blessable, blessingCost, cryptBoost, EVENT_GOAL_WEIGHT, EVENT_REWARDS, EVENT_TIERS, SHOP, buildingCost, buyBlessing, buyBuilding, buyLegacy, buyTemps, canAfford,
-  VOCATION_SHARE, buildingOpen, chroniclesUnlocked, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
+  VOCATION_SHARE, buildingOpen, chroniclesUnlocked, compagnonnageUnlocked, pairLegacyMult, confirmSuccession, echoExpectedRate, echoPower, echoPowerMult, echoSlots, heroWear, isPaused, lifeDuration, prodMult, resumeLife, setActivity, vocationOutlook,
   type OfflineReport, type Runtime,
 } from '../engine/game';
 import { exportSave, importSave } from '../engine/save';
@@ -20,7 +20,7 @@ import { regnalName, renameHead, roman, type Ranked } from '../engine/names';
 import { alliancesUnlocked, weekIndex } from '../engine/alliances';
 import { evolutionsOf } from '../engine/evolution';
 import { FEATS, FEAT_DEF } from '../engine/feats';
-import { alliancesSection, codexSection, epithetBadge, openAcceptProposal, spouseLine } from './legends';
+import { alliancesSection, codexSection, compBadge, epithetBadge, openAcceptProposal, spouseLine } from './legends';
 import { eventGoalLine } from './eventview';
 import { codexFresh, codexKeys, markCodexSeen } from '../engine/codex';
 import { VEILLEE_MAX, VEILLEE_STEP_MIN, answerVeillee, observeVeillee, veilleeIndex, veilleeScene, veilleeSlots } from '../engine/veillee';
@@ -201,7 +201,7 @@ export class App {
     // notifications moteur
     while (this.rt.notices.length) {
       const n = this.rt.notices.shift()!;
-      toast(n.text, n.kind === 'event' ? 'event' : 'good', 4000);
+      toast(n.text, n.kind === 'event' || n.kind === 'comp' ? 'event' : 'good', n.kind === 'comp' ? 6000 : 4000);
     }
     // Succession non bloquante : on prévient, le joueur s'en occupe quand il veut.
     const pending = !!this.s.succession;
@@ -513,19 +513,26 @@ export class App {
     const s = this.s;
     const fill = h('div', { class: 'voc-fill' });
     const txt = h('div', { class: 'voc-txt' });
+    // Compagnonnage (0.8) : second repère à 30 %, visible une fois l'amélioration achetée.
+    const fill2 = h('div', { class: 'voc-fill' });
+    const txt2 = h('div', { class: 'voc-txt' });
+    const second = h('div', { class: 'voc-second' },
+      h('div', { class: 'voc-bar', style: { '--mark': `${COMPAGNON_SHARE * 100}%` } }, fill2, h('span', { class: 'voc-mark' })), txt2);
     const wrap = h('button', {
       class: 'voc-gauge', 'aria-label': 'Vocation',
       onclick: () => toast(`🎓 Consacre au moins ${Math.round(VOCATION_SHARE * 100)} % de la vie à une même activité : la relève pourra en recevoir la Vocation, un rang plus haut. Sinon, elle se transmet affaiblie d'un rang.`, 'info', 6000),
     },
       h('div', { class: 'label' }, '🎓 Vocation'),
       h('div', { class: 'voc-bar', style: { '--mark': `${VOCATION_SHARE * 100}%` } }, fill, h('span', { class: 'voc-mark' })),
-      txt);
+      txt,
+      second);
     let last = '';
     b.add(() => {
       const life = s.life;
       const o = life ? vocationOutlook(life, s.hero) : null;
       wrap.hidden = !o;
       if (!o) return;
+      this.secondGauge(o.act, fill2, txt2, second);
       const d = ACT[o.act];
       const name = (v: { act: ActId; tier: number }) => vocationName(v, s.hero, roman);
       let text: string;
@@ -545,6 +552,34 @@ export class App {
       wrap.dataset.state = o.state;
     });
     return wrap;
+  }
+
+  /** Jauge du second métier (Compagnonnage) : l'activité la plus pratiquée après la vocation visée. */
+  secondGauge(voc: ActId, fill: HTMLElement, txt: HTMLElement, wrap: HTMLElement) {
+    const s = this.s, life = s.life;
+    wrap.hidden = !life || !compagnonnageUnlocked(s);
+    if (!life || wrap.hidden) return;
+    if (life.comp) {
+      const d = PAIR_DEF[life.comp];
+      txt.textContent = `✔ ${d.icon} ${pairName(d.id, s.hero)} : Héritage de la vie ×${pairLegacyMult(d.id).toString().replace('.', ',')}`;
+      fill.style.width = '100%';
+      fill.style.background = ACT[d.acts[0] === voc ? d.acts[1] : d.acts[0]].color;
+      wrap.dataset.state = 'secured';
+      return;
+    }
+    let best: ActId | null = null;
+    for (const a of ACTS) if (a !== voc && s.unlocked.includes(a) && (best === null || life.timeIn[a] > life.timeIn[best])) best = a;
+    if (!best) { wrap.hidden = true; return; }
+    const share = life.timeIn[best] / life.dur;
+    const need = Math.max(0, life.dur * COMPAGNON_SHARE - life.timeIn[best]);
+    const left = life.dur - life.t;
+    const d = ACT[best];
+    txt.textContent = share > 0
+      ? `🤝 Second métier : ${d.icon} ${d.name} ${Math.round(share * 100)} %${need > left + 1e-6 ? ' · hors de portée pour cette vie' : ` · encore ${fmtDur(Math.ceil(need))}`}`
+      : `🤝 Second métier : ${Math.round(COMPAGNON_SHARE * 100)} % de la vie dans un autre métier forment un compagnonnage`;
+    fill.style.width = Math.min(100, share * 100).toFixed(1) + '%';
+    fill.style.background = d.color;
+    wrap.dataset.state = need > left + 1e-6 ? 'lost' : 'onTrack';
   }
 
   /** Proposer l'installation : après la 1re succession, discrètement, et deux fois au plus. */
@@ -717,7 +752,7 @@ export class App {
     const voc = e.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[e.vocation.act].color } }, `${ACT[e.vocation.act].icon} ${vocationName(e.vocation, e, roman)}`) : null;
     return h('div', { class: `card echo-card ${e.pinned ? 'pinned' : ''}` },
       head,
-      h('div', { class: 'row-wrap' }, voc, epithetBadge(e.epithet, e), this.traitChips(e.traits, true, e)),
+      h('div', { class: 'row-wrap' }, voc, compBadge(e.comp, e), epithetBadge(e.epithet, e), this.traitChips(e.traits, true, e)),
       timeline,
       h('div', { class: 'row-between small' },
         doing,
@@ -792,7 +827,7 @@ export class App {
   /** Annonce d'un achat d'Héritage : un déblocage dit où trouver la nouvelle mécanique. */
   legacyToast(id: string, lvl: number): string {
     const d = LEGACY.find((x) => x.id === id)!;
-    const where = id === 'alliances' ? ' · nouveau : Maison › Alliances' : id === 'chroniques' ? ' · nouveau : Maison › Codex' : '';
+    const where = id === 'alliances' ? ' · nouveau : Maison › Alliances' : id === 'chroniques' ? ' · nouveau : Maison › Codex' : id === 'compagnonnage' ? ' · nouveau : second repère sur la jauge de Vocation' : '';
     return `${d.icon} ${d.name} niv. ${lvl}${where}`;
   }
 
@@ -842,6 +877,7 @@ export class App {
         h('div', { class: 'row-between' }, h('strong', null, fullName(a, this.s.lineage.names)), h('span', { class: 'muted small' }, `+${a.legacy} ⚜️ · ${fmt(a.value)} pts`)),
         h('div', { class: 'row-wrap small' },
           a.vocation ? h('span', { class: 'badge badge-voc', style: { '--c': ACT[a.vocation.act].color } }, `${ACT[a.vocation.act].icon} ${vocationName(a.vocation, a, roman)}`) : h('span', { class: 'muted' }, a.dominant ? `${ACT[a.dominant].icon} touche-à-tout` : '—'),
+          compBadge(a.comp, a),
           epithetBadge(a.epithet, a),
           this.traitChips(a.traits, true, a)),
         spouseLine(a, a.spouse, true)))));
@@ -1028,12 +1064,14 @@ export class App {
           h('div', { class: 'big-i' }, '🕯️'),
           h('h2', null, `${this.nm(a)} rejoint les ancêtres`),
           h('p', { class: 'muted' }, `Génération ${a.gen} · ${fmt(a.value)} pts de valeur produite`)),
+        sc.comp && PAIR_DEF[sc.comp.id] ? h('div', { class: 'card evo-card' }, h('strong', null, `🤝 ${PAIR_DEF[sc.comp.id].icon} ${acc(a, 'Compagnon', 'Compagne')} : ${pairName(sc.comp.id, a)}`),
+          h('p', { class: 'muted small' }, `Héritage de sa vie ×${sc.comp.mult.toString().replace('.', ',')}. Son Écho rejouera ses deux métiers plus fort.`)) : null,
         this.epithetReveal(),
         this.evolutionReveal(),
         sc.feats?.length ? h('div', { class: 'card evo-card' }, h('strong', null, '🏆 Haut fait accompli'), h('ul', { class: 'plain-list small' }, sc.feats.map((id) => h('li', null, `${FEAT_DEF[id].icon} ${FEAT_DEF[id].name} : +${FEAT_DEF[id].eclats} ✦`)))) : null,
         sc.noEcho ? h('div', { class: 'card nova-card' }, h('strong', null, '💫 Une Étoile filante s\'est éteinte'), h('p', { class: 'muted small' }, 'Sa vie a embrasé la Crypte, mais elle ne laisse pas d\'Écho : seuls tes Échos actuels continuent de boucler.')) : null,
         h('div', { class: 'stats' },
-          stat('Héritage gagné', `+${sc.legacyGain} ⚜️`),
+          stat('Héritage gagné', sc.comp ? `+${sc.legacyGain} ⚜️ (×${sc.comp.mult.toString().replace('.', ',')})` : `+${sc.legacyGain} ⚜️`),
           stat('Vocation', sc.vocationEarned ? `${ACT[sc.vocationEarned.act].icon} ${vocationName(sc.vocationEarned, a, roman)}` : 'Aucune'),
           stat('Prochain palier ⚜️', `${fmt(Math.pow(sc.legacyGain + 1, 3) * 20)} pts`)),
         h('h3', { class: 'section-t' }, `Échos à conserver (${sel.size}/${slots})`),
@@ -1084,6 +1122,8 @@ export class App {
       h('h2', null, 'Pendant ton absence…'),
       h('p', { class: 'muted' }, `${fmtDur(r.seconds)} se sont écoulées. Tes Échos ont bouclé ${fmtInt(r.loops)} fois.`),
       h('div', { class: 'stats' }, gains.length ? gains : h('p', { class: 'muted' }, 'Rien n\'a été produit : il te faut des Échos !')),
+      r.comp?.length ? h('div', { class: 'card evo-card' }, h('strong', null, '🤝 Compagnonnage formé en ton absence'),
+        h('ul', { class: 'plain-list small' }, r.comp.map((c) => h('li', null, `${PAIR_DEF[c.pair]?.icon ?? ''} ${c.name} : ${pairName(c.pair)} · Héritage de sa vie ×${pairLegacyMult(c.pair).toString().replace('.', ',')}`)))) : null,
       r.died ? h('p', { class: 'accent' }, (() => { const a = this.s.succession?.ancestor; return a ? `🕯️ ${this.nm(a)} s'est ${acc(a, 'éteint', 'éteinte')} en ton absence. Une succession t'attend.` : '🕯️ Une vie s\'est achevée en ton absence. Une succession t\'attend.'; })()) : null,
       h('p', { class: 'muted small' }, 'Les événements ne comptent qu\'en ta présence. Reviens aux heures d\'événement !'),
       h('button', { class: 'btn btn-primary', onclick: () => m.close() }, 'Continuer')));

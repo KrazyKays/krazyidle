@@ -3,9 +3,10 @@
 // ou juste avant un rechargement n'était jamais signalé, et l'ouverture du Codex effaçait tout d'un coup.
 import type { GameState } from './state';
 
-/** Une clé par entrée du Codex : surnom (`e:`), haut fait (`f:`), page d'Almanach (`a:`). */
+/** Une clé par entrée du Codex : surnom (`e:`), haut fait (`f:`), page d'Almanach (`a:`), compagnonnage (`c:`, 0.8). */
 export function codexKeys(s: GameState): string[] {
   return [
+    ...Object.keys(s.compagnons ?? {}).map((id) => `c:${id}`),
     ...Object.keys(s.epithets ?? {}).map((id) => `e:${id}`),
     ...Object.keys(s.feats ?? {}).map((id) => `f:${id}`),
     ...(s.almanach ?? []).map((id) => `a:${id}`),

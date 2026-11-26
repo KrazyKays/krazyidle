@@ -8,7 +8,7 @@
 //   🌠 Destin    — les rendez-vous (l'événement en cours, sa Veillée et le calendrier, sur une seule page).
 import { BUILDINGS, LEGACY, legacyCost } from '../engine/data';
 import { alliancesUnlocked } from '../engine/alliances';
-import { buildingCost, canAfford, chroniclesUnlocked } from '../engine/game';
+import { buildingCost, canAfford, chroniclesUnlocked, compagnonnageUnlocked } from '../engine/game';
 import type { GameState } from '../engine/state';
 
 export type Tab = 'vie' | 'memoire' | 'ameliorer' | 'maison' | 'destin';
@@ -55,7 +55,7 @@ export function subsShown(s: GameState, tab: Tab, layout: Layout): SubDef[] {
       case 'echos': return layout !== 'three';
       case 'bazar': return bazarUnlocked(s);
       case 'alliances': return alliancesUnlocked(s);
-      case 'codex': return chroniclesUnlocked(s);
+      case 'codex': return chroniclesUnlocked(s) || compagnonnageUnlocked(s);
       default: return true;
     }
   });

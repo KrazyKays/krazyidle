@@ -343,6 +343,11 @@ p { margin: 6px 0; }
 .voc-txt { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 .voc-gauge[data-state='secured'] .voc-txt { color: var(--good); }
 .voc-gauge[data-state='lost'] .voc-txt { color: var(--bad); }
+/* Compagnonnage (0.8) : second repère de la jauge de vocation, pastille de compagnon */
+.voc-second { margin-top: 6px; }
+.voc-second[data-state='secured'] .voc-txt { color: var(--good); }
+.voc-second[data-state='lost'] .voc-txt { color: var(--muted); opacity: 0.75; }
+.badge-comp { border-color: var(--good); color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); font-weight: 600; }
 
 /* --- Invitation à installer ------------------------------------------------- */
 .install-card { display: flex; gap: 10px; align-items: flex-start; background: linear-gradient(90deg, rgba(242, 196, 90, 0.13), rgba(242, 196, 90, 0.03)); border: 1px solid rgba(242, 196, 90, 0.4); border-radius: var(--radius); padding: 10px 12px; animation: slideIn 0.4s ease; }

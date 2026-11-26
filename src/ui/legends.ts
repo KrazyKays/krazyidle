@@ -1,11 +1,11 @@
 // Interface des Surnoms (Codex) et des Alliances (mariages entre maisons).
-import { ACT, EVENTS, acc, vocationName, type Named } from '../engine/data';
+import { ACT, COMPAGNON_ECHO, EVENTS, PAIRS, PAIR_DEF, acc, pairName, vocationName, type Named } from '../engine/data';
 import { FEATS } from '../engine/feats';
 import {
   CADETS_MAX, acceptProposal, alliancesUnlocked, canMarry, countyHouses, dowry, isSealed, marry, proposeCadet, readProposal, suitorFor, weekEnd,
 } from '../engine/alliances';
 import { EPITHET, EPITHETS, EPITHET_RARITY, epithetEffect, epithetLabel, fullName } from '../engine/epithets';
-import { ALMANACH_ECLATS, chroniclesUnlocked } from '../engine/game';
+import { ALMANACH_ECLATS, chroniclesUnlocked, compagnonnageUnlocked, pairLegacyMult } from '../engine/game';
 import type { HouseRef, Spouse } from '../engine/state';
 import type { App } from './app';
 import { roman } from './app';
@@ -32,6 +32,20 @@ export function epithetBadge(id: string | undefined, who: Named | null): HTMLEle
     class: 'badge badge-epithet', style: { '--c': EPITHET_RARITY[e.rarity].color }, title: `${label} — ${epithetEffect(e, actName)}`,
     onclick: (ev: Event) => { ev.stopPropagation(); toast(`${e.icon} « ${label} » (${EPITHET_RARITY[e.rarity].name}) · ${epithetEffect(e, actName)}`, 'info', 4500); },
   }, `${e.icon} ${label}`);
+}
+
+const frMult = (x: number) => `×${x.toString().replace('.', ',')}`;
+
+/** Pastille de compagnon (0.8), qui explique le boost de l'Écho au toucher. */
+export function compBadge(id: string | undefined, who: Named | null): HTMLElement | null {
+  const d = id ? PAIR_DEF[id] : undefined;
+  if (!d) return null;
+  const label = pairName(d.id, who);
+  const effect = `Écho : ${ACT[d.acts[0]].name} et ${ACT[d.acts[1]].name} rejoués +${Math.round(COMPAGNON_ECHO * 100)} %`;
+  return h('button', {
+    class: 'badge badge-comp', title: `${label} — ${effect}`,
+    onclick: (ev: Event) => { ev.stopPropagation(); toast(`🤝 ${d.icon} ${label} · ${effect}`, 'info', 4500); },
+  }, `${d.icon} ${label}`);
 }
 
 /** « 💍 Unie à Ysolde, Maison Corbin » */
@@ -220,7 +234,9 @@ let codexPick: string | null = null;
 
 export function codexSection(app: App): HTMLElement | null {
   const s = app.s;
-  if (!chroniclesUnlocked(s)) return null;
+  if (!chroniclesUnlocked(s) && !compagnonnageUnlocked(s)) return null;
+  // Compagnonnage acheté avant Chroniques : le Codex n'a encore que ses compagnonnages, hauts faits et Almanach.
+  if (!chroniclesUnlocked(s)) return h('div', null, freshCard(app, app.codexVisit ?? new Set<string>(), () => {}), compagnonsCard(app), featsCard(app), almanachCard(app));
   const found = EPITHETS.filter((e) => s.epithets[e.id]).length;
   const detail = h('div', { class: 'codex-detail' });
   const show = (id: string | null) => {
@@ -258,6 +274,7 @@ export function codexSection(app: App): HTMLElement | null {
       filters,
       detail,
       grid),
+    compagnonsCard(app),
     featsCard(app),
     almanachCard(app));
 }
@@ -277,6 +294,8 @@ function freshCard(app: App, fresh: Set<string>, show: (id: string) => void): HT
       return h('li', null, h('button', { class: 'link-btn', onclick: () => show(id) }, `${e.icon} ${epithetLabel(id, who ?? null)}`),
         h('span', { class: 'muted' }, who ? ` · ${fullName(who, s.lineage.names)}, ${EPITHET_RARITY[e.rarity].name.toLowerCase()}` : ` · ${EPITHET_RARITY[e.rarity].name.toLowerCase()}`));
     }
+    const c = kind === 'c' ? PAIR_DEF[id] : undefined;
+    if (c) return h('li', null, `🤝 ${c.icon} ${pairName(id)}`, h('span', { class: 'muted' }, ' · compagnonnage'));
     const f = kind === 'f' ? FEATS.find((x) => x.id === id) : undefined;
     if (f) return h('li', null, `🏆 ${f.icon} ${f.name}`, h('span', { class: 'muted' }, ' · haut fait'));
     const a = kind === 'a' ? EVENTS.find((x) => x.id === id) : undefined;
@@ -287,6 +306,22 @@ function freshCard(app: App, fresh: Set<string>, show: (id: string) => void): HT
   return h('div', { class: 'card codex-fresh' },
     h('div', { class: 'label' }, 'Depuis ta dernière visite'),
     h('ul', { class: 'plain-list small' }, items));
+}
+
+/** Compagnonnages (0.8) : une fiche par paire, découverte à sa première formation. */
+export function compagnonsCard(app: App): HTMLElement | null {
+  const s = app.s;
+  if (!compagnonnageUnlocked(s)) return null;
+  const got = s.compagnons ?? {};
+  const n = PAIRS.filter((d) => got[d.id]).length;
+  return h('div', { class: 'card' },
+    h('div', { class: 'row-between' }, h('h2', null, '🤝 Compagnonnages'), h('span', { class: 'accent strong' }, `${n} / ${PAIRS.length}`)),
+    h('p', { class: 'muted small' }, 'Une vie passée à 50 % dans sa vocation et à 30 % dans un autre métier forme un compagnonnage : son Héritage est multiplié, et son Écho rejoue ses deux métiers plus fort. Une seule paire par vie.'),
+    h('div', { class: 'feat-list' }, PAIRS.map((d) => h('div', { class: `codex-item ${got[d.id] ? '' : 'locked'} ${app.codexVisit?.has(`c:${d.id}`) ? 'fresh' : ''}`, style: { '--c': got[d.id] ? ACT[d.acts[0]].color : '#607d8b' } },
+      h('span', { class: 'codex-i' }, got[d.id] ? d.icon : '❔'),
+      h('div', null,
+        h('div', { class: 'strong' }, got[d.id] ? pairName(d.id) : '???', h('span', { class: 'muted small' }, ` · ${ACT[d.acts[0]].icon} ${ACT[d.acts[0]].name} + ${ACT[d.acts[1]].icon} ${ACT[d.acts[1]].name} · Héritage ${frMult(pairLegacyMult(d.id))}${got[d.id] ? ` · ×${got[d.id]}` : ''}`)),
+        h('div', { class: 'muted small' }, got[d.id] ? d.desc : 'Forme ce compagnonnage pour lire sa fiche.'))))));
 }
 
 /** Hauts faits (0.3), dans le Codex : des objectifs lisibles pour la fin de partie. */

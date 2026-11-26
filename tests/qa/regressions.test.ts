@@ -1425,3 +1425,18 @@ describe('COMP-2 — prix du Compagnonnage (0.8)', () => {
     expect(s.legacy).toBe(880);
   });
 });
+
+describe('COMP-3 — Compagnonnage dans le Codex (0.8)', () => {
+  test('une paire formée est une nouveauté du Codex, visible même sans Chroniques', async () => {
+    const { codexFresh, markCodexSeen } = await import('../../src/engine/codex');
+    const { subsShown } = await import('../../src/ui/nav');
+    const s = newGame(0, 1);
+    expect(subsShown(s, 'maison', 'mobile').some((x) => x.id === 'codex')).toBe(false);
+    s.upgrades.compagnonnage = 1;
+    expect(subsShown(s, 'maison', 'mobile').some((x) => x.id === 'codex')).toBe(true);
+    s.compagnons = { 'etudier+mediter': 1 };
+    expect(codexFresh(s)).toEqual(['c:etudier+mediter']);
+    markCodexSeen(s);
+    expect(codexFresh(s)).toEqual([]);
+  });
+});
