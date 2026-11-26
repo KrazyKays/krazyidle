@@ -1,0 +1,42 @@
+# Compagnonnage — calibrage (2026-11-26)
+
+Spécification : `lab/design/BACKLOG-compagnonnage.md`. Rien n'est modifié dans le jeu : tout est simulé en mémoire
+(la récompense est versée par l'enveloppe du profil, `recompense.ts`).
+
+## Critères fixés AVANT les mesures C1
+
+- **K1 — pas de récompense passive** : sans viser la paire, ≤ 10 % des vies (après l'achat) remplissent 50 % + 30 %.
+- **K2 — viser rapporte, sans écraser** : pour un joueur concentré (`mono-<vocation>`), viser une paire avec récompense
+  donne un Héritage à 6 h entre **+3 % et +15 %** (15 % = seuil rouge de `sim:guard`) par rapport à ne pas la viser.
+- **K3 — paires comparables** : écart d'Héritage entre la meilleure et la pire paire (à N égal) ≤ 10 points.
+- **K4 — la vocation reste première** : la récompense d'une vie ≤ 50 % de la valeur produite par cette vie.
+
+## C0 — état des lieux (`etat-des-lieux.ts`, 4 profils × 40 graines × 6 h, dt 0,5) [SIMULÉ]
+
+Voir `results/C0.md`.
+- K1 tenu : vies 50 + 30 après h2 = 0 % (expérimenté, optimiseur), 2,1 % (débutant), 2,9 % (occasionnel).
+  **Fragile** : la 2e activité de l'expérimenté vaut 0,30 en médiane (il commerce dès 70 % de sa vie) : il frôle le seuil.
+- L'optimiseur ne joue que Récolter (déjà connu) et ne débloque jamais Étudier ni Méditer : seule la paire Récolter + Commercer lui est ouverte.
+- Viser une paire SANS récompense fait **gagner** l'expérimenté (+8 à +41 % d'Héritage, sauf Commercer → Méditer −2 %) :
+  sa rotation est plus faible qu'une vie structurée. Il n'est pas une référence de coût ; on mesure contre les mono-vocations.
+- Héritage cumulé (p50) h1…h6 : expérimenté 218 / 534 / 900 / 1 282 / 1 684 / 2 085 ; optimiseur 410 / 961 / 1 679 / 2 479 / 3 301 / 4 141.
+
+## C1 — coût de la visée et récompense R-base (`recompense.ts`, mono-<vocation> × 3 secondes vocations × 40 graines × 6 h, dt 0,5, visée dès h2) [SIMULÉ]
+
+Récompense R-base : N s du débit de la vie en cours hors événements, à valeur égale entre les deux ressources.
+`results/C1.md` (ressources seules), `results/C1-her.md` (récompense comptée aussi dans l'Héritage de la vie), `results/C1-s20.md` (2e à 20 %, N = 0).
+
+- **Coût de la visée sans récompense : −10 à −24 % d'Héritage** (seule exception : mono-Commercer + Récolter ≈ 0, car il récolte
+  déjà 27 % de sa vie quand il manque de Vivres). Abaisser la 2e à 20 % ne retire que 2 à 4 points : le coût vient des 30 %
+  passés dans une activité de bas niveau, pas du seuil.
+- **Ressources seules : ne compensent rien.** Même N = 120 s (≈ la valeur d'une vie entière, K4 ✗) laisse l'Héritage à −9 à −24 % :
+  l'Héritage dépend de la production du héros (racine cubique), pas des stocks.
+- **Comptée dans l'Héritage** : N = 120 ramène la plupart des paires à +2 à +6 % (K2 ✓) mais vaut une vie entière (K4 ✗) ;
+  N = 60 (≈ 50 %, K4 limite) laisse −2 à −19 %.
+- **K3 ✗ quelle que soit N** : Étudier + Commercer s'emballe (mono-Étudier → Commercer : +15 % à N = 30, +39 % à N = 120 ; +64 % comptée
+  dans l'Héritage). L'Or versé débloque Étudier, affamé d'Or : la récompense lève un goulot au lieu de compenser un coût.
+- [HYPOTHÈSE] une part du coût de Commercer → Étudier/Méditer vient de la visée naïve (Étudier sans Or en stock) ; un joueur qui
+  prépare ses stocks avec les 20 % libres paierait moins. Non mesuré.
+
+**Conclusion C1** : aucun N ne tient K2, K3 et K4 ensemble. Une récompense ponctuelle en ressources est le mauvais levier pour
+compenser un coût structurel (niveau de la 2e activité). Pistes à trancher par le propriétaire avant C2 : voir la discussion.

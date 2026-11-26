@@ -1,0 +1,316 @@
+{
+ "tag": "C0",
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "from": 2,
+ "passive": {
+  "experimente": {
+   "livesPerRun": 162.875,
+   "share": 0.036,
+   "shareLate": 0,
+   "second": 0.3,
+   "pairs": {
+    "commercer+etudier": 1
+   },
+   "rateP50": 587.88,
+   "rateP10": 250.04,
+   "rateP90": 1149.05,
+   "legacyP50": [
+    218,
+    534,
+    900,
+    1282,
+    1684,
+    2085
+   ],
+   "chroniquesH": 1
+  },
+  "optimiseur": {
+   "livesPerRun": 160.05,
+   "share": 0,
+   "shareLate": 0,
+   "second": 0,
+   "pairs": {},
+   "rateP50": 4309.17,
+   "rateP10": 2226.87,
+   "rateP90": 5885.5,
+   "legacyP50": [
+    410,
+    961,
+    1679,
+    2479,
+    3301,
+    4141
+   ],
+   "chroniquesH": 1
+  },
+  "debutant": {
+   "livesPerRun": 143.375,
+   "share": 0.028,
+   "shareLate": 0.021,
+   "second": 0.12,
+   "pairs": {
+    "cultiver+etudier": 23,
+    "cultiver+mediter": 20,
+    "cultiver+commercer": 28
+   },
+   "rateP50": 706.93,
+   "rateP10": 238.24,
+   "rateP90": 2303.63,
+   "legacyP50": [
+    172,
+    442,
+    754,
+    1089,
+    1458,
+    1960
+   ],
+   "chroniquesH": 1
+  },
+  "occasionnel": {
+   "livesPerRun": 28.15,
+   "share": 0.137,
+   "shareLate": 0.029,
+   "second": 0.28,
+   "pairs": {
+    "commercer+etudier": 8,
+    "commercer+mediter": 6
+   },
+   "rateP50": 60.78,
+   "rateP10": 33.85,
+   "rateP90": 126.98,
+   "legacyP50": [
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "chroniquesH": 0
+  }
+ },
+ "cost": {
+  "experimente": {
+   "cultiver>commercer": {
+    "okShare": 1,
+    "lives": 97.575,
+    "dlog": 0.216,
+    "dleg": 21.9,
+    "dgen": 3.6,
+    "ratio": 1.68,
+    "okN": 3903
+   },
+   "commercer>cultiver": {
+    "okShare": 1,
+    "lives": 95.675,
+    "dlog": 0.363,
+    "dleg": 35.9,
+    "dgen": 1.7,
+    "ratio": 3.23,
+    "okN": 3827
+   },
+   "cultiver>etudier": {
+    "okShare": 1,
+    "lives": 97.55,
+    "dlog": 0.243,
+    "dleg": 24.5,
+    "dgen": 3.5,
+    "ratio": 1.8,
+    "okN": 3902
+   },
+   "etudier>cultiver": {
+    "okShare": 1,
+    "lives": 96.1,
+    "dlog": 0.39,
+    "dleg": 38.1,
+    "dgen": 2.1,
+    "ratio": 3.41,
+    "okN": 3844
+   },
+   "cultiver>mediter": {
+    "okShare": 1,
+    "lives": 93.625,
+    "dlog": 0.182,
+    "dleg": 16,
+    "dgen": -0.4,
+    "ratio": 1.55,
+    "okN": 3745
+   },
+   "mediter>cultiver": {
+    "okShare": 1,
+    "lives": 93.25,
+    "dlog": 0.054,
+    "dleg": 8.4,
+    "dgen": -0.8,
+    "ratio": 1.59,
+    "okN": 3730
+   },
+   "commercer>etudier": {
+    "okShare": 1,
+    "lives": 97.3,
+    "dlog": -0.041,
+    "dleg": 7.5,
+    "dgen": 3.3,
+    "ratio": 1.17,
+    "okN": 3892
+   },
+   "etudier>commercer": {
+    "okShare": 1,
+    "lives": 95.875,
+    "dlog": 0.423,
+    "dleg": 40.6,
+    "dgen": 1.9,
+    "ratio": 3.67,
+    "okN": 3835
+   },
+   "commercer>mediter": {
+    "okShare": 1,
+    "lives": 95.425,
+    "dlog": -0.152,
+    "dleg": -2.2,
+    "dgen": 1.4,
+    "ratio": 0.85,
+    "okN": 3817
+   },
+   "mediter>commercer": {
+    "okShare": 1,
+    "lives": 93.2,
+    "dlog": 0.075,
+    "dleg": 10.1,
+    "dgen": -0.8,
+    "ratio": 1.68,
+    "okN": 3728
+   },
+   "etudier>mediter": {
+    "okShare": 1,
+    "lives": 90.625,
+    "dlog": 0.383,
+    "dleg": 33,
+    "dgen": -3.4,
+    "ratio": 3.45,
+    "okN": 3625
+   },
+   "mediter>etudier": {
+    "okShare": 1,
+    "lives": 89.4,
+    "dlog": 0.118,
+    "dleg": 11.2,
+    "dgen": -4.6,
+    "ratio": 1.96,
+    "okN": 3576
+   }
+  },
+  "optimiseur": {
+   "cultiver>commercer": {
+    "okShare": 1,
+    "lives": 98.175,
+    "dlog": -0.103,
+    "dleg": -5.7,
+    "dgen": 4.1,
+    "ratio": 0.76,
+    "okN": 3927
+   },
+   "commercer>cultiver": {
+    "okShare": 1,
+    "lives": 100.5,
+    "dlog": -0.241,
+    "dleg": -13.2,
+    "dgen": 6.5,
+    "ratio": 0.51,
+    "okN": 4020
+   },
+   "cultiver>etudier": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "etudier>cultiver": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "cultiver>mediter": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "mediter>cultiver": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "commercer>etudier": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "etudier>commercer": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "commercer>mediter": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "mediter>commercer": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "etudier>mediter": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   },
+   "mediter>etudier": {
+    "okShare": 0,
+    "lives": 94.05,
+    "dlog": 0,
+    "dleg": 0,
+    "dgen": 0,
+    "ratio": 1,
+    "okN": 0
+   }
+  }
+ }
+}

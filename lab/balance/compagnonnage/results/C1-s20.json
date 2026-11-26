@@ -1,0 +1,133 @@
+{
+ "tag": "C1-s20",
+ "toLegacy": false,
+ "seeds": "1-40",
+ "hours": 6,
+ "dt": 0.5,
+ "from": 2,
+ "Ns": [
+  0
+ ],
+ "rows": [
+  {
+   "base": "mono-cultiver",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.9890243902439024,
+   "rewardShare": 0,
+   "dleg": -7.5,
+   "dlog": -0.121,
+   "dgen": 0.6
+  },
+  {
+   "base": "mono-cultiver",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.98876953125,
+   "rewardShare": 0,
+   "dleg": -8.4,
+   "dlog": -0.133,
+   "dgen": 0.5
+  },
+  {
+   "base": "mono-cultiver",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.989025012761613,
+   "rewardShare": 0,
+   "dleg": -10.1,
+   "dlog": -0.127,
+   "dgen": -4
+  },
+  {
+   "base": "mono-commercer",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9922555663117134,
+   "rewardShare": 0,
+   "dleg": 0.1,
+   "dlog": 0.013,
+   "dgen": 0.1
+  },
+  {
+   "base": "mono-commercer",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.9916607100309746,
+   "rewardShare": 0,
+   "dleg": -17.3,
+   "dlog": -0.287,
+   "dgen": 1.7
+  },
+  {
+   "base": "mono-commercer",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.9933709796219004,
+   "rewardShare": 0,
+   "dleg": -20.1,
+   "dlog": -0.304,
+   "dgen": -1.4
+  },
+  {
+   "base": "mono-etudier",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9914549653579676,
+   "rewardShare": 0,
+   "dleg": -16.3,
+   "dlog": -0.256,
+   "dgen": 1.6
+  },
+  {
+   "base": "mono-etudier",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.991913123844732,
+   "rewardShare": 0,
+   "dleg": -15.1,
+   "dlog": -0.232,
+   "dgen": 1.5
+  },
+  {
+   "base": "mono-etudier",
+   "second": "mediter",
+   "N": 0,
+   "okShare": 0.9891414141414141,
+   "rewardShare": 0,
+   "dleg": -20.6,
+   "dlog": -0.27,
+   "dgen": -7.7
+  },
+  {
+   "base": "mono-mediter",
+   "second": "cultiver",
+   "N": 0,
+   "okShare": 0.9896438494569336,
+   "rewardShare": 0,
+   "dleg": -6.5,
+   "dlog": -0.1,
+   "dgen": 0.1
+  },
+  {
+   "base": "mono-mediter",
+   "second": "commercer",
+   "N": 0,
+   "okShare": 0.9896464646464647,
+   "rewardShare": 0,
+   "dleg": -7.2,
+   "dlog": -0.118,
+   "dgen": 0.2
+  },
+  {
+   "base": "mono-mediter",
+   "second": "etudier",
+   "N": 0,
+   "okShare": 0.9889589905362776,
+   "rewardShare": 0,
+   "dleg": -9,
+   "dlog": -0.108,
+   "dgen": -3.7
+  }
+ ]
+}
